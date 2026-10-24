@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {parseAmount,formatAmount,canonical,digest,policySchema,validateDecision} from "../packages/shared";
-import {capture,publicIp,safeFetch} from "../apps/web/lib/evidence";
+import {capture,publicIp,safeFetch,pinnedLookup} from "../apps/web/lib/evidence";
 import {assertFinalized,PendingFinality,genLayerAddress,normalizedCalldata,normalizeStudioTransaction} from "../apps/web/lib/genlayer";
 import {MemoryStore} from "../apps/web/lib/store";
 import {policy,input} from "./fixtures";
@@ -33,3 +33,17 @@ test("Studionet committed call normalization preserves finality, VM failure and 
 });
 
 test("GenLayer decoded constructor integers normalize exactly and reject unsafe JSON values",()=>{assert.deepEqual(normalizedCalldata(new Map([["args",[genLayerAddress("0x"+"12".repeat(20)),"policy","hash",1952n]]])),{args:["0x"+"12".repeat(20),"policy","hash",1952]});assert.throws(()=>normalizedCalldata(9007199254740993n),/exact JSON range/)});
+
+test("pinned DNS lookup supports Node dual-stack and single-address callback contracts",()=>{
+ for(const chosen of [{address:"1.1.1.1",family:4},{address:"2606:4700:4700::1111",family:6}]){
+  for(const all of [true,false]){
+   let calls=0;
+   pinnedLookup(chosen)("changed.example",{all},(error,address,family)=>{
+    calls++;assert.equal(error,null);
+    if(all){assert.deepEqual(address,[chosen]);assert.equal(family,undefined)}
+    else{assert.equal(address,chosen.address);assert.equal(family,chosen.family)}
+   });
+   assert.equal(calls,1);
+  }
+ }
+});
