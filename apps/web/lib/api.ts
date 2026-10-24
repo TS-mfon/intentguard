@@ -2,6 +2,8 @@ import {z} from "zod";
 import {randomBytes,timingSafeEqual} from "node:crypto";
 import {address,hash,parseAmount,paymentSchema,digest,canonical,type RequestView,type DraftView} from "../../../packages/shared";
 import {ApiError,responseError} from "./errors";
+import {assertApplicationOrigin} from "./origins";
+import {createExplorer} from "./explorer";
 import {configuration,publicConfiguration} from "./config";
 import {challenge,login,requireOwner,requireAgent,ownerSession,issueKey,revokeKeys,rateLimit} from "./auth";
 import {database,type Store} from "./store";
@@ -12,7 +14,7 @@ import {evidenceAllowed,requestId} from "./worker";
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Control":"no-store"}});
 async function body(req:Request){const length=Number(req.headers.get("content-length")??0);if(length>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");const reader=req.body?.getReader();if(!reader)throw new ApiError(422,"INVALID_JSON","Supply a JSON request body");const chunks:Uint8Array[]=[];let size=0;while(true){const result=await reader.read();if(result.done)break;size+=result.value.byteLength;if(size>32768){await reader.cancel();throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB")}chunks.push(result.value)}const raw=new TextDecoder().decode(Buffer.concat(chunks));if(Buffer.byteLength(raw)>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");try{return JSON.parse(raw)}catch{throw new ApiError(422,"INVALID_JSON","Supply a JSON request body")}}
 function parse<T>(schema:z.ZodType<T>,value:unknown):T{const r=schema.safeParse(value);if(!r.success)throw new ApiError(422,"INVALID_INPUT",r.error.issues[0]?.message??"Invalid input");return r.data}
-function origin(req:Request){if(req.headers.get("origin")!==new URL(configuration().origin).origin)throw new ApiError(403,"ORIGIN_DENIED","Action must originate from this application")}
+function origin(req:Request){return assertApplicationOrigin(req,configuration().origin)}
 export function createApi(store:Store,evm:EvmPort,{requireConfigured=true}={}){
  return async (req:Request,path:string):Promise<Response>=>{
  try{
@@ -21,8 +23,9 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true}={}){
  if(path==="/auth/session"&&method==="GET")return json({address:process.env.SESSION_SECRET?ownerSession(req.headers.get("cookie")):null});
  if(path==="/auth/logout"&&method==="POST"){origin(req);return new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}});}
  if(requireConfigured&&!c.configured)throw new ApiError(503,"NOT_CONFIGURED","IntentGuard runtime is not configured");
- if(path==="/auth/challenge"&&method==="POST"){origin(req);const v=parse(z.object({address}).strict(),await body(req));await rateLimit(store,"login:"+v.address.toLowerCase(),10);return json(await challenge(store,v.address,c.origin));}
- if(path==="/auth/login"&&method==="POST"){origin(req);const v=parse(z.object({address,signature:z.string().regex(/^0x[0-9a-fA-F]+$/)}).strict(),await body(req));const cookie=await login(store,v.address,v.signature);return Response.json({address:v.address.toLowerCase()},{headers:{"Cache-Control":"no-store","Set-Cookie":"ig_session="+cookie+"; Path=/; HttpOnly; SameSite=Strict; Max-Age=3600"+(new URL(c.origin).protocol==="https:"?"; Secure":"")}});}
+ if(path==="/auth/challenge"&&method==="POST"){origin(req);const v=parse(z.object({address}).strict(),await body(req));await rateLimit(store,"login:"+v.address.toLowerCase(),10);return json(await challenge(store,v.address,new URL(req.url).origin));}
+ if(path==="/auth/login"&&method==="POST"){origin(req);const v=parse(z.object({address,signature:z.string().regex(/^0x[0-9a-fA-F]+$/)}).strict(),await body(req));const cookie=await login(store,v.address,v.signature);return Response.json({address:v.address.toLowerCase()},{headers:{"Cache-Control":"no-store","Set-Cookie":"ig_session="+cookie+"; Path=/; HttpOnly; SameSite=Strict; Max-Age=3600"+(new URL(req.url).protocol==="https:"?"; Secure":"")}});}
+ if(path.startsWith("/explorer/"))return json(await createExplorer(store,evm)(req,path));
  if(c.testnet&&path.startsWith("/demo/invoices")){
  const match=path.match(/^\/demo\/invoices\/([a-f0-9]{32})$/);
  if(method==="GET"&&match){

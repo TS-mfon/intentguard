@@ -3,7 +3,7 @@ import {randomUUID} from "node:crypto";
 export type Doc={_id:string;[key:string]:unknown};
 export interface Store{
  get<T extends Doc>(table:string,id:string):Promise<T|null>;
- find<T extends Doc>(table:string,query:Record<string,unknown>):Promise<T[]>;
+ find<T extends Doc>(table:string,query:Record<string,unknown>,options?:{limit?:number}):Promise<T[]>;
  create<T extends Doc>(table:string,doc:T):Promise<boolean>;
  put<T extends Doc>(table:string,doc:T):Promise<void>;
  patch(table:string,id:string,values:Record<string,unknown>):Promise<void>;
@@ -15,7 +15,7 @@ export class MongoStore implements Store{
  constructor(private client:MongoClient,private database:string){}
  private c(table:string){return this.client.db(this.database).collection<Document>(table)}
  async get<T extends Doc>(t:string,id:string){return await this.c(t).findOne({_id:id as never}) as unknown as T|null}
- async find<T extends Doc>(t:string,q:Record<string,unknown>){return await this.c(t).find(q).sort({createdAt:-1}).limit(200).toArray() as unknown as T[]}
+ async find<T extends Doc>(t:string,q:Record<string,unknown>,options:{limit?:number}={}){return await this.c(t).find(q).sort({createdAt:-1,_id:-1}).limit(options.limit??200).toArray() as unknown as T[]}
  async create<T extends Doc>(t:string,d:T){try{await this.c(t).insertOne(d as never);return true}catch(e){if((e as {code?:number}).code===11000)return false;throw e}}
  async put<T extends Doc>(t:string,d:T){await this.c(t).replaceOne({_id:d._id as never},d as never,{upsert:true})}
  async patch(t:string,id:string,v:Record<string,unknown>){await this.c(t).updateOne({_id:id as never},{$set:v})}
@@ -23,12 +23,17 @@ export class MongoStore implements Store{
  async claim<T extends Doc>(t:string,q:Record<string,unknown>,now:number,leaseMs:number){return await this.c(t).findOneAndUpdate({...q,$and:[{$or:[{leaseUntil:{$lt:now}},{leaseUntil:{$exists:false}}]},{$or:[{nextAt:{$lte:now}},{nextAt:{$exists:false}}]}]},{$set:{leaseToken:randomUUID(),leaseUntil:now+leaseMs}},{returnDocument:"after",sort:{createdAt:1}}) as unknown as T|null}
  async complete(t:string,id:string,leaseToken:string,v:Record<string,unknown>){const r=await this.c(t).updateOne({_id:id as never,leaseToken},{$set:{...v,leaseUntil:0,leaseToken:null}});return r.modifiedCount===1}
 }
-function matches(d:Doc,q:Record<string,unknown>):boolean{return Object.entries(q).every(([k,v])=>typeof v==="object"&&v!==null&&"$in"in v?(v as {$in:unknown[]}).$in.includes(d[k]):d[k]===v)}
+function matches(d:Doc,q:Record<string,unknown>):boolean{return Object.entries(q).every(([k,v])=>{
+ if(k==="$or"&&Array.isArray(v))return v.some(condition=>matches(d,condition));
+ if(k==="$and"&&Array.isArray(v))return v.every(condition=>matches(d,condition));
+ if(v&&typeof v==="object")return Object.entries(v).every(([op,value])=>op==="$in"?Array.isArray(value)&&value.includes(d[k]):op==="$lt"?(d[k] as any)<value:op==="$lte"?(d[k] as any)<=value:false);
+ return d[k]===v;
+})}
 export class MemoryStore implements Store{
  private data=new Map<string,Map<string,Doc>>();
  private c(t:string){let c=this.data.get(t);if(!c)this.data.set(t,c=new Map());return c}
  async get<T extends Doc>(t:string,id:string){const d=this.c(t).get(id);return d?structuredClone(d) as T:null}
- async find<T extends Doc>(t:string,q:Record<string,unknown>){return[...this.c(t).values()].filter(d=>matches(d,q)).sort((a,b)=>Number(b.createdAt??0)-Number(a.createdAt??0)).slice(0,200).map(d=>structuredClone(d) as T)}
+ async find<T extends Doc>(t:string,q:Record<string,unknown>,options:{limit?:number}={}){return[...this.c(t).values()].filter(d=>matches(d,q)).sort((a,b)=>Number(b.createdAt??0)-Number(a.createdAt??0)||(a._id<b._id?1:a._id>b._id?-1:0)).slice(0,options.limit??200).map(d=>structuredClone(d) as T)}
  async create<T extends Doc>(t:string,d:T){if(this.c(t).has(d._id))return false;this.c(t).set(d._id,structuredClone(d));return true}
  async put<T extends Doc>(t:string,d:T){this.c(t).set(d._id,structuredClone(d))}
  async patch(t:string,id:string,v:Record<string,unknown>){const d=this.c(t).get(id);if(d)Object.assign(d,structuredClone(v))}

@@ -4,6 +4,7 @@ import {verifyMessage} from "viem";
 import {address,digest} from "../../../packages/shared";
 import {ApiError} from "./errors";
 import {configuration} from "./config";
+import {assertApplicationOrigin} from "./origins";
 import type {Store,Doc} from "./store";
 type KeyDoc=Doc&{cardId:string;owner:string;revoked:boolean;createdAt:number};
 export function secret(){const s=process.env.SESSION_SECRET;if(!s||s.length<32)throw Error("SESSION_SECRET must be at least 32 characters");return s}
@@ -13,7 +14,7 @@ export function ownerSession(cookie:string|null){const token=cookie?.split(";").
 export async function login(store:Store,owner:string,signature:string){const id=address.parse(owner).toLowerCase();const c=await store.get<Doc&{message:string;expires:number}>("challenges",id);if(!c||c.expires<Date.now())throw new ApiError(401,"CHALLENGE_EXPIRED","Request a fresh wallet challenge");
 if(!await verifyMessage({address:id as `0x${string}`,message:c.message,signature:signature as `0x${string}`}).catch(()=>false))throw new ApiError(401,"INVALID_SIGNATURE","Wallet signature did not match");
 const taken=await store.claim("challenges",{_id:id,message:c.message},Date.now(),300000);if(!taken||taken.message!==c.message)throw new ApiError(401,"CHALLENGE_USED","This challenge was already used");return session(id)}
-export function requireOwner(req:Request,origin:string){if(req.method!=="GET"&&req.headers.get("origin")!==new URL(origin).origin)throw new ApiError(403,"ORIGIN_DENIED","Owner action must originate from this application");const owner=ownerSession(req.headers.get("cookie"));if(!owner)throw new ApiError(401,"LOGIN_REQUIRED","Connect and sign in with the owner wallet");return owner}
+export function requireOwner(req:Request,origin:string){if(req.method!=="GET")assertApplicationOrigin(req,origin);const owner=ownerSession(req.headers.get("cookie"));if(!owner)throw new ApiError(401,"LOGIN_REQUIRED","Connect and sign in with the owner wallet");return owner}
 export async function issueKey(store:Store,cardId:string,owner:string){for(const key of await store.find<KeyDoc>("keys",{cardId,revoked:false}))await store.patch("keys",key._id,{revoked:true});const token="ig_"+randomBytes(32).toString("base64url");await store.create("keys",{_id:digest(token),cardId,owner,revoked:false,createdAt:Date.now()});await store.patch("cards",cardId,{activeKeyId:digest(token),keyStatus:"ACTIVE"});return token}
 export async function revokeKeys(store:Store,cardId:string){await store.patch("cards",cardId,{activeKeyId:null,keyStatus:"REVOKED"});for(const key of await store.find<KeyDoc>("keys",{cardId,revoked:false}))await store.patch("keys",key._id,{revoked:true})}
 export async function requireAgent(store:Store,req:Request){const value=req.headers.get("authorization");if(!value?.startsWith("Bearer ig_"))throw new ApiError(401,"KEY_REQUIRED","Supply the agent API key");const key=await store.get<KeyDoc>("keys",digest(value.slice(7)));if(!key||key.revoked)throw new ApiError(401,"KEY_REVOKED","Agent API key is invalid or revoked");const card=await store.get("cards",key.cardId);if(!card||card.activeKeyId!==key._id)throw new ApiError(401,"KEY_REVOKED","This credential has been rotated or revoked");await rateLimit(store,"agent:"+key._id,60);return key}

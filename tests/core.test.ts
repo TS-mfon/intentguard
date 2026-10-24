@@ -31,3 +31,5 @@ test("Studionet committed call normalization preserves finality, VM failure and 
  assert.throws(()=>normalize({...raw,hash:"0x"+"cd".repeat(32)}));
  assert.throws(()=>assertFinalized(normalize(raw),{target,method:"review",args:["changed"],sender}));
 });
+
+test("GenLayer decoded constructor integers normalize exactly and reject unsafe JSON values",()=>{assert.deepEqual(normalizedCalldata(new Map([["args",[genLayerAddress("0x"+"12".repeat(20)),"policy","hash",1952n]]])),{args:["0x"+"12".repeat(20),"policy","hash",1952]});assert.throws(()=>normalizedCalldata(9007199254740993n),/exact JSON range/)});

@@ -9,6 +9,7 @@ import type {Store,Doc} from "./store";
 import type {Card,Draft,Payment} from "./models";
 export const genLayerAddress=(address:string)=>new CalldataAddress(toBytes(address as Hex));
 export function normalizedCalldata(value:unknown):unknown{
+ if(typeof value==="bigint"){const number=Number(value);if(!Number.isSafeInteger(number))throw Error("GenLayer integer exceeds exact JSON range");return number;}
  if(value instanceof CalldataAddress)return toHex(value.bytes).toLowerCase();
  if(value instanceof Map)return Object.fromEntries([...value].map(([k,v])=>[k,normalizedCalldata(v)]));
  if(Array.isArray(value))return value.map(normalizedCalldata);
