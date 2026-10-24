@@ -1,0 +1,32 @@
+{
+  "name": "intentguard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "pnpm --filter @intentguard/web dev",
+    "build": "pnpm --filter @intentguard/web build",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "worker": "tsx apps/worker/main.ts",
+    "test:evm": "forge test --root contracts/evm",
+    "test:circuit": "node --test circuits/*.test.mjs",
+    "test:genlayer": "uvx --offline --from genvm-linter genvm-lint check contracts/genlayer/permission_interpreter.py && uvx --offline --from genvm-linter genvm-lint check contracts/genlayer/purchase_reviewer.py && uvx --offline --from genlayer-test gltest contracts/genlayer/tests/direct -v -s",
+    "check": "node tools/check.mjs all-tests"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8",
+    "mongodb": "7.6.0",
+    "viem": "2.56.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.2",
+    "tsx": "^4.20.0",
+    "@playwright/test": "^1.56.0"
+  }
+}

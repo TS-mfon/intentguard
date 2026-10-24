@@ -1,0 +1,10 @@
+node_modules
+**/.next
+.env*
+!.env.example
+.local
+.unlazy
+**/out
+**/cache
+test-results
+playwright-report

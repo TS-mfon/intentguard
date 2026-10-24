@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.unlazy/
+contracts/evm/out/
+contracts/evm/cache/
+__pycache__/
+.local/
+playwright-report/
+test-results/
+
+.vercel/
+.pytest_cache/
+*.tsbuildinfo
+contracts/evm/integration-report.json
+.vercel

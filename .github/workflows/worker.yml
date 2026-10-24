@@ -1,0 +1,68 @@
+name: IntentGuard worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_seconds:
+        description: Queue processing duration (10 to 240 seconds)
+        required: false
+        default: "180"
+        type: string
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intentguard-worker
+  cancel-in-progress: false
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Process the durable queue
+        env:
+          WORKER_RUN_SECONDS: ${{ inputs.duration_seconds || '180' }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}
+          REVIEW_ATTESTOR_PRIVATE_KEY: ${{ secrets.REVIEW_ATTESTOR_PRIVATE_KEY }}
+          GENLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.GENLAYER_OPERATOR_PRIVATE_KEY }}
+          INTENTGUARD_MODE: ${{ vars.INTENTGUARD_MODE }}
+          XLAYER_CHAIN_ID: ${{ vars.XLAYER_CHAIN_ID }}
+          XLAYER_RPC_URL: ${{ vars.XLAYER_RPC_URL }}
+          PAYMENT_TOKEN: ${{ vars.PAYMENT_TOKEN }}
+          CARD_FACTORY_ADDRESS: ${{ vars.CARD_FACTORY_ADDRESS }}
+          GATEWAY_ADDRESS: ${{ vars.GATEWAY_ADDRESS }}
+          ATTESTOR_ADDRESS: ${{ vars.ATTESTOR_ADDRESS }}
+          TAPEOUT_PROCESSOR: ${{ vars.TAPEOUT_PROCESSOR }}
+          TAPEOUT_CIRCUIT_ID: ${{ vars.TAPEOUT_CIRCUIT_ID }}
+          TAPEOUT_BEACON: ${{ vars.TAPEOUT_BEACON }}
+          TAPEOUT_IMPLEMENTATION: ${{ vars.TAPEOUT_IMPLEMENTATION }}
+          TAPEOUT_NETLIST_HASH: ${{ vars.TAPEOUT_NETLIST_HASH }}
+          GENLAYER_INTERPRETER_ADDRESS: ${{ vars.GENLAYER_INTERPRETER_ADDRESS }}
+          GENLAYER_RPC_URL: ${{ vars.GENLAYER_RPC_URL }}
+          MONGODB_DB: ${{ vars.MONGODB_DB }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if ! [[ "$WORKER_RUN_SECONDS" =~ ^[0-9]{1,3}$ ]] || (( 10#$WORKER_RUN_SECONDS < 10 || 10#$WORKER_RUN_SECONDS > 240 )); then
+            echo "Worker duration must be between 10 and 240 seconds."
+            exit 1
+          fi
+          if [[ "$INTENTGUARD_MODE" != "testnet" || "$XLAYER_CHAIN_ID" != "1952" ]]; then
+            echo "This workflow is authorized only for X Layer testnet chain 1952."
+            exit 1
+          fi
+          pnpm exec tsx apps/worker/main.ts --duration-seconds "$WORKER_RUN_SECONDS"

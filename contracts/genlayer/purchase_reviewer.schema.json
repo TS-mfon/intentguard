@@ -1,0 +1,84 @@
+{
+  "ctor": {
+    "params": [
+      [
+        "operator",
+        "address"
+      ],
+      [
+        "policyJson",
+        "string"
+      ],
+      [
+        "policyHash",
+        "string"
+      ],
+      [
+        "chainId",
+        "int"
+      ],
+      [
+        "token",
+        "string"
+      ]
+    ],
+    "kwparams": {}
+  },
+  "methods": {
+    "get_operator": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "address"
+    },
+    "get_policy_hash": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_review": {
+      "params": [
+        [
+          "requestId",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "review": {
+      "params": [
+        [
+          "requestId",
+          "string"
+        ],
+        [
+          "requestJson",
+          "string"
+        ],
+        [
+          "evidenceJson",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    },
+    "get_chain_id": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_token": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    }
+  }
+}

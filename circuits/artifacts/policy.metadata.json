@@ -1,0 +1,126 @@
+{
+  "format": "TapeOut NAND v1",
+  "inputBits": 451,
+  "outputBits": 8,
+  "gateCount": 1766,
+  "signalCount": 2219,
+  "depth": 144,
+  "bytes": 12362,
+  "sha256": "0x280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761",
+  "inputs": [
+    {
+      "name": "amount",
+      "offset": 0,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "perPaymentLimit",
+      "offset": 64,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "remainingTotal",
+      "offset": 128,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "remainingPeriod",
+      "offset": 192,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "validFrom",
+      "offset": 256,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "now",
+      "offset": 320,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "validUntil",
+      "offset": 384,
+      "width": 64,
+      "packing": "least-significant bit first"
+    },
+    {
+      "name": "recipientAllowed",
+      "offset": 448,
+      "width": 1
+    },
+    {
+      "name": "assetAllowed",
+      "offset": 449,
+      "width": 1
+    },
+    {
+      "name": "enabled",
+      "offset": 450,
+      "width": 1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "allow",
+      "offset": 0
+    },
+    {
+      "name": "fail_perPayment",
+      "offset": 1
+    },
+    {
+      "name": "fail_total",
+      "offset": 2
+    },
+    {
+      "name": "fail_period",
+      "offset": 3
+    },
+    {
+      "name": "fail_time",
+      "offset": 4
+    },
+    {
+      "name": "fail_recipient",
+      "offset": 5
+    },
+    {
+      "name": "fail_asset",
+      "offset": 6
+    },
+    {
+      "name": "fail_enabled",
+      "offset": 7
+    }
+  ],
+  "outputSignals": [
+    2211,
+    2212,
+    2213,
+    2214,
+    2215,
+    2216,
+    2217,
+    2218
+  ],
+  "opcodes": {
+    "NAND": 0
+  },
+  "constants": {
+    "zero": 0,
+    "one": 1
+  },
+  "firstInputSignal": 2,
+  "netlistHashAlgorithm": "SHA-256",
+  "deployment": {
+    "status": "NOT_DEPLOYED",
+    "chainId": 196
+  }
+}
