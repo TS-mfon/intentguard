@@ -1,5 +1,5 @@
 import {readFile} from "node:fs/promises";
-import {createAccount,createClient} from "genlayer-js";
+import {createAccount,createClient,decodeInputData} from "genlayer-js";
 import {studionet} from "genlayer-js/chains";
 import {TransactionHashVariant,transactionsStatusNumberToName,executionResultNumberToName,transactionResultNumberToName,CalldataAddress,type CalldataEncodable,type GenLayerTransaction,type Hash as GLHash} from "genlayer-js/types";
 import {createPublicClient,http,decodeEventLog,keccak256,toBytes,toHex,type Abi,type Hex,type Address} from "viem";
@@ -15,6 +15,27 @@ export function normalizedCalldata(value:unknown):unknown{
  if(value&&typeof value==="object")return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,normalizedCalldata(v)]));
  return value;
 }
+
+// Studionet returns the simulator RPC shape even when accessed through genlayer-js.
+// Decode the committed RLP bytes; never infer calldata or VM success from UI fields.
+export function normalizeStudioTransaction(tx:GenLayerTransaction,expectedHash?:string):GenLayerTransaction{
+ const raw=tx as unknown as Record<string,any>;
+ if(expectedHash&&raw.hash&&String(raw.hash).toLowerCase()!==expectedHash.toLowerCase())throw Error("GenLayer transaction hash mismatch");
+ if(typeof raw.tx_data!=="string")return tx;
+ const encoded=(raw.tx_data.startsWith("0x")?raw.tx_data:"0x"+raw.tx_data) as Hex;
+ if(!/^0x[0-9a-fA-F]+$/.test(encoded))throw Error("Invalid GenLayer committed transaction data");
+ const decoded=decodeInputData(encoded,raw.recipient??raw.to_address);
+ const leaders=raw.consensus_data?.leader_receipt;
+ const receipts=Array.isArray(leaders)?leaders:leaders?[leaders]:[];
+ const latest=receipts.at(-1);
+ return {...tx,
+  statusName:raw.status_name??raw.statusName??raw.status,
+  resultName:raw.result_name??raw.resultName,
+  txExecutionResultName:latest?.execution_result==="SUCCESS"?"FINISHED_WITH_RETURN":"FINISHED_WITH_ERROR",
+  txDataDecoded:decoded,
+ } as GenLayerTransaction;
+}
+
 export class PendingFinality extends Error {}
 export function assertFinalized(tx:GenLayerTransaction,expected?:{target:string;method:string;args:unknown[];sender?:string}){
  const status=tx.statusName??transactionsStatusNumberToName[String(tx.status) as keyof typeof transactionsStatusNumberToName]??tx.status;
@@ -44,7 +65,10 @@ export class GenLayer implements GenLayerPort{
  readonly cfg=configuration();
  readonly client=createClient({chain:studionet,endpoint:this.cfg.genLayerRpc});
  readonly public=createPublicClient({transport:http(this.cfg.genLayerRpc,{timeout:15000,retryCount:0})});
- constructor(private store:Store){}
+ constructor(private store:Store){
+ const get=this.client.getTransaction.bind(this.client);
+ this.client.getTransaction=async args=>normalizeStudioTransaction(await get(args),args.hash);
+ }
  account(){const key=process.env.GENLAYER_OPERATOR_PRIVATE_KEY;if(!key)throw Error("GenLayer operator key is required");return createAccount(key as Hex)}
  async send(id:string,action:(client:ReturnType<typeof createClient>)=>Promise<unknown>){
  let saved=await this.store.get<Signed>("transactions","gl:"+id);if(saved?.protocolHash)return saved.protocolHash;
@@ -60,7 +84,7 @@ export class GenLayer implements GenLayerPort{
  let protocolHash:string;
  // Studio deployments may expose the transaction directly by its signed EVM hash.
  const direct=await this.client.getTransaction({hash:hash as GLHash}).catch(()=>null);
- if(direct&&(direct.recipient||direct.to_address)&&direct.txDataDecoded)protocolHash=hash;
+ if(direct&&direct.txDataDecoded)protocolHash=hash;
  else {
  const receipt=await this.public.waitForTransactionReceipt({hash:saved.evmHash,timeout:25000,pollingInterval:1000});
  if(receipt.status!=="success")throw Error("GenLayer submission reverted");

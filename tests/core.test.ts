@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {parseAmount,formatAmount,canonical,digest,policySchema,validateDecision} from "../packages/shared";
 import {capture,publicIp,safeFetch} from "../apps/web/lib/evidence";
-import {assertFinalized,PendingFinality,genLayerAddress,normalizedCalldata} from "../apps/web/lib/genlayer";
+import {assertFinalized,PendingFinality,genLayerAddress,normalizedCalldata,normalizeStudioTransaction} from "../apps/web/lib/genlayer";
 import {MemoryStore} from "../apps/web/lib/store";
 import {policy,input} from "./fixtures";
 test("exact money covers fractions, boundaries and unsafe representations",()=>{for(const s of ["0","1","0.000001","18446744073709.551615","9007199254.740993"]){assert.equal(parseAmount(formatAmount(parseAmount(s))),parseAmount(s))}assert.equal(parseAmount("0.000001"),1n);for(const s of ["-1","+1","01","1e6","1.0000001","18446744073709.551616","NaN","1."]){assert.throws(()=>parseAmount(s))}});
@@ -16,3 +16,18 @@ test("leases provide single claim and fence a stale completion",async()=>{const 
 
 test("GenLayer constructor address uses the SDK Address wire type",async()=>{const {abi:{calldata}}=await import("genlayer-js");const value=genLayerAddress("0x"+"12".repeat(20));const decoded=calldata.decode(calldata.encode(value));assert.equal(normalizedCalldata(decoded),"0x"+"12".repeat(20));assert.deepEqual(normalizedCalldata(new Map([["args",[decoded,"policy"]]])),{args:["0x"+"12".repeat(20),"policy"]})});
 test("finality requires successful consensus and full validator participation",()=>{const base={status:7,txExecutionResult:1,result:6,txDataDecoded:{type:"call",leaderOnly:false,callData:{method:"review",args:[]}}};assert.doesNotThrow(()=>assertFinalized(base as never));assert.throws(()=>assertFinalized({...base,result:7} as never));assert.throws(()=>assertFinalized({...base,txDataDecoded:{...base.txDataDecoded,leaderOnly:true}} as never));assert.throws(()=>assertFinalized({...base,txDataDecoded:{type:"call"}} as never))});
+
+test("Studionet committed call normalization preserves finality, VM failure and hash checks",async()=>{
+ const {abi:{calldata}}=await import("genlayer-js");
+ const {toHex,toRlp}=await import("viem");
+ const hash="0x"+"ab".repeat(32),target="0x"+"11".repeat(20),sender="0x"+"22".repeat(20);
+ const args=["request","{}","[]"],tx_data=toRlp([toHex(calldata.encode({method:"review",args})),"0x"]).slice(2);
+ const raw={hash,status:"FINALIZED",result_name:"MAJORITY_AGREE",recipient:target,sender,tx_data,consensus_data:{leader_receipt:[{execution_result:"SUCCESS"}]}};
+ const normalize=(v:unknown)=>normalizeStudioTransaction(v as never,hash);
+ assert.doesNotThrow(()=>assertFinalized(normalize(raw),{target,method:"review",args,sender}));
+ assert.throws(()=>assertFinalized(normalize({...raw,status:"ACCEPTED"})),PendingFinality);
+ assert.throws(()=>assertFinalized(normalize({...raw,consensus_data:{leader_receipt:[{execution_result:"SUCCESS"},{execution_result:"ERROR"}]}})));
+ assert.throws(()=>assertFinalized(normalize({...raw,consensus_data:{}})));
+ assert.throws(()=>normalize({...raw,hash:"0x"+"cd".repeat(32)}));
+ assert.throws(()=>assertFinalized(normalize(raw),{target,method:"review",args:["changed"],sender}));
+});

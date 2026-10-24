@@ -38,8 +38,8 @@ async function send(id:string,to:Address|undefined,data:Hex,value=0n){
  if(receipt.status!=="success")throw Error("Deployment step reverted: "+id);return receipt;
 }
 async function main(){
- if(c.testnet){process.argv[2]=process.argv[2]==="check"?"check":"deploy";await import("./testnet");return;}
  const step=process.argv[2]??"check";if(!["check","tapeout","factory","genlayer"].includes(step))throw Error("Use check, tapeout, factory or genlayer");
+ if(c.testnet){process.argv[2]=step==="check"?"check":"deploy";await import("./testnet");return;}
  const checked=await checkDeployment();const {netlist,...summary}=checked;console.log(JSON.stringify({action:step,broadcast:process.argv.includes("--broadcast"),...summary},null,2));
  if(step==="check"||!process.argv.includes("--broadcast")){console.log("Read-only deployment plan. Add --broadcast to an explicitly requested deployment step.");return}
  if(step==="tapeout"){

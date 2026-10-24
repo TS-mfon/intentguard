@@ -1,4 +1,3 @@
-
 import {MongoClient,type Document} from "mongodb";
 import {randomUUID} from "node:crypto";
 export type Doc={_id:string;[key:string]:unknown};
@@ -38,4 +37,4 @@ export class MemoryStore implements Store{
  async complete(t:string,id:string,token:string,v:Record<string,unknown>){const d=this.c(t).get(id);if(!d||d.leaseToken!==token)return false;Object.assign(d,structuredClone(v),{leaseUntil:0,leaseToken:null});return true}
 }
 let pending:Promise<Store>|undefined;
-export function database():Promise<Store>{if(!process.env.MONGODB_URI)throw Error("MONGODB_URI is required");return pending??=new MongoClient(process.env.MONGODB_URI,{serverSelectionTimeoutMS:5000}).connect().then(async c=>{const db=process.env.MONGODB_DB??"intentguard";await c.db(db).collection("rate").createIndex({expiresAt:1},{expireAfterSeconds:0});return new MongoStore(c,db)}).catch(e=>{pending=undefined;throw e})}
+export function database():Promise<Store>{if(!process.env.MONGODB_URI)throw Error("MONGODB_URI is required");return pending??=new MongoClient(process.env.MONGODB_URI,{serverSelectionTimeoutMS:10000,maxPoolSize:5,minPoolSize:0,maxIdleTimeMS:30000}).connect().then(async c=>{const db=process.env.MONGODB_DB??"intentguard";await c.db(db).collection("rate").createIndex({expiresAt:1},{expireAfterSeconds:0});return new MongoStore(c,db)}).catch(e=>{pending=undefined;throw e})}

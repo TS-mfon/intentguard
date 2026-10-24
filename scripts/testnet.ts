@@ -1,3 +1,4 @@
+import {spawn} from "node:child_process";
 import {loadEnvFile} from "node:process";
 import {readFile,writeFile,mkdir,rename,chmod} from "node:fs/promises";
 import {createHash,randomBytes} from "node:crypto";
@@ -10,6 +11,26 @@ import {MemoryStore,type Doc} from "../apps/web/lib/store";
 import {canonical} from "../packages/shared";
 import type {Hash as GLHash} from "genlayer-js/types";
 
+// Deployment-only transport fallback: curl uses the host's configured proxy reliably.
+// Signed payloads flow through stdin and are never arguments or diagnostic output.
+const nativeFetch=globalThis.fetch;
+if(process.env.INTENTGUARD_DEPLOY_CURL!=="0"){
+ globalThis.fetch=async(input,init)=>{
+  const request=new Request(input,init),url=new URL(request.url);
+  if(!["testrpc.xlayer.tech","xlayertestrpc.okx.com","studio.genlayer.com"].includes(url.hostname))return nativeFetch(input,init);
+  const body=Buffer.from(await request.arrayBuffer());
+  return await new Promise<Response>((resolve,reject)=>{
+   const child=spawn("curl",["--silent","--show-error","--compressed","--max-time","35","--request",request.method,"--header","Content-Type: application/json","--data-binary","@-","--write-out","\\n%{http_code}",request.url],{stdio:["pipe","pipe","pipe"]});
+   const chunks:Buffer[]=[];let size=0;
+   const abort=()=>child.kill("SIGTERM");request.signal.addEventListener("abort",abort,{once:true});
+   child.stdout.on("data",chunk=>{size+=chunk.length;if(size>2097152)child.kill("SIGTERM");else chunks.push(chunk)});
+   // Consume stderr without forwarding endpoint data or signed payloads.
+   child.stderr.resume();child.once("error",reject);
+   child.once("close",code=>{request.signal.removeEventListener("abort",abort);if(code!==0)return reject(Error("Deployment RPC curl transport failed, exit "+code));const output=Buffer.concat(chunks).toString("utf8"),marker=output.lastIndexOf(String.fromCharCode(10)),status=Number(output.slice(marker+1));if(!Number.isInteger(status)||status<100||status>599)return reject(Error("Invalid deployment RPC HTTP response"));resolve(new Response(output.slice(0,marker),{status,headers:{"Content-Type":"application/json"}}));});
+   child.stdin.end(body);
+  });
+ };
+}
 const root=new URL("../",import.meta.url);
 const manifestPath=new URL(".local/testnet-deployment.json",root);
 const journalPath=new URL(".local/testnet-journal.json",root);
@@ -20,10 +41,10 @@ if(action==="deploy"&&!process.argv.includes("--broadcast"))throw Error("Testnet
 if(action==="deploy")loadEnvFile(process.env.INTENTGUARD_BUILD_ENV??"/home/sudodave/.env.build");
 const existingEnv=await readFile(envPath,"utf8").catch(()=>"");
 for(const line of existingEnv.split("\n")){const match=line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);if(match)process.env[match[1]]=match[2];}
-const rpc=process.env.XLAYER_RPC_URL??"https://testrpc.xlayer.tech";
+const rpc=process.env.XLAYER_RPC_URL??"https://xlayertestrpc.okx.com";
 const chain=defineChain({id:1952,name:"X Layer Testnet",nativeCurrency:{name:"Test OKB",symbol:"OKB",decimals:18},rpcUrls:{default:{http:[rpc]}},testnet:true});
 const pub=createPublicClient({chain,transport:http(rpc,{timeout:25000,retryCount:2,retryDelay:1000}),pollingInterval:1500,cacheTime:0});
-type Manifest={version:number;mode:"testnet";chainId:number;rpcUrl:string;genLayerChainId:number;genLayerRpc:string;token?:string;processor?:string;beacon?:string;implementation?:string;factoryAddress?:string;interpreter?:string;interpreterTx?:string;gateway?:string;attestor?:string;operator?:string;circuitId:string;netlistHash:string;circuitGates:number;transactions:Record<string,string>;processorKind:string;verifiedAt?:string};
+type Manifest={version:number;mode:"testnet";chainId:number;rpcUrl:string;genLayerChainId:number;genLayerRpc:string;token?:string;processor?:string;beacon?:string;implementation?:string;factoryAddress?:string;interpreter?:string;interpreterTx?:string;gateway?:string;attestor?:string;operator?:string;circuitId:string;netlistHash:string;circuitGates:number;transactions:Record<string,string>;processorKind:string;verifiedAt?:string;codeHashes?:Record<string,string>};
 type Journal={transactions:Record<string,{raw:Hex;hash:Hex}>;genlayerTransactions:Doc[];attestorKey?:Hex};
 const meta=JSON.parse(await readFile(new URL("circuits/artifacts/policy.metadata.json",root),"utf8"));
 const netlist=await readFile(new URL("circuits/artifacts/policy.netlist.bin",root));
@@ -82,6 +103,10 @@ async function deploy(){
  await emitEnv();
  const gl=await glClient();const actualChain=await gl.client.getChainId();assert.equal(actualChain,61999,"Refusing non-Studionet deployment");
  const source=await readFile(new URL("contracts/genlayer/permission_interpreter.py",root));
+ if(!manifest.interpreterTx){
+ const saved=journal.genlayerTransactions.find(row=>row._id==="gl:deploy:testnet-interpreter");
+ if(saved?.evmHash){const existing=await gl.client.getTransaction({hash:saved.evmHash as GLHash}).catch(()=>null);if(existing){assert.equal((existing.sender??existing.from_address)?.toLowerCase(),gl.account().address.toLowerCase());manifest.interpreterTx=String(saved.evmHash);saved.protocolHash=manifest.interpreterTx;manifest.transactions.interpreter=manifest.interpreterTx;await save();console.log(JSON.stringify({step:"interpreter",recovery:"existing Studionet protocol hash",transactionHash:manifest.interpreterTx}));}}
+ }
  if(!manifest.interpreterTx){manifest.interpreterTx=await gl.send("deploy:testnet-interpreter",client=>client.deployContract({code:source,args:[genLayerAddress(gl.account().address)]}));manifest.transactions.interpreter=manifest.interpreterTx;await save();console.log(JSON.stringify({step:"interpreter",transactionHash:manifest.interpreterTx,chainId:61999}));}
  const until=Date.now()+Number(process.env.GENLAYER_FINALITY_TIMEOUT_MS??1200000);let previousStatus="";
  while(Date.now()<until){
@@ -92,7 +117,12 @@ async function deploy(){
  await verify();
 }
 async function verify(){
- await identity();for(const name of ["processor","beacon","token","factoryAddress"] as const){const address=manifest[name];assert.ok(address&&/^0x[0-9a-fA-F]{40}$/.test(address),"Missing testnet "+name);assert.ok((await pub.getCode({address:address as Address}))?.length!>2,name+" has no bytecode");const tx=manifest.transactions[name];assert.ok(tx,"Missing deployment receipt "+name);const receipt=await pub.getTransactionReceipt({hash:tx as Hex});assert.equal(receipt.status,"success");assert.equal(receipt.contractAddress?.toLowerCase(),address.toLowerCase());}
+ await identity();for(const name of ["processor","beacon","token","factoryAddress"] as const){const address=manifest[name];assert.ok(address&&/^0x[0-9a-fA-F]{40}$/.test(address),"Missing testnet "+name);assert.ok((await pub.getCode({address:address as Address}))?.length!>2,name+" has no bytecode");const tx=manifest.transactions[name];assert.ok(tx,"Missing deployment receipt "+name);const receipt=await pub.getTransactionReceipt({hash:tx as Hex});assert.equal(receipt.status,"success");assert.equal(receipt.contractAddress?.toLowerCase(),address.toLowerCase());
+ const builds={processor:["TestnetNandProcessor","TestnetNandProcessor",["0x"+netlist.toString("hex")]],beacon:["TestnetNandProcessor","TestnetProcessorBeacon",[manifest.processor]],token:["TestnetUSDT","TestnetUSDT",[]],factoryAddress:["CardFactory","CardFactory",[]]} as const;
+ const [source,contract,args]=builds[name],compiled=await artifact(source,contract),expected=encodeDeployData({abi:compiled.abi,bytecode:compiled.bytecode.object,args});
+ const submitted=await pub.getTransaction({hash:tx as Hex});assert.equal(submitted.input.toLowerCase(),expected.toLowerCase(),"Deployed creation bytecode/constructor differs from source");
+ const code=await pub.getCode({address:address as Address});manifest.codeHashes??={};const actualHash=keccak256(code!);if(manifest.codeHashes[name])assert.equal(actualHash,manifest.codeHashes[name]);manifest.codeHashes[name]=actualHash;
+}
  const cpu=parseAbi(["function netlist(uint256) view returns (bytes)","function circuitInfo(uint256) view returns (uint32,uint32,uint32,uint32)","function eval(uint256,bytes) view returns (bytes)"]);
  const [raw,info,decimals,implementation]=await Promise.all([
  pub.readContract({address:manifest.processor as Address,abi:cpu,functionName:"netlist",args:[1n]}),
@@ -103,7 +133,12 @@ async function verify(){
  const input=Buffer.alloc(57);[1n,2n,2n,2n,0n,1n,2n].forEach((v,i)=>input.writeBigUInt64LE(v,i*8));input[56]=7;
  assert.equal(await pub.readContract({address:manifest.processor as Address,abi:cpu,functionName:"eval",args:[1n,("0x"+input.toString("hex")) as Hex]}),"0x01");
  input.writeBigUInt64LE(3n,0);assert.notEqual(await pub.readContract({address:manifest.processor as Address,abi:cpu,functionName:"eval",args:[1n,("0x"+input.toString("hex")) as Hex]}),"0x01");
- assert.ok(manifest.interpreter&&manifest.interpreterTx,"Missing finalized Studionet interpreter");const gl=await glClient();assert.equal(await gl.client.getChainId(),61999);const tx=await gl.client.getTransaction({hash:manifest.interpreterTx as GLHash});assertFinalized(tx);assert.equal(String(await gl.read(manifest.interpreter,"get_operator")).toLowerCase(),manifest.operator!.toLowerCase());manifest.verifiedAt=new Date().toISOString();await save();console.log("TESTNET_DEPLOYMENT_CHECK_PASSED");console.log(JSON.stringify(manifest,null,2));
+ assert.ok(manifest.interpreter&&manifest.interpreterTx,"Missing finalized Studionet interpreter");const gl=await glClient();assert.equal(await gl.client.getChainId(),61999);const tx=await gl.client.getTransaction({hash:manifest.interpreterTx as GLHash});assertFinalized(tx);
+ const source=await readFile(new URL("contracts/genlayer/permission_interpreter.py",root),"utf8"),decoded=tx.txDataDecoded;
+ assert.ok(decoded&&decoded.type==="deploy"&&"contractAddress"in decoded);assert.equal(decoded.code,source);
+ const args=normalizedCalldata(decoded.constructorArgs) as {args?:unknown[]};assert.equal(canonical(args.args),canonical([manifest.operator!.toLowerCase()]));
+ assert.equal((tx.sender??tx.from_address)?.toLowerCase(),manifest.operator!.toLowerCase());
+ assert.equal(String(await gl.read(manifest.interpreter,"get_operator")).toLowerCase(),manifest.operator!.toLowerCase());manifest.verifiedAt=new Date().toISOString();await save();console.log("TESTNET_DEPLOYMENT_CHECK_PASSED");console.log(JSON.stringify(manifest,null,2));
 }
 try{if(action==="deploy")await deploy();else if(action==="verify")await verify();else{await identity();console.log(JSON.stringify({chainId:1952,rpcUrl:rpc,genLayerChainId:61999,genLayerRpc:manifest.genLayerRpc,circuitGates:meta.gateCount,processorKind:manifest.processorKind,knownMainnetTapeoutFactoryCode:await pub.getCode({address:"0x1f09daefa827f02cbb40967cc91b259763760761"})},null,2));}}
 catch(e){const message=e instanceof Error?e.message:String(e);console.error("Testnet deployment/check failed: "+message.replace(/0x[0-9a-fA-F]{64,}/g,"[transaction-data-redacted]").slice(0,4000));process.exitCode=1;}

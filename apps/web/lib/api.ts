@@ -1,5 +1,6 @@
 import {z} from "zod";
-import {address,hash,paymentSchema,digest,canonical,type RequestView,type DraftView} from "../../../packages/shared";
+import {randomBytes,timingSafeEqual} from "node:crypto";
+import {address,hash,parseAmount,paymentSchema,digest,canonical,type RequestView,type DraftView} from "../../../packages/shared";
 import {ApiError,responseError} from "./errors";
 import {configuration,publicConfiguration} from "./config";
 import {challenge,login,requireOwner,requireAgent,ownerSession,issueKey,revokeKeys,rateLimit} from "./auth";
@@ -22,6 +23,26 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true}={}){
  if(requireConfigured&&!c.configured)throw new ApiError(503,"NOT_CONFIGURED","IntentGuard runtime is not configured");
  if(path==="/auth/challenge"&&method==="POST"){origin(req);const v=parse(z.object({address}).strict(),await body(req));await rateLimit(store,"login:"+v.address.toLowerCase(),10);return json(await challenge(store,v.address,c.origin));}
  if(path==="/auth/login"&&method==="POST"){origin(req);const v=parse(z.object({address,signature:z.string().regex(/^0x[0-9a-fA-F]+$/)}).strict(),await body(req));const cookie=await login(store,v.address,v.signature);return Response.json({address:v.address.toLowerCase()},{headers:{"Cache-Control":"no-store","Set-Cookie":"ig_session="+cookie+"; Path=/; HttpOnly; SameSite=Strict; Max-Age=3600"+(new URL(c.origin).protocol==="https:"?"; Secure":"")}});}
+ if(c.testnet&&path.startsWith("/demo/invoices")){
+ const match=path.match(/^\/demo\/invoices\/([a-f0-9]{32})$/);
+ if(method==="GET"&&match){
+ const saved=await store.get<{_id:string;content:string}>("demoInvoices",match[1]);
+ if(!saved)throw new ApiError(404,"NOT_FOUND","Invoice not found");
+ return new Response(saved.content,{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=31536000, immutable"}});
+ }
+ if(path==="/demo/invoices"&&method==="POST"){
+ const configured=process.env.DEMO_MERCHANT_ADMIN_KEY??"",provided=req.headers.get("authorization")?.replace(/^Bearer /,"")??"";
+ const a=Buffer.from(provided),b=Buffer.from(configured);
+ if(b.length<32||a.length!==b.length||!timingSafeEqual(a,b))throw new ApiError(401,"MERCHANT_ADMIN_REQUIRED","Merchant administrator key required");
+ const v=parse(z.object({buyer:address,amount:z.string().refine(value=>{try{return parseAmount(value)>0n}catch{return false}}),description:z.string().min(3).max(1000)}).strict(),await body(req));
+ const recipient=address.parse(process.env.DEMO_MERCHANT_RECIPIENT);
+ const invoiceId=randomBytes(16).toString("hex"),issuedAt=Math.floor(Date.now()/1000);
+ const invoice={invoiceId,buyer:v.buyer.toLowerCase(),token:c.token.toLowerCase(),chainId:c.chainId,recipient:recipient.toLowerCase(),amount:v.amount,description:v.description,issuedAt,expiresAt:issuedAt+7200};
+ await store.create("demoInvoices",{_id:invoiceId,content:JSON.stringify(invoice),createdAt:Date.now()});
+ return json({invoice,url:c.origin+"/api/v1/demo/invoices/"+invoiceId},201);
+ }
+ throw new ApiError(404,"NOT_FOUND","Invoice endpoint not found");
+ }
  if(path.startsWith("/owner/")){
  const owner=requireOwner(req,c.origin);await rateLimit(store,"owner:"+owner,120);
  const owned=async(id:string)=>{const card=await store.get<Card>("cards",id);if(!card||card.owner!==owner)throw new ApiError(404,"NOT_FOUND","Card not found");return card};
