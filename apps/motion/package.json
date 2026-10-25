@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@remotion/cli": "4.0.538",
+    "@remotion/media": "4.0.538",
+    "@remotion/transitions": "4.0.538",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.538"
@@ -29,6 +31,9 @@
     "build": "remotion bundle",
     "lint": "eslint src && tsc",
     "render": "remotion render src/index.ts AgentCard ../web/public/motion/agent-card.mp4 --codec=h264 --crf=22 --pixel-format=yuv420p --concurrency=2",
-    "poster": "remotion still src/index.ts AgentCard ../web/public/motion/agent-card-poster.jpg --frame=30 --image-format=jpeg --jpeg-quality=88"
+    "poster": "remotion still src/index.ts AgentCard ../web/public/motion/agent-card-poster.jpg --frame=30 --image-format=jpeg --jpeg-quality=88",
+    "story:sound": "node scripts/generate-story-sound.mjs",
+    "story:render": "npm run story:sound && remotion render src/index.ts ProtocolStory ../web/public/motion/protocol-story.mp4 --codec=h264 --crf=25 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=128k --concurrency=2",
+    "story:poster": "remotion still src/index.ts ProtocolStory ../web/public/motion/protocol-story-poster.jpg --frame=203 --image-format=jpeg --jpeg-quality=86"
   }
 }

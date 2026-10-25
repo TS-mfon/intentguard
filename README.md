@@ -344,6 +344,8 @@ SVG is downloadable from the API; the UI also exports PNG and opens an X compose
 
 The interface uses a distinctive engraved card/agent identity, sectioned docs, accessible scroll/entrance/micro/loading motion and an original rendered background film. Motion pauses offscreen, supports manual pause and respects reduced-motion preferences.
 
+The [Why we exist story](https://intentguard-tapeout.vercel.app/why-we-exist) shows an agent presenting its ATM card through numerical permission, evidence review and exact settlement. Its original film has synchronized sound, explicit playback/volume controls and a native scrolling mechanical journey. Playback is an illustrative protocol flow; real usage remains in the explorer. Reduced motion presents readable static sections.
+
 ## Skills and MCP
 
 Install the repository skill:

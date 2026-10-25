@@ -17,7 +17,7 @@ const paths=execFileSync("git",["diff","--cached","--name-only","-z","--diff-fil
 for(const path of paths){
  assert.ok(!/^(?:\.local|\.unlazy|\.vercel)\//.test(path),"Private state is staged");
  assert.ok(!/(^|\/)\.env(?:\.|$)/.test(path)||path===".env.example","Environment file is staged");
- const body=execFileSync("git",["show",":"+path],{cwd:root}).toString();
+ const body=execFileSync("git",["show",":"+path],{cwd:root,maxBuffer:16*1024*1024}).toString();
  for(const secret of candidates)assert.ok(!body.includes(secret),"Sensitive credential found in staged file: "+path);
 }
 console.log("STAGED_SECRET_SCAN_PASSED",paths.length,"files");

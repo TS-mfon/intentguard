@@ -1,0 +1,82 @@
+{
+  "original": true,
+  "sampleRate": 48000,
+  "channels": 2,
+  "duration": 28,
+  "events": [
+    {
+      "time": 1.1,
+      "duration": 0.35,
+      "kind": "assemble",
+      "pan": -0.4
+    },
+    {
+      "time": 3.5,
+      "duration": 0.65,
+      "kind": "swipe",
+      "pan": -0.35
+    },
+    {
+      "time": 6.2,
+      "duration": 0.55,
+      "kind": "scan",
+      "pan": 0.45
+    },
+    {
+      "time": 10.3,
+      "duration": 0.6,
+      "kind": "deny",
+      "pan": 0.25
+    },
+    {
+      "time": 13.5,
+      "duration": 0.6,
+      "kind": "mechanism",
+      "pan": 0.1
+    },
+    {
+      "time": 17.8,
+      "duration": 0.5,
+      "kind": "scan",
+      "pan": -0.25
+    },
+    {
+      "time": 18.4,
+      "duration": 0.15,
+      "kind": "compute",
+      "pan": -0.5
+    },
+    {
+      "time": 19,
+      "duration": 0.15,
+      "kind": "compute",
+      "pan": 0
+    },
+    {
+      "time": 19.6,
+      "duration": 0.15,
+      "kind": "compute",
+      "pan": 0.5
+    },
+    {
+      "time": 20.2,
+      "duration": 0.45,
+      "kind": "seal",
+      "pan": 0.15
+    },
+    {
+      "time": 23,
+      "duration": 0.65,
+      "kind": "mechanism",
+      "pan": 0.35
+    },
+    {
+      "time": 25.2,
+      "duration": 1.15,
+      "kind": "confirm",
+      "pan": 0.4
+    }
+  ],
+  "peak": 0.38,
+  "rms": 0.04629175145725389
+}

@@ -30,6 +30,12 @@ jobs:
       - run: node tools/check.mjs release
       - run: pnpm exec tsx scripts/verify-protocol-docs.ts
       - run: pnpm build
+      - name: Install browser for wallet and story regressions
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify actual production routes and wallet event recovery
+        run: pnpm exec tsx scripts/identity-browser.ts
+      - name: Verify story playback, audio controls and scroll progression
+        run: pnpm exec tsx scripts/story-browser.ts
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable

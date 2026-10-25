@@ -32,7 +32,7 @@ assert.ok(all.length>0);assert.equal(new Set(all.map(p=>p.id)).size,all.length);
 const card=await get("/explorer/agents/"+agentId+"/card"),sum=all.filter(p=>p.status==="PAID").reduce((n,p)=>n+parseAmount(p.amount),0n);
 assert.equal(card.usage.requestCount,all.length);assert.equal(card.usage.paidCount,all.filter(p=>p.status==="PAID").length);
 assert.equal(card.usage.fundsMoved,formatAmount(sum));assert.equal(card.usage.blockedCount,all.filter(p=>p.status==="BLOCKED").length);
-assert.equal(card.shareUrl,base+"/explorer?agentId="+agentId);
+const cardShareUrl=new URL(card.shareUrl);assert.equal(cardShareUrl.origin,base);assert.equal(cardShareUrl.pathname,"/explorer");assert.equal(cardShareUrl.searchParams.get("agentId"),agentId);assert.equal(cardShareUrl.searchParams.get("view"),"agents");
 const svg=await request(base,"/explorer/agents/"+agentId+"/card.svg");
 assert.equal(svg.response.status,200);assert.match(svg.response.headers.get("Content-Type")||"",/image\/svg\+xml/);
 assert.match(svg.response.headers.get("Content-Disposition")||"",/attachment/);assert.ok(svg.body.includes(card.usage.fundsMoved));
@@ -75,7 +75,7 @@ try{
   }
   throw Error("Release verification allows domain-bound login signatures only");
  });
- await context.addInitScript({content:'Object.defineProperty(window,"ethereum",{value:{request:args=>window.intentguardReleaseWallet(args),on:()=>{},removeListener:()=>{}}})'});
+ await context.addInitScript({content:'window.intentguardReleaseListeners={};Object.defineProperty(window,"ethereum",{value:{request:async args=>{const result=await window.intentguardReleaseWallet(args);if(args.method==="eth_requestAccounts")window.intentguardReleaseListeners.accountsChanged?.(result);return result},on:(event,handler)=>window.intentguardReleaseListeners[event]=handler,removeListener:event=>delete window.intentguardReleaseListeners[event]}})'});
  const response=await page.goto(origin,{waitUntil:"domcontentloaded",timeout:60000});assert.equal(response?.status(),200);
  await page.locator(".hero-title").waitFor({timeout:45000});
  await page.locator(".transaction-row").first().waitFor({timeout:45000});
@@ -93,6 +93,10 @@ try{
  await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();
  await page.waitForFunction(async()=>{const r=await fetch("/api/v1/auth/session");const body=await r.json();return !!body.address;},undefined,{timeout:45000});
  assert.equal(signatures,1);
+ await page.evaluate(owner=>(window as unknown as {intentguardReleaseListeners:Record<string,(a:string[])=>void>}).intentguardReleaseListeners.accountsChanged([owner]),account.address);
+ await page.waitForTimeout(100);assert.equal(await page.getByText(/Wallet account changed|Sign in again to access/).count(),0);
+ const stillAuthenticated=await page.evaluate(async()=>{const r=await fetch("/api/v1/auth/session");return (await r.json()).address});assert.equal(stillAuthenticated?.toLowerCase(),account.address.toLowerCase());
+
  await page.goto(origin+"/agents?agent="+agentId);
  await page.locator(".issued-identity .atm-card").waitFor({timeout:45000});
  assert.ok((await page.locator(".atm-usage").innerText()).includes(card.usage.requestCount.toLocaleString()));

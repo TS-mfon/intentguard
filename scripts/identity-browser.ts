@@ -21,6 +21,7 @@ const transactions=Array.from({length:5},(_,i)=>({id:"0x"+String(i+1).padStart(6
 try{
  const deadline=Date.now()+60000;while(Date.now()<deadline){if(await fetch(base).then(r=>r.ok).catch(()=>false))break;await new Promise(r=>setTimeout(r,500))}
  if(!await fetch(base).then(r=>r.ok).catch(()=>false))throw Error("Production server failed: "+output.slice(-2000));
+ for(const method of ["PUT","PATCH","OPTIONS"]){const rejected=await fetch(base+"/api/v1/config",{method});assert.equal(rejected.status,405);assert.equal(rejected.headers.get("Allow"),"GET");const body=await rejected.json();assert.equal(body.error.code,"METHOD_NOT_ALLOWED");assert.equal(rejected.headers.get("X-Request-Id"),body.error.requestId);}
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
  const page=await context.newPage();page.on("pageerror",e=>pageErrors.push(e.message));
@@ -50,6 +51,7 @@ try{
  window.testWalletMethods=[];window.testWalletListeners={};
  Object.defineProperty(window,"ethereum",{value:{on:(event,handler)=>window.testWalletListeners[event]=handler,removeListener:(event)=>delete window.testWalletListeners[event],request:async({method})=>{
  window.testWalletMethods.push(method);
+ if(method==="eth_requestAccounts"&&window.testEmitGrant)window.testWalletListeners.accountsChanged?.([${JSON.stringify(owner)}]);
  if(["eth_accounts","eth_requestAccounts"].includes(method))return [${JSON.stringify(owner)}];
  if(method==="eth_chainId")return "0x7a0";if(method==="personal_sign"&&window.testDeferSign)return new Promise(resolve=>window.resolveTestSignature=()=>resolve("0x"+"ab".repeat(65)));
  throw Object.assign(new Error("User rejected wallet request"),{code:4001});
@@ -87,6 +89,15 @@ try{
  await page.getByRole("tab",{name:"API key",exact:true}).click();await page.getByRole("button",{name:"Rotate API key",exact:true}).click();await page.getByRole("button",{name:"Rotate key",exact:true}).click();await page.getByText("ig_browser_test_once_only",{exact:true}).waitFor();
  await page.evaluate(()=>((window as unknown as {testWalletListeners:Record<string,()=>void>}).testWalletListeners.accountsChanged)());await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();assert.equal(await page.getByText("ig_browser_test_once_only",{exact:true}).count(),0);assert.equal(await page.getByRole("heading",{name:policy.name,exact:true}).count(),0);
  authenticated=true;await page.reload();await page.getByRole("heading",{name:policy.name,exact:true}).first().waitFor();await page.getByRole("button",{name:"Sign out",exact:true}).click();await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();
+ const grantsBefore=await page.evaluate(()=>((window as unknown as {testWalletMethods:string[]}).testWalletMethods).filter(m=>m==="eth_requestAccounts").length);
+ await page.evaluate(()=>{const w=window as unknown as {testDeferSign:boolean;testEmitGrant:boolean};w.testDeferSign=true;w.testEmitGrant=true});
+ await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.waitForFunction(()=>typeof (window as unknown as {resolveTestSignature?:unknown}).resolveTestSignature==="function");await page.evaluate(()=>(window as unknown as {resolveTestSignature:()=>void}).resolveTestSignature());
+ await page.getByRole("heading",{name:policy.name,exact:true}).first().waitFor();
+ assert.equal(await page.evaluate(()=>((window as unknown as {testWalletMethods:string[]}).testWalletMethods).filter(m=>m==="eth_requestAccounts").length),grantsBefore+1,"Initial permission must require one connect click");
+ await page.evaluate(owner=>((window as unknown as {testWalletListeners:Record<string,(a:string[])=>void>}).testWalletListeners.accountsChanged)([owner]),owner);
+ await page.waitForTimeout(100);assert.equal(await page.getByRole("heading",{name:policy.name,exact:true}).first().isVisible(),true);assert.equal(await page.getByText(/Wallet account changed|Sign in again to access/).count(),0);
+ await page.evaluate(()=>((window as unknown as {testWalletListeners:Record<string,(a:string[])=>void>}).testWalletListeners.accountsChanged)(["0x"+"12".repeat(20)]));await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();assert.equal(await page.getByRole("heading",{name:policy.name,exact:true}).count(),0);
+ await page.evaluate(()=>{(window as unknown as {resolveTestSignature?:unknown}).resolveTestSignature=undefined});
  await page.evaluate(()=>{(window as unknown as {testDeferSign:boolean}).testDeferSign=true});await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.waitForFunction(()=>typeof (window as unknown as {resolveTestSignature?:()=>void}).resolveTestSignature==="function");
  await page.evaluate(()=>{const w=window as unknown as {testWalletListeners:Record<string,()=>void>;resolveTestSignature:()=>void};w.testWalletListeners.accountsChanged();w.resolveTestSignature()});
  await page.waitForFunction(()=>!document.querySelector('button[aria-busy="true"]'));await page.reload();await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();assert.equal(await page.getByRole("heading",{name:policy.name,exact:true}).count(),0);

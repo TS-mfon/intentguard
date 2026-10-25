@@ -7,3 +7,7 @@ const handle=(req:Request)=>route(req,task=>after(task));
 export const GET=handle;
 export const POST=handle;
 export const DELETE=handle;
+export const PUT=handle;
+export const PATCH=handle;
+export const HEAD=handle;
+export const OPTIONS=handle;

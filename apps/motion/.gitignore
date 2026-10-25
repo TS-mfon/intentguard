@@ -2,3 +2,4 @@ node_modules/
 .remotion/
 build/
 out/
+/public/protocol-story-sound.wav
