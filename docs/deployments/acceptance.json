@@ -1,0 +1,186 @@
+{
+  "mode": "REAL_HOSTED_TESTNET_ACCEPTANCE",
+  "appUrl": "https://intentguard-gen-daves-projects.vercel.app",
+  "repository": "https://github.com/TS-mfon/intentguard",
+  "chainId": 1952,
+  "genLayerChainId": 61999,
+  "runId": "ded3e45b9666e9a32ef91622",
+  "phase": "COMPLETE",
+  "startedAt": "2026-10-24T21:13:23.437Z",
+  "completedAt": "2026-10-25T02:47:58.373Z",
+  "owner": "0xEd9EDd8586b20524CafA4F568413C504C9B03172",
+  "merchant": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+  "draftId": "0x50fc4f700b2e2cd2aeb9aa6421735b36aa183d34cd2abb591b364a2235815d86",
+  "draftTransaction": "0xc4c6b103495f3a3fb83022449fb004ac0249dbecca018beb6a9eb9efd58f04b2",
+  "cardAddress": "0xDb5EAF29025Cb8a94536649997f830dE87F78cdC",
+  "reviewerTransaction": "0x53ce4c30cbff4d623ddb16bb9dc64d48ee4a6b80fd6d9453c1b8b0c046d57081",
+  "ownerTransactions": {
+    "activate": {
+      "hash": "0x32139e79caa35a24985e86f2909daf165ab0e1bdbde8c363d376cc328671d26b",
+      "confirmed": true
+    },
+    "faucet": {
+      "hash": "0x9e7e3482a4f153ab2eb03922702939a45960e2a79c1a2f32780031cab022fbfb",
+      "confirmed": true
+    },
+    "fund": {
+      "hash": "0xc5d6335e70191a22de28316327d971680246cf4326cc2899b7566e15c27e949b",
+      "confirmed": true
+    }
+  },
+  "requests": {
+    "approved": {
+      "id": "0x3c47642a512e1a99b66c0e5351342538219908aa2f49145e342bc4ab93f646b0",
+      "status": "PAID",
+      "requestHash": "0x2281d0e468367cc382cd4c1a17346860a65c1f44356cf890668a577bba40499c",
+      "evidenceHash": "0x1bbed252f8b6cfb9db7e6909bc9b1e3d024ad45f53aebba98760ca357160b6fd",
+      "guard": {
+        "allow": true,
+        "failures": [],
+        "txHash": "0x1c82e19cb1fdd0091beaa4d71b761109534b60d0994e43253dd961d057518886"
+      },
+      "review": {
+        "decision": "APPROVE",
+        "requestHash": "0x2281d0e468367cc382cd4c1a17346860a65c1f44356cf890668a577bba40499c",
+        "policyHash": "0xe3be5a20da6619751a37e7e341e9f6d7c08e6b6728b3413e0c8e5750ceb70006",
+        "evidenceHash": "0x1bbed252f8b6cfb9db7e6909bc9b1e3d024ad45f53aebba98760ca357160b6fd",
+        "criteria": [
+          {
+            "id": "research-invoice",
+            "status": "PASS",
+            "reason": "The invoice matches the buyer card (0xdb5eaf29025cb8a94536649997f830de87f78cdc), token (0x47f846c659b4df565d2e8b1cd32f610e68d11b9a), recipient (0xe72e260811c6fbc27d1c350d92abaac89bbf803d), and exact amount (1). The described research data ('Verified protocol revenue research dataset') directly supports the mission to purchase verified protocol revenue research data from the approved merchant.",
+            "sources": [
+              "https://intentguard-gen-daves-projects.vercel.app/api/v1/demo/invoices/3ab9b252c29f338c0883ee264aa38331"
+            ]
+          }
+        ],
+        "reason": "All policy criteria are met. The purchase is for an approved product from the authorized merchant, matches the financial details provided in the request and verified invoice, and aligns with the research mission."
+      },
+      "genLayerTxHash": "0x0240c3ac0f79217ec431e5a94ea5140148179c731ea33a39b7a9fac3e7d92186",
+      "paymentTxHash": "0x47d329787c0fe71160858db0cbb5b13f4fe1ecf59ffaa163b9e1366bc90c406b",
+      "invoiceUrl": "https://intentguard-gen-daves-projects.vercel.app/api/v1/demo/invoices/3ab9b252c29f338c0883ee264aa38331"
+    },
+    "approved_evidence_attempt1": {
+      "id": "0xd2dbfe576c3f7a7cdd147a6d83fe3ac9c5699d3a6d209bd46daacb8ad91cbd66",
+      "status": "NEEDS_EVIDENCE",
+      "requestHash": "",
+      "evidenceHash": "",
+      "guard": {
+        "allow": true,
+        "failures": []
+      },
+      "invoiceUrl": "https://intentguard-gen-daves-projects.vercel.app/api/v1/demo/invoices/45b5dbae749a5d93d0e58b943dff3309"
+    },
+    "budget": {
+      "id": "0x58dee655216a4b4b5ef81a6b21a668787b1a6eaf2ab73f0e06640fde4bfc0e7d",
+      "status": "BLOCKED",
+      "requestHash": "",
+      "evidenceHash": "",
+      "guard": {
+        "allow": false,
+        "failures": [
+          "Payment limit"
+        ]
+      },
+      "invoiceUrl": "https://intentguard-gen-daves-projects.vercel.app/api/v1/demo/invoices/a1d41523df97321bdd548a7733958449"
+    },
+    "semantic": {
+      "id": "0x4a2eb0f9320e7f6e12b4f2c65e11853c5b53b3c56bfc4d0aee79c4394b452216",
+      "status": "REJECTED",
+      "requestHash": "0x1ca021c87136416c6f696560fba00ccea9e4703f5e5520e2f9ac6e1a09a0ed83",
+      "evidenceHash": "0x7eb94b464f2ac469c83c31688daf05d9665a64e0dc3131d7cf6d8acfa4cd269c",
+      "guard": {
+        "allow": true,
+        "failures": [],
+        "txHash": "0xd7ac0703f6f5f137db23b57b942afe7750348dbe6c2ea9499f556fa5c1cf704d"
+      },
+      "review": {
+        "decision": "REJECT",
+        "requestHash": "0x1ca021c87136416c6f696560fba00ccea9e4703f5e5520e2f9ac6e1a09a0ed83",
+        "policyHash": "0xe3be5a20da6619751a37e7e341e9f6d7c08e6b6728b3413e0c8e5750ceb70006",
+        "evidenceHash": "0x7eb94b464f2ac469c83c31688daf05d9665a64e0dc3131d7cf6d8acfa4cd269c",
+        "criteria": [
+          {
+            "id": "research-invoice",
+            "status": "FAIL",
+            "reason": "Invoice description, justification, and purchaseDescription explicitly state personal entertainment movie-streaming subscription unrelated to protocol research or mission; prohibited by policy.",
+            "sources": [
+              "https://intentguard-gen-daves-projects.vercel.app/api/v1/demo/invoices/73008ce03470d7d84099b646602ff538"
+            ]
+          }
+        ],
+        "reason": "Deterministic policy violation on prohibited purchase; REJECT."
+      },
+      "genLayerTxHash": "0x7ed610a437da5e26624c39bdd2b926470677ba9d707021174c2e37176fbdbd66",
+      "invoiceUrl": "https://intentguard-gen-daves-projects.vercel.app/api/v1/demo/invoices/73008ce03470d7d84099b646602ff538"
+    }
+  },
+  "workerRuns": [
+    {
+      "id": 40133537632,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40133537632",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40133881259,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40133881259",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40134213771,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40134213771",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40134563285,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40134563285",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40134909701,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40134909701",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40135242863,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40135242863",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40136947295,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40136947295",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40138107519,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40138107519",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 40138441668,
+      "url": "https://github.com/TS-mfon/intentguard/actions/runs/40138441668",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "findings": [
+    "Real finalized GenLayer policy interpretation verified.",
+    "Owner funded testnet vault through signed transactions.",
+    "Per-card reviewer code, constructor, policy and network verified.",
+    "Actual one-token merchant payment, exact Paid event and balance delta verified.",
+    "Six-token request blocked by genuine NAND spending circuit before review.",
+    "Personal entertainment request rejected by finalized GenLayer review; reservation cancelled.",
+    "Identical retry reused its original request and created no duplicate payout.",
+    "GitHub Actions alone processed durable jobs; spent1/reserved0/available9.",
+    "Public explorer reasoning matches the actual finalized GenLayer contract decisions.",
+    "The earlier unreserved NEEDS_EVIDENCE attempt is preserved in the ledger; its replacement used a new idempotency key and fresh invoice."
+  ]
+}

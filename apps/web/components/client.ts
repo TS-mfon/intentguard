@@ -3,7 +3,7 @@ import type {CardView, DraftView, Policy, RequestView} from "@intentguard/shared
 import exportedAbis from "../../../contracts/evm/abi.json";
 
 export type {CardView, DraftView, Policy, RequestView};
-export type Config = {mode:"live"|"local"|"testnet";rpcUrl?:string;networkName?:string;paymentSymbol?:string;chainId:number;token:string;factoryAddress:string|null;explorerUrl:string;genLayerExplorerUrl:string;configured:boolean;activation?:Record<string,unknown>};
+export type Config = {mode:"live"|"local"|"testnet";rpcUrl?:string;networkName?:string;paymentSymbol?:string;chainId:number;token:string;factoryAddress:string|null;explorerUrl:string;genLayerExplorerUrl:string;applicationUrl?:string;configured:boolean;activation?:Record<string,unknown>};
 export type ActivationDraft = DraftView & {activation?:{factoryAddress:string;config:Record<string,unknown>}};
 type Provider = {request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,handler:(...args:unknown[])=>void)=>void;removeListener?:(event:string,handler:(...args:unknown[])=>void)=>void};
 declare global {interface Window {ethereum?:Provider}}
@@ -19,7 +19,7 @@ export function amount(v:string|undefined, decimals=2):string{if(v===undefined||
 export function difference(a:string,b:string,c="0"):string{try{const v=parseUnitsExact(a)-parseUnitsExact(b)-parseUnitsExact(c);const n=v<0n?0n:v;const f=(n%1000000n).toString().padStart(6,"0").replace(/0+$/,"");return (n/1000000n).toString()+(f?"."+f:"")}catch{return "Unavailable"}}
 export const short=(v:string,size=6)=>v.length>size*2+3?v.slice(0,size)+"…"+v.slice(-4):v;
 export const human=(s:string)=>s.toLowerCase().replace(/_/g," ").replace(/^./,c=>c.toUpperCase());
-export function errorMessage(e:unknown){const message=e instanceof Error?e.message:"Something went wrong. Please retry.";if(/reject|denied|4001/i.test(message))return "Wallet request declined. Your form is preserved; retry when you are ready.";return message.split("\n")[0].slice(0,500)}
+export function errorMessage(e:unknown){const message=e instanceof Error?e.message:"Something went wrong. Please retry.";if((e as {code?:number;cause?:{code?:number}})?.code===4001||(e as {cause?:{code?:number}})?.cause?.code===4001||/user rejected|user denied|wallet request declined|UserRejectedRequestError/i.test(message))return "Wallet request declined. Your form is preserved; retry when you are ready.";return message.split("\n")[0].slice(0,500)}
 export function date(v:number,full=false){return new Intl.DateTimeFormat("en",{month:"short",day:"numeric",...(full?{year:"numeric" as const,hour:"2-digit" as const,minute:"2-digit" as const}:{hour:"2-digit" as const,minute:"2-digit" as const})}).format(new Date(v<1e12?v*1000:v))}
 export function txUrl(base:string,hash?:string,protocol:"evm"|"genlayer"="evm"){return hash&&base?base.replace(/\/$/,"")+(protocol==="genlayer"?"/transactions/":"/tx/")+hash:null}
 export const erc20Abi=[{type:"function",name:"transfer",stateMutability:"nonpayable",inputs:[{name:"to",type:"address"},{name:"amount",type:"uint256"}],outputs:[{type:"bool"}]}] as const;

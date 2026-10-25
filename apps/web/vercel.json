@@ -1,5 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm --filter @intentguard/web build"
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm exec next build --webpack",
+  "outputDirectory": ".next"
 }

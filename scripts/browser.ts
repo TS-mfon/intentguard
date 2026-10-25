@@ -4,62 +4,96 @@ import {createServer} from "node:net";
 import {mkdir,readFile,writeFile} from "node:fs/promises";
 import assert from "node:assert/strict";
 import {card,policy,input,owner,FakeEvm} from "../tests/fixtures";
-import {digest} from "../packages/shared";
+import {digest,type Policy} from "../packages/shared";
 const port=await new Promise<number>(resolve=>{const s=createServer();s.listen(0,"127.0.0.1",()=>{const a=s.address();s.close(()=>resolve(typeof a==="object"&&a?a.port:3999))})});
 await readFile(new URL("../apps/web/.next/BUILD_ID",import.meta.url),"utf8");
-const server=spawn("pnpm",["--filter","@intentguard/web","start","--port",String(port)],{cwd:new URL("../",import.meta.url),stdio:["ignore","pipe","pipe"],detached:process.platform!=="win32",env:{...process.env,APP_URL:"http://127.0.0.1:"+port}});
-let output="";server.stdout.on("data",c=>{output+=c.toString()});server.stderr.on("data",c=>{output+=c.toString()});
+const base="http://127.0.0.1:"+port;
+const server=spawn("pnpm",["--filter","@intentguard/web","start","--port",String(port)],{cwd:new URL("../",import.meta.url),stdio:["ignore","pipe","pipe"],detached:process.platform!=="win32",env:{...process.env,APP_URL:base}});
+let output="";server.stdout.on("data",c=>output+=c.toString());server.stderr.on("data",c=>output+=c.toString());
 let browser:Awaited<ReturnType<typeof chromium.launch>>|undefined;
 const folder=new URL("../.local/screenshots/",import.meta.url);await mkdir(folder,{recursive:true});
-const errors:string[]=[];
-async function noOverflow(page:Page){assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,"Viewport has horizontal overflow")}
+const pageErrors:string[]=[];
+async function noOverflow(page:Page){assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,"Viewport overflow at "+page.url())}
+const config={mode:"testnet",networkName:"X Layer Testnet",paymentSymbol:"TEST-USDT",chainId:1952,token:String(card.token),factoryAddress:"0x"+"55".repeat(20),configured:true,explorerUrl:"https://www.oklink.com/xlayer-test",genLayerExplorerUrl:"https://explorer-studio.genlayer.com"};
+const view={...await new FakeEvm().view(card),chainId:1952,reviewerAddress:"0x"+"44".repeat(20),keyStatus:"NONE"};
+const publicAgent={id:card._id,name:policy.name,mission:policy.mission,address:card.address,owner,policyHash:digest(policy),chainId:1952,token:String(card.token),status:"ACTIVE",reviewerAddress:view.reviewerAddress,createdAt:Date.now(),financial:policy.financial,balances:view.balances,criteria:policy.criteria};
+const transactions=Array.from({length:5},(_,i)=>({id:"0x"+String(i+1).padStart(64,"0"),cardId:card._id,agentName:policy.name,status:"PAID",amount:"1.000001",recipient:input.recipient,category:"data",purchaseDescription:"Browser fixture purchase "+(i+1),createdAt:Date.now()-i*10000,updatedAt:Date.now(),requestHash:"0x"+"bb".repeat(32),evidenceHash:"0x"+"cc".repeat(32),guard:{allow:true,failures:[],txHash:"0x"+"dd".repeat(32)},review:{decision:"APPROVE",requestHash:"0x"+"bb".repeat(32),policyHash:digest(policy),evidenceHash:"0x"+"cc".repeat(32),reason:"Committed merchant invoice and mission criteria passed.",criteria:policy.criteria.map(c=>({id:c.id,status:"PASS",reason:"Criterion verified from the committed invoice.",sources:["https://merchant.example/invoice","javascript:alert(1)"]}))},genLayerTxHash:"0x"+"ee".repeat(32),paymentTxHash:"0x"+"ff".repeat(32)}));
 try{
- const base="http://127.0.0.1:"+port;const readyUntil=Date.now()+60000;
- while(Date.now()<readyUntil){if(await fetch(base).then(r=>r.ok).catch(()=>false))break;await new Promise(r=>setTimeout(r,500))}
- if(!await fetch(base).then(r=>r.ok).catch(()=>false))throw Error("Production server did not start: "+output.slice(-3000));
+ const deadline=Date.now()+60000;while(Date.now()<deadline){if(await fetch(base).then(r=>r.ok).catch(()=>false))break;await new Promise(r=>setTimeout(r,500))}
+ if(!await fetch(base).then(r=>r.ok).catch(()=>false))throw Error("Production server failed: "+output.slice(-2000));
  browser=await chromium.launch({headless:true});
- const page=await browser.newPage({viewport:{width:1440,height:1000}});page.on("pageerror",e=>errors.push(e.message));await page.goto(base);await page.getByRole("heading",{name:"A card for the mission."}).waitFor();
- await page.getByText("SAMPLE PREVIEW",{exact:true}).waitFor();await noOverflow(page);
- assert.equal(await page.getByRole("button",{name:"Create card",exact:true}).isDisabled(),true);
- const config=await (await fetch(base+"/api/v1/config")).json();assert.equal(config.configured,false);
- await page.screenshot({path:new URL("desktop.png",folder).pathname,fullPage:true});
- await page.getByRole("tab",{name:/Payment ledger/}).click();await page.getByRole("button",{name:"Q4 energy sector outlook",exact:true}).click();await page.getByRole("dialog").waitFor();await page.keyboard.press("Escape");await page.getByRole("dialog").waitFor({state:"hidden"});
- for(const width of [768,390]){await page.setViewportSize({width,height:900});await noOverflow(page);await page.getByRole("tab",{name:/Cards/}).click();await page.screenshot({path:new URL("viewport-"+width+".png",folder).pathname,fullPage:true});}
- const context=await browser.newContext({viewport:{width:1440,height:1000}});
- await context.addInitScript({content:`
- window.testWalletMethods=[];
- Object.defineProperty(window,"ethereum",{value:{request:async({method})=>{
- window.testWalletMethods.push(method);
- if(["eth_accounts","eth_requestAccounts"].includes(method))return [${JSON.stringify(owner)}];
- if(method==="eth_chainId")return "0x7a69";
- throw Object.assign(new Error("Wallet request declined"),{code:4001});
- }}});
- `});
- const live=await context.newPage();live.on("pageerror",e=>errors.push(e.message));let cardsVisible=false,guidance:unknown;
- const view={...await new FakeEvm().view(card),keyStatus:"NONE"};const requests=[{id:"0x"+"aa".repeat(32),cardId:card._id,cardName:policy.name,status:"PAID",request:input,requestHash:"0x"+"bb".repeat(32),evidenceHash:"0x"+"cc".repeat(32),createdAt:Date.now(),updatedAt:Date.now()}];
- await live.route("**/api/v1/**",async route=>{const request=route.request(),path=new URL(request.url()).pathname.replace("/api/v1","");let data:unknown={},status=200;
- if(path==="/config")data={mode:"local",chainId:31337,token:String(card.token),factoryAddress:"0x"+"55".repeat(20),configured:true,explorerUrl:"",genLayerExplorerUrl:"https://explorer-studio.genlayer.com"};
- else if(path==="/auth/session")data={address:owner};
- else if(path==="/owner/cards")data={cards:cardsVisible?[view]:[]};
- else if(path==="/owner/requests")data={requests:cardsVisible?requests:[]};
- else if(path==="/owner/drafts"&&request.method()==="POST"){const body=request.postDataJSON();guidance=body.guidance;assert.ok(body.description.length>=10);status=202;data={id:card._id,status:"QUEUED"}}
- else if(path==="/owner/drafts/"+card._id)data={id:card._id,state:"FINALIZED",status:"PROPOSED",policy,interpretation:"Exact research permission",questions:[],activation:{factoryAddress:"0x"+"55".repeat(20),config:{owner,gateway:owner,attestor:owner,token:String(card.token),processor:card.address,circuitId:"1",beacon:card.address,expectedImplementation:card.address,expectedNetlistHash:"0x"+"00".repeat(32),policyHash:digest(policy),totalLimit:"100000000",perPaymentLimit:"10000000",periodLimit:"30000000",periodSeconds:"86400",validFrom:"1",validUntil:"4102444800",allowedRecipients:[input.recipient]}}};
- else if(path.endsWith("/keys")&&request.method()==="POST")data={apiKey:"ig_browser_test_once_only"};
- else if(path.endsWith("/keys")&&request.method()==="DELETE"){await route.fulfill({status:204});return}
+ const context=await browser.newContext({viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
+ const page=await context.newPage();page.on("pageerror",e=>pageErrors.push(e.message));
+ let publicMode="populated",source="genlayer-finalized-contract",authenticated=false,cardsVisible=false,keyDenied=false,guidance:Policy|undefined,keyStatus="NONE";
+ await context.route("**/api/v1/**",async route=>{
+ const req=route.request(),url=new URL(req.url()),path=url.pathname.replace("/api/v1","");let data:unknown={},status=200;
+ if(path==="/config")data=config;
+ else if(path==="/auth/challenge")data={message:"Browser isolated session challenge"};else if(path==="/auth/login"){authenticated=true;data={address:owner}}else if(path==="/auth/session")data={address:authenticated?owner:null};else if(path==="/auth/logout"){authenticated=false;await route.fulfill({status:204});return}
+ else if(path==="/explorer/agents")data={agents:publicMode==="empty"?[]:[publicAgent],nextCursor:null};
+ else if(path==="/explorer/transactions"){
+   if(publicMode==="error"){status=503;data={error:{code:"UNAVAILABLE",message:"Public index is temporarily unavailable."}}}
+   else data={transactions:publicMode==="empty"?[]:url.searchParams.get("limit")==="4"?transactions.slice(0,4):transactions,nextCursor:null};
+ }
+ else if(path.startsWith("/explorer/transactions/"))data={transaction:transactions[0],agent:publicAgent,reasoningSource:source};
+ else if(path==="/owner/cards")data={cards:cardsVisible?[{...view,keyStatus}]:[]};
+ else if(path==="/owner/requests")data={requests:cardsVisible?[{...transactions[0],cardName:policy.name,request:input}]:[]};
+ else if(path==="/owner/drafts"&&req.method()==="POST"){const body=req.postDataJSON();guidance=body.guidance;assert.ok(body.description.length>=10);status=202;data={id:card._id,status:"QUEUED"}}
+ else if(path==="/owner/drafts/"+card._id)data={id:card._id,state:"FINALIZED",status:"PROPOSED",policy:guidance||policy,interpretation:"The complete owner guidance is preserved.",questions:[],activation:{factoryAddress:config.factoryAddress,config:{owner,gateway:owner,attestor:owner,token:String(card.token),processor:card.address,circuitId:"1",beacon:card.address,expectedImplementation:card.address,expectedNetlistHash:"0x"+"00".repeat(32),policyHash:digest(guidance||policy),totalLimit:"100000000",perPaymentLimit:"10000000",periodLimit:"30000000",periodSeconds:"86400",validFrom:"1",validUntil:"4102444800",allowedRecipients:[input.recipient]}}};
+ else if(path.endsWith("/keys")&&req.method()==="POST"){if(keyDenied){status=403;data={error:{code:"DENIED",message:"Permission denied by policy."}}}else{data={apiKey:"ig_browser_test_once_only"};keyStatus="ACTIVE"}}
+ else if(path.endsWith("/keys")&&req.method()==="DELETE"){keyStatus="REVOKED";await route.fulfill({status:204});return}
  else{status=404;data={error:{code:"NOT_FOUND",message:"Test endpoint unavailable"}}}
  await route.fulfill({status,contentType:"application/json",body:JSON.stringify(data)});
  });
- await live.goto(base);await live.getByRole("button",{name:"Create card",exact:true}).waitFor();await live.getByRole("button",{name:"Create card",exact:true}).click();await live.getByRole("dialog").waitFor();
- assert.equal(await live.locator("#name").evaluate(el=>el===document.activeElement),true,"Wizard initial focus is not on agent name");
- await live.getByLabel("Agent / card name").fill("Research Agent");await live.getByLabel("Mission",{exact:true}).fill(policy.mission);await live.getByLabel("Task context",{exact:true}).fill(policy.taskContext);await live.getByLabel("Allowed purchase categories").fill("data");await live.getByRole("button",{name:"Continue",exact:true}).click();
- await live.getByLabel("Lifetime budget · USDT").fill("100");await live.getByLabel("Per-payment limit · USDT").fill("10.000001");await live.getByLabel("Period budget · USDT").fill("30");await live.getByRole("button",{name:"Continue",exact:true}).click();
- await live.getByLabel("Merchant name",{exact:true}).fill("Research vendor");await live.getByLabel("Recipient address",{exact:true}).fill(input.recipient);await live.getByLabel("Merchant HTTPS origins").fill("https://merchant.example");await live.getByLabel("Permitted products").fill("Research data");await live.getByLabel("Approved evidence origins").fill("https://merchant.example");await live.getByRole("button",{name:"Propose terms",exact:true}).click();
- await live.getByText("Approve the exact terms.",{exact:true}).waitFor({timeout:15000});assert.equal(Object.keys(guidance as object).length,11);
- await live.getByRole("checkbox").check();await live.getByRole("button",{name:"Activate card",exact:true}).click();await live.getByText(/Wallet request declined/).waitFor();assert.equal(await live.getByRole("dialog").isVisible(),true,"Declined activation lost the form");
- await live.keyboard.press("Escape");cardsVisible=true;await live.reload();await live.getByRole("tab",{name:/Agent API/}).click();await live.getByRole("button",{name:"Issue API key",exact:true}).click();await live.getByRole("dialog").waitFor();await live.getByText("ig_browser_test_once_only",{exact:true}).waitFor();await live.getByRole("button",{name:/saved the key/}).click();
- assert.equal(await live.getByText("ig_browser_test_once_only",{exact:true}).count(),0);
- assert.equal(await live.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes("ig_browser_test_once_only")),false);
- await live.getByRole("tab",{name:/Payment ledger/}).click();await live.getByRole("combobox",{name:"Filter requests by status"}).selectOption("PAID");await live.getByRole("button",{name:"Verified protocol data API",exact:true}).waitFor();
- assert.deepEqual(errors,[]);await writeFile(new URL("browser-report.json",folder),JSON.stringify({mode:"PRODUCTION_BROWSER_WITH_EXPLICIT_TEST_API",viewports:[1440,768,390],pageErrors:errors,checks:["sample write disabled","responsive overflow","dialog keyboard","complete guidance","declined activation preservation","one-time key storage","ledger filters"]},null,2));
+ await context.addInitScript({content:`
+ window.testWalletMethods=[];window.testWalletListeners={};
+ Object.defineProperty(window,"ethereum",{value:{on:(event,handler)=>window.testWalletListeners[event]=handler,removeListener:(event)=>delete window.testWalletListeners[event],request:async({method})=>{
+ window.testWalletMethods.push(method);
+ if(["eth_accounts","eth_requestAccounts"].includes(method))return [${JSON.stringify(owner)}];
+ if(method==="eth_chainId")return "0x7a0";if(method==="personal_sign"&&window.testDeferSign)return new Promise(resolve=>window.resolveTestSignature=()=>resolve("0x"+"ab".repeat(65)));
+ throw Object.assign(new Error("User rejected wallet request"),{code:4001});
+ }}});
+ `});
+ await page.goto(base);await page.getByRole("heading",{name:/Let your agents spend/}).waitFor();
+ await page.locator(".transaction-row").first().waitFor();assert.equal(await page.locator(".transaction-row").count(),4);
+ assert.equal(await page.getByText(/SAMPLE PREVIEW|Sample balances/).count(),0);
+ for(const width of [390,768,1440,1920]){await page.setViewportSize({width,height:1000});await noOverflow(page);await page.screenshot({path:new URL("landing-"+width+".png",folder).pathname,fullPage:true})}
+ publicMode="empty";await page.reload();await page.getByRole("heading",{name:"No transactions yet"}).waitFor();assert.equal(await page.locator(".transaction-row").count(),0);
+ publicMode="error";await page.reload();await page.getByRole("alert").filter({hasText:"Public index is temporarily unavailable."}).waitFor();assert.equal(await page.getByRole("heading",{name:"No transactions yet"}).count(),0);
+ publicMode="populated";await page.getByRole("button",{name:"Retry",exact:true}).click();await page.locator(".transaction-row").first().waitFor();
+ await page.goto(base+"/docs");await page.getByRole("heading",{name:"Complete policy reference"}).waitFor();assert.equal(await page.locator(".docs-article>section").count(),19);assert.ok((await page.locator(".docs-article").innerText()).length>22000);
+ for(const id of ["quickstart","wallet-sessions","policy-fields","funding","credentials","api-reference","invoice","snapshots","reasoning","architecture","contracts","actions","troubleshooting","faq"])assert.equal(await page.locator("#"+id).count(),1);
+ await page.getByRole("button",{name:"Copy TypeScript SDK",exact:true}).click();assert.ok((await page.evaluate(()=>navigator.clipboard.readText())).includes("new IntentGuard"));
+ for(const width of [390,768,1440,1920]){await page.setViewportSize({width,height:1000});await noOverflow(page);if(width===390||width===1440){await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:new URL("docs-"+width+".png",folder).pathname,fullPage:true});await page.screenshot({path:new URL("docs-overview-"+width+".png",folder).pathname,fullPage:false})}}
+ await page.goto(base+"/agents");await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();assert.equal(await page.getByText(policy.name,{exact:true}).count(),0);
+ await page.setViewportSize({width:390,height:900});await page.getByRole("button",{name:"Open navigation"}).click();await page.getByRole("dialog").waitFor();await page.keyboard.press("Escape");await page.getByRole("dialog").waitFor({state:"hidden"});assert.equal(await page.getByRole("button",{name:"Open navigation"}).evaluate(el=>el===document.activeElement),true);
+ authenticated=true;await page.goto(base+"/agents");await page.reload();await page.getByRole("heading",{name:"Create your first agent"}).waitFor();
+ await page.goto(base+"/agent-setup");await page.getByLabel("Agent name",{exact:true}).waitFor();await page.getByLabel("Agent name",{exact:true}).fill("Browser owner agent");await page.getByLabel("Mission",{exact:true}).fill(policy.mission);await page.getByLabel("Task context",{exact:true}).fill("Preserved task context.");
+ await page.reload();await page.getByLabel("Agent name",{exact:true}).waitFor();assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),"Browser owner agent");
+ await page.getByRole("button",{name:"Continue",exact:true}).click();await page.getByLabel("Allowed purchase categories").fill("data");await page.getByText("Prohibited purchases and exceptions",{exact:true}).click();await page.getByLabel("Prohibited purchases",{exact:true}).fill("Unrelated services");await page.getByLabel("Explicit exceptions",{exact:true}).fill("Owner-approved public datasets");
+ await page.getByLabel("Merchant name",{exact:true}).fill("Approved evidence merchant");await page.getByLabel("Recipient address",{exact:true}).fill(input.recipient);await page.getByLabel("Merchant HTTPS origins").fill("https://merchant.example");await page.getByLabel("Permitted products").fill("Research data");await page.getByLabel("Approved evidence origins").fill("https://merchant.example");await page.getByLabel("Evidence freshness · seconds").fill("86400");
+ await page.getByRole("button",{name:"Continue",exact:true}).click();await page.getByLabel("Lifetime budget · TEST-USDT").fill("100");await page.getByLabel("Per-payment limit · TEST-USDT").fill("10.000001");await page.getByLabel("Period budget · TEST-USDT").fill("30");await page.getByLabel("Budget period",{exact:true}).selectOption("custom");await page.getByLabel("Custom period · seconds").fill("900");await page.getByLabel("Valid from · UTC").fill("2030-01-01T00:00");await page.getByLabel("Valid until · UTC").fill("2031-01-01T00:00");
+ await page.getByRole("button",{name:"Propose policy",exact:true}).click();await page.getByText("Approve the exact terms.",{exact:true}).waitFor({timeout:15000});assert.equal(Object.keys(guidance!).length,11);assert.equal(guidance!.name,"Browser owner agent");assert.equal(guidance!.financial.perPaymentLimit,"10.000001");assert.equal(guidance!.financial.periodSeconds,900);assert.equal(guidance!.prohibitedPurchases[0],"Unrelated services");assert.equal(guidance!.merchants[0].products[0],"Research data");assert.ok(page.url().includes("draftId="));
+ assert.equal(await page.getByRole("button",{name:"Activate agent",exact:true}).isDisabled(),true);await page.getByRole("checkbox").check();await page.getByRole("button",{name:"Activate agent",exact:true}).click();await page.getByRole("alert").filter({hasText:/Wallet request declined/}).waitFor();assert.equal(await page.getByText("Approve the exact terms.",{exact:true}).isVisible(),true);
+ await page.reload();await page.getByText("Approve the exact terms.",{exact:true}).waitFor();assert.equal(await page.getByRole("button",{name:"Activate agent",exact:true}).isDisabled(),true);
+ for(const width of [390,768,1440,1920]){await page.setViewportSize({width,height:1000});await noOverflow(page);if(width===390||width===1440)await page.screenshot({path:new URL("setup-"+width+".png",folder).pathname,fullPage:true})}
+ cardsVisible=true;await page.goto(base+"/agents");await page.getByRole("heading",{name:policy.name,exact:true}).waitFor();await page.getByRole("tab",{name:"API key",exact:true}).click();keyDenied=true;await page.getByRole("button",{name:"Issue API key",exact:true}).click();await page.getByRole("alert").filter({hasText:"Permission denied by policy."}).waitFor();assert.equal(await page.getByText(/Wallet request declined/).count(),0);
+ keyDenied=false;await page.getByRole("button",{name:"Issue API key",exact:true}).click();await page.getByText("ig_browser_test_once_only",{exact:true}).waitFor();await page.getByRole("button",{name:"I saved the key"}).click();assert.equal(await page.getByText("ig_browser_test_once_only",{exact:true}).count(),0);assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes("ig_browser_test_once_only")),false);
+ await page.getByRole("tab",{name:"Overview",exact:true}).click();
+ for(const name of ["Fund vault","Pause","Withdraw","Revoke","Mint test tokens"])assert.equal(await page.getByRole("button",{name,exact:true}).isEnabled(),true);
+ for(const width of [390,768,1440,1920]){await page.setViewportSize({width,height:1000});await noOverflow(page);if(width===390||width===1440)await page.screenshot({path:new URL("agents-"+width+".png",folder).pathname,fullPage:true})}
+ await page.getByRole("button",{name:"Fund vault",exact:true}).click();await page.getByRole("dialog").waitFor();assert.equal(await page.getByLabel("Amount · TEST-USDT").evaluate(el=>el===document.activeElement),true);await page.getByLabel("Amount · TEST-USDT").fill("2");await page.getByRole("button",{name:"Confirm fund"}).click();await page.getByRole("alert").filter({hasText:/Wallet request declined/}).waitFor();assert.equal(await page.getByLabel("Amount · TEST-USDT").inputValue(),"2");await page.keyboard.press("Escape");
+ await page.getByRole("tab",{name:"API key",exact:true}).click();await page.getByRole("button",{name:"Rotate API key",exact:true}).click();await page.getByRole("button",{name:"Rotate key",exact:true}).click();await page.getByText("ig_browser_test_once_only",{exact:true}).waitFor();
+ await page.evaluate(()=>((window as unknown as {testWalletListeners:Record<string,()=>void>}).testWalletListeners.accountsChanged)());await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();assert.equal(await page.getByText("ig_browser_test_once_only",{exact:true}).count(),0);assert.equal(await page.getByRole("heading",{name:policy.name,exact:true}).count(),0);
+ authenticated=true;await page.reload();await page.getByRole("heading",{name:policy.name,exact:true}).waitFor();await page.getByRole("button",{name:"Sign out",exact:true}).click();await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();
+ await page.evaluate(()=>{(window as unknown as {testDeferSign:boolean}).testDeferSign=true});await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.waitForFunction(()=>typeof (window as unknown as {resolveTestSignature?:()=>void}).resolveTestSignature==="function");
+ await page.evaluate(()=>{const w=window as unknown as {testWalletListeners:Record<string,()=>void>;resolveTestSignature:()=>void};w.testWalletListeners.accountsChanged();w.resolveTestSignature()});
+ await page.waitForFunction(()=>!document.querySelector('button[aria-busy="true"]'));await page.reload();await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();assert.equal(await page.getByRole("heading",{name:policy.name,exact:true}).count(),0);
+ await page.goto(base+"/explorer");await page.getByRole("tab",{name:"Transactions",exact:true}).waitFor();await page.locator(".transaction-row").first().waitFor();assert.equal(await page.locator(".transaction-row").count(),5);await page.getByRole("tab",{name:"Agents",exact:true}).click();await page.getByRole("heading",{name:policy.name,exact:true}).waitFor();await page.getByRole("searchbox",{name:"Search public records"}).fill("no matching agent");await page.getByRole("heading",{name:"No matching agents"}).waitFor();await page.getByRole("searchbox",{name:"Search public records"}).fill("");
+ await page.goto(base+"/explorer/transactions/"+transactions[0].id);await page.getByText("Source: finalized GenLayer contract result",{exact:true}).waitFor();assert.equal(await page.getByText("Committed merchant invoice and mission criteria passed.",{exact:true}).isVisible(),true);assert.equal(await page.locator('a[href^="javascript:"]').count(),0);
+ for(const width of [390,768,1440,1920]){await page.setViewportSize({width,height:1000});await noOverflow(page);if(width===390||width===1440)await page.screenshot({path:new URL("transaction-"+width+".png",folder).pathname,fullPage:true})}
+ source="pending";await page.reload();await page.getByText(/Review has not finalized/).waitFor();assert.equal(await page.getByText("Committed merchant invoice and mission criteria passed.",{exact:true}).count(),0);
+ assert.deepEqual(pageErrors,[]);
+ await writeFile(new URL("browser-report.json",folder),JSON.stringify({mode:"PRODUCTION_BROWSER_WITH_ISOLATED_TEST_API",viewports:[390,768,1440,1920],pageErrors,checks:["latest four real API records","empty and error distinct","comprehensive docs anchors/copy","owner auth/empty gates","Radix escape/focus restoration","all policy fields submitted","draft and form refresh recovery","declined activation preserved","API permission error preserved","one-time keys absent from storage","owner controls/funding decline","wallet account switch clears session/key","explicit sign out","account switch during signing cannot restore stale session","public explorers/search","verified criterion reasoning","pending finality hidden","safe citations","responsive document overflow"]},null,2));
  console.log("PRODUCTION_BROWSER_FLOWS_PASSED");
-}catch(error){for(const context of browser?.contexts()??[]){for(const page of context.pages()){console.error("BROWSER_DIAGNOSTIC",JSON.stringify({url:page.url(),alerts:await page.getByRole("alert").allTextContents(),dialogs:await page.getByRole("dialog").allTextContents(),walletMethods:await page.evaluate(()=>((window as unknown as {testWalletMethods?:string[]}).testWalletMethods??[]))}));}}throw error;}finally{await browser?.close();if(process.platform==="win32")server.kill("SIGTERM");else if(server.pid){try{process.kill(-server.pid,"SIGTERM")}catch{server.kill("SIGTERM")}}}
+}catch(error){for(const c of browser?.contexts()??[])for(const p of c.pages())console.error("BROWSER_DIAGNOSTIC",JSON.stringify({url:p.url(),alerts:await p.getByRole("alert").allTextContents(),dialogs:(await p.getByRole("dialog").allTextContents()).map(v=>v.slice(0,1000))}));throw error}
+finally{await browser?.close();if(process.platform==="win32")server.kill("SIGTERM");else if(server.pid)try{process.kill(-server.pid,"SIGTERM")}catch{server.kill("SIGTERM")}}

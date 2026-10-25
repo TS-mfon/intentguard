@@ -18,3 +18,23 @@ test("revocation marks every pending authorized request for cancellation",async(
 test("unconfigured public config is truthful and money APIs fail closed",async()=>{const s=new MemoryStore(),api=createApi(s,new FakeEvm());assert.equal((await api(req("/config","none"),"/config")).status,200);assert.equal((await api(req("/requests","none",input),"/requests")).status,503)});
 
 test("concurrent rotations leave exactly one usable credential",async()=>{const {s,api}=await setup();const keys=await Promise.all([issueKey(s,card._id,owner),issueKey(s,card._id,owner)]);const statuses=await Promise.all(keys.map(key=>api(req("/me",key),"/me").then(r=>r.status)));assert.deepEqual(statuses.sort(),[200,401])});
+
+test("testnet merchant invoices require admin authorization and serve immutable exact bytes",async()=>{
+ const previous=Object.fromEntries(["INTENTGUARD_MODE","XLAYER_CHAIN_ID","PAYMENT_TOKEN","DEMO_MERCHANT_ADMIN_KEY","DEMO_MERCHANT_RECIPIENT"].map(k=>[k,process.env[k]]));
+ try{
+ Object.assign(process.env,{INTENTGUARD_MODE:"testnet",XLAYER_CHAIN_ID:"1952",PAYMENT_TOKEN:card.token,DEMO_MERCHANT_ADMIN_KEY:"merchant-test-only-secret-with-32-characters",DEMO_MERCHANT_RECIPIENT:input.recipient});
+ const s=new MemoryStore(),api=createApi(s,new FakeEvm(),{requireConfigured:false});
+ const post=(key:string,value:unknown)=>new Request("http://localhost:3000/api/v1/demo/invoices",{method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify(value)});
+ const value={buyer:card.address,amount:"1",description:"Approved research dataset"};
+ assert.equal((await api(post("wrong",value),"/demo/invoices")).status,401);
+ assert.equal((await api(post(process.env.DEMO_MERCHANT_ADMIN_KEY!,{...value,recipient:owner}),"/demo/invoices")).status,422);
+ const created=await api(post(process.env.DEMO_MERCHANT_ADMIN_KEY!,value),"/demo/invoices");assert.equal(created.status,201);
+ const {invoice,url}=await created.json();assert.equal(invoice.chainId,1952);assert.equal(invoice.token,String(card.token).toLowerCase());assert.equal(invoice.buyer,card.address.toLowerCase());
+ const path="/demo/invoices/"+invoice.invoiceId;
+ const first=await api(new Request(url),path),bytes=await first.text();assert.deepEqual(JSON.parse(bytes),invoice);
+ await s.patch("demoInvoices",invoice.invoiceId,{updatedAt:Date.now()+1000});
+ assert.equal(await (await api(new Request(url),path)).text(),bytes);
+ assert.match(first.headers.get("cache-control")!,/immutable/);
+ assert.equal((await api(new Request(url),"/demo/invoices/"+"00".repeat(16))).status,404);
+ }finally{for(const [k,v]of Object.entries(previous)){if(v===undefined)delete process.env[k];else process.env[k]=v}}
+});

@@ -2,7 +2,13 @@
 
 An owner-funded spending card for an AI agent. Define a mission and permissions in ordinary language, approve the exact proposed terms, then let the agent request merchant payments with its own API key.
 
-The dashboard combines ATM-style spending cards, agent identities and a payment ledger. Owners retain funding, pause, revocation, cancellation and withdrawal controls.
+The dark console provides a public landing page, complete policy setup, an owner workspace and public agent/transaction explorers. Owners retain funding, pause, revocation, cancellation, withdrawal and one-time credential controls.
+
+Live app: https://intentguard-gen-daves-projects.vercel.app
+Documentation: https://intentguard-gen-daves-projects.vercel.app/docs
+Create an agent: https://intentguard-gen-daves-projects.vercel.app/agent-setup
+Public explorer: https://intentguard-gen-daves-projects.vercel.app/explorer
+Repository: https://github.com/TS-mfon/intentguard
 
 ## What each protocol does
 
@@ -22,13 +28,9 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open http://localhost:3000. An unconfigured installation provides a clearly marked sample preview. It never records sample payments as live ones.
+Open http://localhost:3000. Public activity comes from persisted requests. An empty or unavailable backend shows its actual state.
 
-For real API operations, copy `.env.example` to `.env`, configure MongoDB, deployed contracts and a 32-character-or-longer session secret. The environment must be loaded into the worker process, for example:
-
-```sh
-node --env-file=.env --import tsx apps/worker/main.ts
-```
+For real API operations, configure MongoDB, deployed contracts and a 32-character-or-longer session secret using the fields in `.env.example`. The hosted installation runs its durable queue exclusively through [GitHub Actions](docs/ACTIONS-WORKER.md), with signing credentials stored as repository secrets.
 
 Next loads the web environment from `apps/web/.env.local`; configure the shared non-worker fields there or inject them through the deployment platform. The worker needs three dedicated signing keys. The web server only needs public gateway/attestor addresses and its session/database secrets.
 
@@ -57,9 +59,9 @@ const result = await guard.wait(queued.id);
 
 Reuse the same Idempotency-Key when retrying the same request. Different payment details under that key return HTTP 409. A rejected or corrected invoice requires a new request and a new key.
 
-Provide public HTTPS JSON/text evidence. Each source is limited to 64 KiB and the bundle to 128 KiB. The merchant invoice must identify the card buyer, X Layer 196, USDT token, recipient, exact amount, issue time and expiry. The reviewer verifies merchant-origin content; it cannot prove that a dishonest merchant's claims are objectively true.
+Provide public HTTPS JSON/text evidence. Each source is limited to 64 KiB and the bundle to 128 KiB. The merchant invoice must identify the card buyer, the configured X Layer chain and six-decimal payment token, recipient, exact amount, issue time and expiry. The reviewer verifies merchant-origin content; it cannot prove that a dishonest merchant's claims are objectively true.
 
-See [OpenAPI](docs/openapi.json), [integration contract](docs/CONTRACT.md), [architecture](docs/ARCHITECTURE.md), [deployment](docs/DEPLOYMENT.md) and [three-minute demo](docs/DEMO.md).
+See the [complete application docs](https://intentguard-gen-daves-projects.vercel.app/docs), [OpenAPI](docs/openapi.json), [integration contract](docs/CONTRACT.md), [architecture](docs/ARCHITECTURE.md) and [deployment](docs/DEPLOYMENT.md).
 
 ## Verify
 
@@ -77,4 +79,11 @@ node tools/check.mjs release
 
 The integration boots an isolated Anvil chain with fresh local test accounts, the unmodified TapeOut NetlistVM, generated circuit, vault, signatures and token transfers. GenLayer fixtures in this integration are explicitly test-only; separate direct contract tests execute the intelligent-contract validation paths. Browser checks exercise the owner flow with typed test API responses and a wallet that refuses live signing.
 
-No live deployment or mainnet transfer has been made during implementation. Live operation requires dedicated funded wallets and contract configuration. The project is a hackathon MVP; see deployment notes for the attestor and protocol trust assumptions.
+The hosted build uses X Layer testnet 1952 and GenLayer Studionet 61999. Testnet addresses and transaction evidence are in [TESTNET.md](docs/TESTNET.md). The evaluator uses TapeOut’s unchanged NetlistVM in a labelled testnet adapter; TEST-USDT is a faucet token. See deployment notes for attestor and protocol trust assumptions.
+
+Hosted acceptance scripts use the private configured testnet environment and a resumable journal:
+```sh
+pnpm exec tsx scripts/hosted-check.ts --run
+pnpm exec tsx scripts/hosted-browser.ts
+```
+The first verifies actual contract execution and exactly-once payments; the second verifies real wallet-login signatures, hosted records and finalized reasoning on both aliases. Public evidence is in [deployments](docs/deployments/).

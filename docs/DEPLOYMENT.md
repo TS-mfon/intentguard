@@ -32,3 +32,15 @@ Demo merchant: `pnpm exec tsx scripts/merchant.ts` starts a separate invoice ser
 Operational trust: GenLayer consensus is represented on X Layer by the EIP712 attestor. TapeOut contracts are upgradeable; pinned implementation changes stop spending and require a new reviewed card. Owner recovery of unreserved USDT remains available. No keys from unrelated local projects are used.
 
 When using a local environment file, load it explicitly, for example `node --env-file=.env --import tsx scripts/deploy.ts check`. The public deployment record is resumable; the file also contains signed transaction bytes and must be protected as server state. Browser tests and local integration receipts are test evidence, not public-chain deployments.
+
+## Hosted testnet build
+
+The current installation uses the verified configuration in [TESTNET.md](TESTNET.md) and [public manifest](deployments/testnet.json). The GitHub Actions workflow is the queue worker; see [ACTIONS-WORKER.md](ACTIONS-WORKER.md). It runs five-minute scheduled bursts and supports manual dispatch. GenLayer finality can span multiple bursts, so payment latency includes the next scheduled run.
+
+Vercel uses project root `apps/web`. The app configuration builds with `pnpm exec next build --webpack` because the current Vercel adapter requires the server NFT trace absent from its Turbopack build. `pnpm-workspace.yaml` explicitly permits esbuild’s install script. Deploy from the repository root with `npx --yes vercel@latest deploy --prod --yes --archive=tgz` after linking the project and configuring production environment variables.
+
+The dedicated Atlas M0 cluster stores sessions, jobs, evidence and transaction journals. The application user has readWrite permission only for database `intentguard`, scoped to this cluster. Database network access permits the dynamic egress addresses of Vercel and GitHub runners; this deployment is a testnet demonstration.
+
+Testnet-only `POST /api/v1/demo/invoices` requires the merchant administrator credential and publishes immutable public JSON at `GET /api/v1/demo/invoices/{id}`. The buyer is the vault address. Invoice bytes are persisted once in MongoDB and remain identical for independent validator refetches. `scripts/hosted-check.ts --run` resumes the real owner and agent acceptance flow from private mode-0600 state; its public result is `.local/hosted-report.json`.
+
+Signing keys are installed only as Actions worker secrets. Vercel receives the MongoDB/session/merchant administration credentials and public contract settings. Private local configuration and raw transaction journals remain ignored; the public manifest contains no signing data.

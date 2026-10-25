@@ -1,0 +1,61 @@
+{
+  "mode": "REAL_HOSTED_BROWSER_AND_API",
+  "verifiedAt": "2026-10-25T02:51:57.211Z",
+  "results": [
+    {
+      "origin": "https://intentguard-gen-daves-projects.vercel.app",
+      "loginSignatures": 1,
+      "latestActualRecords": [
+        "0x4a2eb0f9320e7f6e12b4f2c65e11853c5b53b3c56bfc4d0aee79c4394b452216",
+        "0x58dee655216a4b4b5ef81a6b21a668787b1a6eaf2ab73f0e06640fde4bfc0e7d",
+        "0x3c47642a512e1a99b66c0e5351342538219908aa2f49145e342bc4ab93f646b0",
+        "0xd2dbfe576c3f7a7cdd147a6d83fe3ac9c5699d3a6d209bd46daacb8ad91cbd66"
+      ],
+      "card": "0xdb5eaf29025cb8a94536649997f830de87f78cdc",
+      "balances": {
+        "funded": "9",
+        "spent": "1",
+        "reserved": "0",
+        "available": "9",
+        "periodSpent": "1",
+        "periodReserved": "0"
+      },
+      "docsSections": 19,
+      "verifiedReasoning": [
+        "approved",
+        "semantic"
+      ]
+    },
+    {
+      "origin": "https://intentguard-ivory.vercel.app",
+      "loginSignatures": 1,
+      "latestActualRecords": [
+        "0x4a2eb0f9320e7f6e12b4f2c65e11853c5b53b3c56bfc4d0aee79c4394b452216",
+        "0x58dee655216a4b4b5ef81a6b21a668787b1a6eaf2ab73f0e06640fde4bfc0e7d",
+        "0x3c47642a512e1a99b66c0e5351342538219908aa2f49145e342bc4ab93f646b0",
+        "0xd2dbfe576c3f7a7cdd147a6d83fe3ac9c5699d3a6d209bd46daacb8ad91cbd66"
+      ],
+      "card": "0xdb5eaf29025cb8a94536649997f830de87f78cdc",
+      "balances": {
+        "funded": "9",
+        "spent": "1",
+        "reserved": "0",
+        "available": "9",
+        "periodSpent": "1",
+        "periodReserved": "0"
+      },
+      "docsSections": 19,
+      "verifiedReasoning": [
+        "approved",
+        "semantic"
+      ]
+    }
+  ],
+  "pageErrors": [],
+  "viewports": [
+    390,
+    768,
+    1440,
+    1920
+  ]
+}

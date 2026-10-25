@@ -1,0 +1,17 @@
+.git/
+.vercel/
+.local/
+.unlazy/
+node_modules/
+**/node_modules/
+**/.next/
+.env*
+**/.env*
+contracts/evm/out/
+contracts/evm/cache/
+**/__pycache__/
+.pytest_cache/
+playwright-report/
+test-results/
+artifacts/
+*.tsbuildinfo

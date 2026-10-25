@@ -17,3 +17,8 @@ The EVM/TapeOut, GenLayer and frontend agents returned complete deliverables. Th
 
 ## Acceptance
 Current local build, types, contract/circuit/GenLayer/API tests and production browser checks pass. GitHub source and worker workflow exist. Public testnet contract deployments are verified. Hosted API uses durable shared storage, real testnet contracts and a working worker. An owner proposal and an agent payment complete through the hosted application. Unavailable external credentials or infrastructure remain explicit unmet outcomes.
+
+## Product amendments and final validation
+The owner selected charcoal surfaces, crisp IBM Plex type and restrained green. Implement a public landing with the latest four persisted requests; full documentation; authenticated policy/name/budget setup; an owner agent workspace; public agent/transaction explorers; and transaction details with independently verified finalized GenLayer reasoning. Remove the former preview data path and fix authentication across legitimate Vercel aliases.
+
+Verification separates isolated browser fixtures from the real hosted system. Direct tests cover EVM, circuit arithmetic, GenLayer validation, API privacy/origins and durable worker recovery. Hosted acceptance exercises a paid purchase, a budget rejection, a semantic rejection, reservation release and an identical idempotency retry. Hosted browser checks use actual records and domain-bound owner-login signatures on both production aliases. GitHub Actions remains the only live worker.

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "mode": "testnet",
+  "chainId": 1952,
+  "rpcUrl": "https://testrpc.xlayer.tech",
+  "genLayerChainId": 61999,
+  "genLayerRpc": "https://studio.genlayer.com/api",
+  "circuitId": "1",
+  "netlistHash": "0x280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761",
+  "circuitGates": 1766,
+  "transactions": {
+    "processor": "0x7e8a46f8ab635267fa82c335229c9b4f8dd709fd305a2391155cd5380e5a8f34",
+    "beacon": "0x4380cf5c8f67e38bf84dd28bed621ee62fcc62686e131aafa6f34ca309480466",
+    "token": "0x7949b013601dd122628d57375efe4c7d06c9ff28d8d1a0fedb9eb4da625f1fb8",
+    "factoryAddress": "0xe9537c04dd441ad5e7f1c33ab6ea15d752703ff118da1d4d49e90fc4cb2f96ea",
+    "interpreter": "0x15c6f64fa7893e9943f6736b7f6ab014d0039e126d55e53351299610c1d9494a"
+  },
+  "processorKind": "TESTNET_ADAPTER_UNMODIFIED_TAPEOUT_NETLIST_VM",
+  "gateway": "0xEd9EDd8586b20524CafA4F568413C504C9B03172",
+  "operator": "0xEd9EDd8586b20524CafA4F568413C504C9B03172",
+  "attestor": "0xB09F1DAaBaCFe6D9fedC74ccbC0590974c129FE2",
+  "processor": "0xa34d101011d4dbe18375ff2e7591b646e22c2ff3",
+  "implementation": "0xa34d101011d4dbe18375ff2e7591b646e22c2ff3",
+  "beacon": "0x699f57090c5c74acc3b7f7f2fdc4f808ff6a010f",
+  "token": "0x47f846c659b4df565d2e8b1cd32f610e68d11b9a",
+  "factoryAddress": "0xb452f9fabdf1599b2c72acbad0fc52baac58dfb7",
+  "interpreterTx": "0x15c6f64fa7893e9943f6736b7f6ab014d0039e126d55e53351299610c1d9494a",
+  "interpreter": "0x0922B814Cd91a9f2fF36F95D321A74eA22CEa9d3",
+  "codeHashes": {
+    "processor": "0xcd89b5e5782212d087bca3c26fcee13f804816c33106ea2de202498ef16f423e",
+    "beacon": "0x738b29933c225af988b71a9ce318beec43d28e468238414e0d398dbec70d6d21",
+    "token": "0x2e082af7010f516e484f388a66c431f02d23e3918c79da1560ebdd2286748da1",
+    "factoryAddress": "0x3228905580cd7848b3df774c9d442b3ff883809c65569f61225fde3d8edb1c14"
+  },
+  "verifiedAt": "2026-10-24T20:36:50.766Z"
+}

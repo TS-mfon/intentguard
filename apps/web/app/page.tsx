@@ -1,2 +1,2 @@
-import {Dashboard} from "../components/dashboard";
-export default function Page(){return <Dashboard/>}
+import {Landing} from "../components/public";
+export default function Page(){return <Landing/>}
