@@ -1,0 +1,58 @@
+{
+  "mode": "LIVE_ACTIONS_TESTNET_NO_PAYMENT_MUTATIONS",
+  "verifiedAt": "2026-10-25T07:28:03.070Z",
+  "sourceHash": "0x2dc4d00d2a12ff43bb5cc58228a99b326bbe22841d3f43a084a8f56d6508a2d4",
+  "legacyReviewer": "0x29FFb90ef511c26c1aa1566E7f1725C10EA0f1b9",
+  "reviewerVersion": 2,
+  "reviewerAddress": "0xb336d0B99020cf15676421500C7876c640685A87",
+  "deploymentTx": "0xf511a4361299352afcf14873543ace7fd011f9a2ccedb53e0ac2e137e28505f8",
+  "reviewTx": "0x8b5a0c4115b7a9ec1e1a36bd83890ee4b979a4fe9583040d07fb7ea03dbf07d1",
+  "decision": {
+    "decision": "REJECT",
+    "requestHash": "0xa071745b656183b6d648f46372841fc01b32032a42d6ac2e17d18211847a1063",
+    "policyHash": "0xb49edf0c548c727519fe3baff26ede1382f4850e53555f72139d42955e5436e6",
+    "evidenceHash": "0x0866d44978bc63a7efe785f64f57e59017798d242a041895af91d5d5648ec265",
+    "criteria": [
+      {
+        "id": "mission_fit",
+        "status": "FAIL",
+        "reason": "Purchase category is outside owner permissions. Request or owner policy is expired or not yet valid.",
+        "sources": []
+      },
+      {
+        "id": "merchant_invoice",
+        "status": "FAIL",
+        "reason": "Purchase category is outside owner permissions. Request or owner policy is expired or not yet valid.",
+        "sources": []
+      },
+      {
+        "id": "product_scope",
+        "status": "FAIL",
+        "reason": "Purchase category is outside owner permissions. Request or owner policy is expired or not yet valid.",
+        "sources": []
+      },
+      {
+        "id": "instruction_safety",
+        "status": "FAIL",
+        "reason": "Purchase category is outside owner permissions. Request or owner policy is expired or not yet valid.",
+        "sources": []
+      }
+    ],
+    "reason": "Purchase category is outside owner permissions. Request or owner policy is expired or not yet valid."
+  },
+  "tapeoutBoundary": {
+    "allow": false,
+    "failures": [
+      "Payment limit",
+      "Period budget"
+    ]
+  },
+  "applicationRequestsAdded": 0,
+  "fundsMoved": "0",
+  "workflow": {
+    "runId": 40172767750,
+    "url": "https://github.com/TS-mfon/intentguard/actions/runs/40172767750",
+    "sourceCommit": "de16e3261e4e0c326a515bac8df2888cf7232f3f"
+  },
+  "scope": "Live finality and independent deterministic denial verified. The reused invoice is expired; this does not prove semantic prompt-injection reliability or migrate the existing agent."
+}

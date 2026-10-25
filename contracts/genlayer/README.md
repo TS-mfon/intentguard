@@ -31,14 +31,15 @@ The leader and every validator independently fetch the original HTTPS URLs.
 Each snapshot must match its original declared hash and byte hash, and each
 HTTP 200 body must match that committed byte SHA-256. Only approved origins
 are fetched. An invoice must come from the payee's approved merchant origin
-and match buyer card address, recipient, token, chain 196, invoice ID and exact
+and match buyer card address, recipient, token, configured chain (1952 on the hosted testnet), invoice ID and exact
 amount; issuance, expiry and age are verified using consensus transaction time.
 Changed/contradictory evidence yields REJECT. Inaccessible, stale, future-dated
 or missing evidence yields NEEDS_EVIDENCE. Byte identity does not establish
 that every merchant assertion is independently true.
 
-Every review calls GenLayer's model, even for a small purchase or deterministic
-failure. The model evaluates purpose, task, prohibitions, exceptions, products,
+Version 2 handles deterministic permission failures and missing evidence before
+model evaluation. Validators reproduce those outcomes without an LLM. Semantic
+reviews call GenLayer's model, even for a small purchase. The model evaluates purpose, task, prohibitions, exceptions, products,
 required evidence types and each criterion. Only every criterion PASS permits
 APPROVE. Validators refetch evidence, independently evaluate all criteria, and
 check substantive fidelity of the proposed reasons/citations. Evidence and
@@ -62,7 +63,9 @@ FINALIZED (7), majority agreement and FINISHED_WITH_RETURN (1), validate exact
 transaction arguments, and read using transactionHashVariant:'latest-final'.
 An ordinary EVM receipt or ACCEPTED GenLayer transaction is insufficient.
 
-Verification uses the pinned real SDK in genlayer-test direct mode. Model and
+Verification uses the pinned real SDK in genlayer-test direct mode. The test
+fixtures require GenVM v0.2.16's official universal artifact and verify its SHA256;
+they do not follow the incompatible latest-release artifact name. Model and
 web outputs are fixtures. Direct mode runs leaders without consensus by
 default, so tests explicitly run captured validators and demonstrate rejected
 valid-shaped but false budgets/approvals, contradictory independent evidence,
