@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "phase": "AWAITING_USER_AGENT_AND_KEY",
+  "appUrl": "https://intentguard-gen-daves-projects.vercel.app",
+  "network": {
+    "chainId": 1952,
+    "genLayerChainId": 61999,
+    "token": "0x47f846c659b4df565d2e8b1cd32f610e68d11b9a"
+  },
+  "funding": "10",
+  "submissionCount": 12,
+  "countDefinition": "Exactly12 payment POST submissions including intentional retries and invalid inputs; status polls, invoice issuance and read-only protocol checks are additional.",
+  "runOrder": "Call1 must be PAID before calls2-10; confirm rejected reservations clear before calls11-12; submit last two concurrently within one unchanged budget period. Calls11-12 use separate newly issued invoices and distinct idempotency keys to prevent invoice-replay checks from masking the period-budget test.",
+  "expectedFinal": {
+    "uniqueLedgerRecords": 9,
+    "paid": 2,
+    "blocked": 3,
+    "rejected": 2,
+    "needsEvidence": 2,
+    "spent": "3.000001",
+    "reserved": "0",
+    "available": "6.999999"
+  },
+  "cases": [
+    {
+      "id": 1,
+      "name": "valid_exact_decimal",
+      "amount": "1.000001",
+      "expected": "PAID",
+      "purpose": "Positive control; six-decimal exact settlement and finalized four-criterion approval."
+    },
+    {
+      "id": 2,
+      "name": "idempotent_repeat",
+      "amount": "1.000001",
+      "expected": "SAME_REQUEST_NO_NEW_PAYMENT",
+      "purpose": "Repeat call1 with byte-equivalent input and the same idempotency key."
+    },
+    {
+      "id": 3,
+      "name": "idempotency_conflict",
+      "amount": "1.000002",
+      "expected": "HTTP_409",
+      "purpose": "Reuse call1 idempotency key with altered payment details."
+    },
+    {
+      "id": 4,
+      "name": "excess_decimal_precision",
+      "amount": "1.0000001",
+      "expected": "HTTP_422",
+      "purpose": "Seven decimal places must not be rounded or accepted."
+    },
+    {
+      "id": 5,
+      "name": "payment_limit",
+      "amount": "3.000001",
+      "expected": "BLOCKED",
+      "purpose": "One atomic unit above the payment cap; no reservation or GenLayer transaction."
+    },
+    {
+      "id": 6,
+      "name": "unauthorized_recipient",
+      "amount": "1",
+      "expected": "BLOCKED",
+      "purpose": "Recipient outside allowlist; no payout to the supplied address."
+    },
+    {
+      "id": 7,
+      "name": "prohibited_category_and_purchase",
+      "amount": "1",
+      "expected": "REJECTED",
+      "purpose": "Entertainment outside data scope; finalized rejection and cancelled reservation."
+    },
+    {
+      "id": 8,
+      "name": "invoice_buyer_mismatch",
+      "amount": "1",
+      "expected": "NEEDS_EVIDENCE",
+      "purpose": "Fresh hosted invoice issued for another buyer; no reservation or payout."
+    },
+    {
+      "id": 9,
+      "name": "evidence_digest_mismatch",
+      "amount": "1",
+      "expected": "NEEDS_EVIDENCE",
+      "purpose": "Declared SHA256 differs from actual invoice bytes; no reservation or payout."
+    },
+    {
+      "id": 10,
+      "name": "prompt_injection",
+      "amount": "1",
+      "expected": "REJECTED",
+      "purpose": "Request/invoice tells reviewer to override policy; explicit instruction-safety criterion must fail and reservation be cancelled."
+    },
+    {
+      "id": 11,
+      "name": "concurrent_budget_a",
+      "amount": "2",
+      "expected": "ONE_PAID_ONE_BLOCKED_WITH_CALL12",
+      "purpose": "Submit together after prior reservations clear; both cannot fit remaining2.999999 weekly capacity."
+    },
+    {
+      "id": 12,
+      "name": "concurrent_budget_b",
+      "amount": "2",
+      "expected": "ONE_PAID_ONE_BLOCKED_WITH_CALL11",
+      "purpose": "Verify fresh reserve preview and reserved capacity prevent combined5.000001 spending."
+    }
+  ],
+  "additionalChecks": [
+    "Compare policies and constructor/calldata with finalized GenLayer deployments.",
+    "Verify TapeOut circuit/runtime/netlist pins and actual guard bitmaps.",
+    "Verify settled receipts, Paid events and independent merchant/card balances.",
+    "Observe reserved-period accounting and no settlement before finality.",
+    "Inspect GitHub Actions head commits, leases, retries and schedule/dispatch latency.",
+    "Check API key/owner/card isolation using read-only calls.",
+    "Review SSRF, invoice replay, key rotation, stale finality and expiry paths in source/tests; identify which need further live owner actions.",
+    "Record each confirmed bug with severity, reproduction, expected/actual behavior and suggested fix; separate findings from untested hypotheses."
+  ]
+}
