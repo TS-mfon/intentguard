@@ -159,6 +159,12 @@ This run did not live-exercise credential rotation/revocation, owner pause/revok
 
 72 API/core/worker tests, TypeScript, production build, SDK/OpenAPI release checks and hosted wallet/setup/reasoning checks passed for the repaired release. The twelve-request audit's FAILED verdict remains independent of those build checks.
 
+### Published release and acceptance evidence
+
+[Release manifest](../deployments/audit-12-release.json) records Vercel deployment dpl_3UC7Uq4y3S6RCAgBDQP9tQV7GD2B, READY on both production aliases, built from source commit 68f89426b01121013a720823e319bd3346b3b1b2. [Fresh hosted browser evidence](../deployments/hosted-browser.json) confirms wallet login, setup, actual landing activity, the new balance/rate-limit/invoice documentation, and finalized contract reasoning, with no page errors at the checked viewports.
+
+Acceptance gates: 9 worker-repair gates plus 6 audit-completion gates met; 0 unmet, 0 abandoned. These gates verify execution, reconciliation and honest reporting. They do not convert the audit's two failed semantic expectations into passed outcomes.
+
 ## 4. Raw logs
 
 [Complete masked request/response log](audit-12-raw-logs.json), [case results and protocol receipts](audit-12-results.json), and [supplementary read-only API and TapeOut evidence](audit-12-supplementary.json), and [fresh remote protocol verification](audit-12-remote-verification.json). The log contains all twelve payment intents, eleven captured payment responses, fresh merchant invoice calls and terminal GET responses. Call 9 explicitly records its missing response. No API key, merchant credential or signed transaction bytes are included.

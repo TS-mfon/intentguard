@@ -1,0 +1,53 @@
+{
+  "mode": "REAL_PRODUCTION_RELEASE_AND_AUDIT_EVIDENCE",
+  "sourceCommit": "68f89426b01121013a720823e319bd3346b3b1b2",
+  "verifiedAt": "2026-10-25T05:37:16.031129+00:00",
+  "deployment": {
+    "id": "dpl_3UC7Uq4y3S6RCAgBDQP9tQV7GD2B",
+    "url": "https://intentguard-r1oz65x5r-gen-daves-projects.vercel.app",
+    "readyState": "READY",
+    "target": "production",
+    "aliases": [
+      "https://intentguard-gen-daves-projects.vercel.app",
+      "https://intentguard-ivory.vercel.app"
+    ]
+  },
+  "hostedBrowserEvidence": "hosted-browser.json",
+  "remoteProtocolEvidence": "../audits/audit-12-remote-verification.json",
+  "audit": {
+    "verdict": "FAILED",
+    "paymentPostAttempts": 12,
+    "capturedPaymentResponses": 11,
+    "uniqueLedgerRecords": 9,
+    "counts": {
+      "PAID": 2,
+      "BLOCKED": 3,
+      "NEEDS_EVIDENCE": 2,
+      "CANCELLED": 2
+    },
+    "plannedOutcomesMet": 10,
+    "totalCases": 12,
+    "transferred": "3.000001",
+    "finalLedger": {
+      "funded": "96.999999",
+      "spent": "3.000001",
+      "reserved": "0",
+      "available": "96.999999",
+      "periodSpent": "3.000001",
+      "periodReserved": "0"
+    }
+  },
+  "acceptanceGates": {
+    "worker-wake": {
+      "met": 9,
+      "unmet": 0,
+      "abandoned": 0
+    },
+    "audit12": {
+      "met": 6,
+      "unmet": 0,
+      "abandoned": 0
+    }
+  },
+  "remainingBlocker": "Calls 7 and 10 cancelled safely after failed GenLayer consensus instead of producing finalized semantic rejection. Versioned reviewer repair and migration, followed by focused retesting, remain."
+}

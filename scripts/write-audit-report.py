@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 r=json.loads(Path("docs/audits/audit-12-results.json").read_text())
 remote=json.loads(Path("docs/audits/audit-12-remote-verification.json").read_text())
+release=json.loads(Path("docs/deployments/audit-12-release.json").read_text())
 assert remote["transferred"]==r["transferred"]
 logs=json.loads(Path("docs/audits/audit-12-raw-logs.json").read_text())["requests"]
 wake=json.loads(Path("docs/deployments/worker-wake.json").read_text())
@@ -169,6 +170,12 @@ The deployment accepts and settles approved payments end to end, and no spending
 This run did not live-exercise credential rotation/revocation, owner pause/revoke/withdraw, period rollover, malicious DNS rebinding or dependency outages against this vault. Relevant source/unit checks exist, but their existence is not live proof. A later local Atlas TCP timeout affected re-verification from this environment; hosted database reads still succeeded. The fresh verifier reads the hosted API and public contracts, and production connection settings were not changed. Rate-limit rejection was not forced, so no HTTP 429 response was captured.
 
 72 API/core/worker tests, TypeScript, production build, SDK/OpenAPI release checks and hosted wallet/setup/reasoning checks passed for the repaired release. The twelve-request audit's FAILED verdict remains independent of those build checks.
+
+### Published release and acceptance evidence
+
+[Release manifest](../deployments/audit-12-release.json) records Vercel deployment {release["deployment"]["id"]}, READY on both production aliases, built from source commit {release["sourceCommit"]}. [Fresh hosted browser evidence](../deployments/hosted-browser.json) confirms wallet login, setup, actual landing activity, the new balance/rate-limit/invoice documentation, and finalized contract reasoning, with no page errors at the checked viewports.
+
+Acceptance gates: 9 worker-repair gates plus 6 audit-completion gates met; 0 unmet, 0 abandoned. These gates verify execution, reconciliation and honest reporting. They do not convert the audit's two failed semantic expectations into passed outcomes.
 
 ## 4. Raw logs
 
