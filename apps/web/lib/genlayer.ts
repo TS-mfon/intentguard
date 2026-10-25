@@ -38,12 +38,13 @@ export function normalizeStudioTransaction(tx:GenLayerTransaction,expectedHash?:
 }
 
 export class PendingFinality extends Error {}
+export class GenLayerTerminalError extends Error {}
 export function assertFinalized(tx:GenLayerTransaction,expected?:{target:string;method:string;args:unknown[];sender?:string}){
  const status=tx.statusName??transactionsStatusNumberToName[String(tx.status) as keyof typeof transactionsStatusNumberToName]??tx.status;
- if(status!=="FINALIZED"){if(["CANCELED","UNDETERMINED","VALIDATORS_TIMEOUT","LEADER_TIMEOUT"].includes(String(status)))throw Error("GenLayer transaction failed: "+status);throw new PendingFinality("GenLayer consensus is not finalized");}
+ if(status!=="FINALIZED"){if(["CANCELED","UNDETERMINED","VALIDATORS_TIMEOUT","LEADER_TIMEOUT"].includes(String(status)))throw new GenLayerTerminalError("GenLayer transaction failed: "+status);throw new PendingFinality("GenLayer consensus is not finalized");}
  const execution=tx.txExecutionResultName??executionResultNumberToName[String(tx.txExecutionResult) as keyof typeof executionResultNumberToName];
- if(execution!=="FINISHED_WITH_RETURN")throw Error("GenLayer VM execution was not successful");
- const result=tx.resultName??transactionResultNumberToName[String(tx.result) as keyof typeof transactionResultNumberToName];if(!["AGREE","MAJORITY_AGREE","SUCCESS"].includes(String(result)))throw Error("GenLayer consensus did not approve execution");if(tx.txDataDecoded?.leaderOnly!==false)throw Error("GenLayer validator consensus is required");
+ if(execution!=="FINISHED_WITH_RETURN")throw new GenLayerTerminalError("GenLayer VM execution was not successful");
+ const result=tx.resultName??transactionResultNumberToName[String(tx.result) as keyof typeof transactionResultNumberToName];if(!["AGREE","MAJORITY_AGREE","SUCCESS"].includes(String(result)))throw new GenLayerTerminalError("GenLayer consensus did not approve execution");if(tx.txDataDecoded?.leaderOnly!==false)throw Error("GenLayer validator consensus is required");
  if(expected){
  if((tx.recipient??tx.to_address)?.toLowerCase()!==expected.target.toLowerCase())throw Error("GenLayer transaction target mismatch");
  if(expected.sender&&(tx.sender??tx.from_address)?.toLowerCase()!==expected.sender.toLowerCase())throw Error("GenLayer transaction sender mismatch");
@@ -106,7 +107,7 @@ export class GenLayer implements GenLayerPort{
  if(!["PROPOSED","NEEDS_CLARIFICATION"].includes(result.status)||!Array.isArray(result.questions)||typeof result.interpretation!=="string")throw Error("Invalid draft result");
  if(result.status==="PROPOSED")result.policy=policySchema.parse(result.policy);else if(result.policy!==null)throw Error("Clarification must not authorize policy");return result;}
  reviewerArgs(c:Card){return [genLayerAddress(this.account().address),canonical(c.policy),c.policyHash,Number(c.chainId??this.cfg.chainId),String(c.token??this.cfg.token).toLowerCase()]}
- async deployReviewer(c:Card){const source=await readFile(new URL("../../../contracts/genlayer/purchase_reviewer.py",import.meta.url));return this.send("reviewer:"+c._id,client=>client.deployContract({code:source,args:this.reviewerArgs(c)}))}
+ async deployReviewer(c:Card){const source=await readFile(new URL("../../../contracts/genlayer/purchase_reviewer.py",import.meta.url));return this.send("reviewer:"+c._id+(c.reviewerAttempt?":attempt:"+Number(c.reviewerAttempt):""),client=>client.deployContract({code:source,args:this.reviewerArgs(c)}))}
  async reviewer(c:Card){if(!c.reviewerTx)throw Error("Missing reviewer deployment");const tx=await this.client.getTransaction({hash:c.reviewerTx as GLHash});assertFinalized(tx);const decoded=tx.txDataDecoded;
  if(!decoded||decoded.type!=="deploy"||!("contractAddress" in decoded))throw Error("Expected reviewer deployment transaction");
  const source=await readFile(new URL("../../../contracts/genlayer/purchase_reviewer.py",import.meta.url),"utf8");

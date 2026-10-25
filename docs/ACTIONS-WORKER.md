@@ -36,3 +36,13 @@ Locked dependencies use Node 24 and pnpm 11.9.0. The workflow refuses signing un
 ## Verification
 
 `pnpm exec tsx scripts/check-worker-wake.ts` checks concurrency, active-run reuse, handoff, failures, credential isolation and API recovery. `pnpm exec tsx scripts/verify-worker-trigger.ts` submits a real hosted policy proposal and independently checks the automatically started Actions run and successful committed GenLayer finality. It does not submit payments or activate another vault.
+
+## Terminal GenLayer failures
+
+Pending consensus and temporary RPC failures remain retryable. Terminal consensus states and finalized VM/consensus failures become explicit outcomes:
+
+- Failed policy proposals stop retrying, retain the original transaction/input, and authorize no activation. Owners can edit and submit a new proposal.
+- Failed reviewer deployments stop retrying. The owner can POST /owner/cards/{id}/reviewer or use Retry reviewer initialization in My agents. A fenced claim coalesces concurrent retries. The new attempt has a distinct signing journal and preserves the existing funded vault and immutable policy.
+- Failed payment reviews persist cancellation intent before broadcast. The next tick releases the reservation and records CANCELLED without settling. Cancellation recovery retains its failure explanation.
+
+These paths prevent a permanently failed GenLayer transaction from driving endless continuation bursts or an indefinite waiting message. The worker never turns protocol failure into an approved decision.

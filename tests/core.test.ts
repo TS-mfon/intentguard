@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {parseAmount,formatAmount,canonical,digest,policySchema,validateDecision} from "../packages/shared";
 import {capture,publicIp,safeFetch,pinnedLookup} from "../apps/web/lib/evidence";
-import {assertFinalized,PendingFinality,genLayerAddress,normalizedCalldata,normalizeStudioTransaction} from "../apps/web/lib/genlayer";
+import {assertFinalized,PendingFinality,GenLayerTerminalError,genLayerAddress,normalizedCalldata,normalizeStudioTransaction} from "../apps/web/lib/genlayer";
 import {MemoryStore} from "../apps/web/lib/store";
 import {policy,input} from "./fixtures";
 test("exact money covers fractions, boundaries and unsafe representations",()=>{for(const s of ["0","1","0.000001","18446744073709.551615","9007199254.740993"]){assert.equal(parseAmount(formatAmount(parseAmount(s))),parseAmount(s))}assert.equal(parseAmount("0.000001"),1n);for(const s of ["-1","+1","01","1e6","1.0000001","18446744073709.551616","NaN","1."]){assert.throws(()=>parseAmount(s))}});
@@ -46,4 +46,11 @@ test("pinned DNS lookup supports Node dual-stack and single-address callback con
    assert.equal(calls,1);
   }
  }
+});
+
+test("terminal consensus and finalized VM failures differ from pending finality",()=>{
+ for(const statusName of ["CANCELED","UNDETERMINED","VALIDATORS_TIMEOUT","LEADER_TIMEOUT"])assert.throws(()=>assertFinalized({statusName} as any),GenLayerTerminalError);
+ assert.throws(()=>assertFinalized({statusName:"ACCEPTED"} as any),PendingFinality);
+ assert.throws(()=>assertFinalized({statusName:"FINALIZED",txExecutionResultName:"FINISHED_WITH_ERROR"} as any),GenLayerTerminalError);
+ assert.throws(()=>assertFinalized({statusName:"FINALIZED",txExecutionResultName:"FINISHED_WITH_RETURN",resultName:"MAJORITY_DISAGREE"} as any),GenLayerTerminalError);
 });

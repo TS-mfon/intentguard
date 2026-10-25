@@ -65,7 +65,7 @@ export class Evm implements EvmPort{
  throw Error("Paid state has no confirmed matching event");
  }
  async view(card:Card){const [ledger,enabled,revoked]=await Promise.all([this.read(card.address,"ledger"),this.read(card.address,"enabled"),this.read(card.address,"revoked")]);const keys=["funded","spent","reserved","available","periodSpent","periodReserved"] as const;const balances=Object.fromEntries(keys.map((k,i)=>[k,formatAmount((ledger as bigint[])[i])])) as CardView["balances"];
- return {id:card._id,name:card.policy.name,mission:card.policy.mission,address:card.address,policyHash:card.policyHash,policy:card.policy,status:revoked?"REVOKED":enabled?"ACTIVE":"PAUSED",balances,keyStatus:card.keyStatus,chainId:this.cfg.chainId,token:this.cfg.token,reviewerAddress:card.reviewerAddress??"",reviewerTx:card.reviewerTx,activationTx:card.activationTx} as CardView;}
+ return {id:card._id,name:card.policy.name,mission:card.policy.mission,address:card.address,policyHash:card.policyHash,policy:card.policy,status:revoked?"REVOKED":enabled?"ACTIVE":"PAUSED",balances,keyStatus:card.keyStatus,chainId:this.cfg.chainId,token:this.cfg.token,reviewerAddress:card.reviewerAddress??"",reviewerTx:card.reviewerTx,activationTx:card.activationTx,setupState:card.state,setupError:card.error??null} as CardView;}
  async verifyActivation(owner:string,policy:Policy,address:string,tx:string){
  await this.identity();const receipt=await this.public.getTransactionReceipt({hash:asHex(tx)});if(receipt.status!=="success")throw Error("Activation transaction failed");
  if(await this.public.getBlockNumber()<receipt.blockNumber+1n)throw Error("Wait for activation confirmation");

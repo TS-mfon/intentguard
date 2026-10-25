@@ -89,3 +89,23 @@ test("owner payment reads recover pending work without waking for terminal recor
  assert.equal((await read("/owner/requests/"+id)).status,200);assert.equal(wakes,3);
  await store.patch("requests",id,{status:"PAID"});await read("/owner/requests");await read("/owner/requests/"+id);assert.equal(wakes,3);
 });
+
+test("only the owning authenticated wallet can retry a failed reviewer",async()=>{
+ const s=new MemoryStore();await s.create("cards",{...card,state:"FAILED",reviewerTx:"0x"+"ab".repeat(32),reviewerAddress:undefined});let wakes=0;
+ const api=createApi(s,new FakeEvm(),{requireConfigured:false,wake:()=>{wakes++}});
+ const path="/owner/cards/"+card._id+"/reviewer";
+ const post=(account=owner,origin="http://localhost:3000")=>api(new Request("http://localhost:3000/api/v1"+path,{method:"POST",headers:{cookie:"ig_session="+session(account),origin}}),path);
+ assert.equal((await post("0x"+"77".repeat(20))).status,404);assert.equal((await post(owner,"https://evil.example")).status,403);assert.equal(wakes,0);
+ const results=await Promise.all([post(),post()]);assert.deepEqual(results.map(r=>r.status).sort(),[202,409]);assert.equal(wakes,1);
+ const updated=await s.get("cards",card._id);assert.equal(updated?.state,"SETTING_UP");assert.equal(updated?.address,card.address);assert.equal(updated?.policyHash,card.policyHash);
+ assert.equal(updated?.reviewerAttempt,1);assert.equal(updated?.reviewerTx,null);assert.equal(updated?.reviewerAddress,null);
+ assert.equal((await post()).status,409);
+});
+test("failed reviewer blocks credentials with a truthful error and healthy reviewers cannot be retried",async()=>{
+ const s=new MemoryStore();await s.create("cards",{...card,state:"FAILED"});const api=createApi(s,new FakeEvm(),{requireConfigured:false});
+ const path="/owner/cards/"+card._id+"/keys";
+ const response=await api(new Request("http://localhost:3000/api/v1"+path,{method:"POST",headers:{cookie:"ig_session="+session(owner),origin:"http://localhost:3000"}}),path);
+ assert.equal(response.status,409);assert.equal((await response.json()).error.code,"REVIEWER_FAILED");assert.equal((await s.find("keys",{})).length,0);
+ await s.patch("cards",card._id,{state:"READY"});const retry="/owner/cards/"+card._id+"/reviewer";
+ assert.equal((await api(new Request("http://localhost:3000/api/v1"+retry,{method:"POST",headers:{cookie:"ig_session="+session(owner),origin:"http://localhost:3000"}}),retry)).status,409);
+});

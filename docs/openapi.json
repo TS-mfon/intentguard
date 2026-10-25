@@ -1132,6 +1132,57 @@
           }
         }
       }
+    },
+    "/owner/cards/{id}/reviewer": {
+      "post": {
+        "operationId": "retryReviewer",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Failed reviewer reset for a new verified deployment; vault and policy are preserved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "card": {
+                      "$ref": "#/components/schemas/CardView"
+                    }
+                  },
+                  "required": [
+                    "card"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error, including 409 for a reviewer that is not failed or a retry already in progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1600,6 +1651,20 @@
           "activationTx": {
             "type": "string",
             "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "setupState": {
+            "type": "string",
+            "enum": [
+              "SETTING_UP",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "setupError": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [

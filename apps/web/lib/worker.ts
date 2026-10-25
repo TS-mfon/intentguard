@@ -4,7 +4,7 @@ import type {Store,Doc} from "./store";
 import type {Card,Payment,Draft,Job} from "./models";
 import {activeStatuses,terminal} from "./models";
 import type {EvmPort} from "./evm";
-import {PendingFinality,type GenLayerPort} from "./genlayer";
+import {PendingFinality,GenLayerTerminalError,type GenLayerPort} from "./genlayer";
 import {capture} from "./evidence";
 export const requestId=()=>"0x"+randomBytes(32).toString("hex");
 export function evidenceAllowed(card:Card,input:PaymentInput){
@@ -33,7 +33,18 @@ export class Worker{
  for(const [table,query]of [["drafts",{state:"QUEUED"}],["drafts",{state:"AWAITING_FINALITY"}],["cards",{state:"SETTING_UP"}],["requests",{status:{$in:activeStatuses}}]] as const){
  const job=await this.store.claim<Job>(table,query,Date.now(),120000);if(!job)continue;
  try{const values=table==="drafts"?await this.draft(job as Draft):table==="cards"?await this.card(job as Card):await this.payment(job as Payment);await this.store.complete(table,job._id,job.leaseToken!,{error:null,...values,updatedAt:Date.now(),attempts:0,nextAt:Date.now()+2000});}
- catch(e){const pending=e instanceof PendingFinality;const attempts=Number(job.attempts??0)+1;await this.store.complete(table,job._id,job.leaseToken!,{error:pending?null:"Processing is delayed. The worker will retry safely.",attempts,nextAt:Date.now()+(pending?5000:Math.min(60000,1000*2**Math.min(attempts,6))),updatedAt:Date.now()});if(!pending)console.error("IntentGuard job failed",{table,id:job._id,error:e instanceof Error?e.message:String(e)});}
+ catch(e){
+ if(e instanceof GenLayerTerminalError){
+  const error=table==="drafts"?"GenLayer could not finalize this proposal successfully. Review the instructions and submit a new proposal.":table==="cards"?"GenLayer reviewer initialization failed. Retry initialization in My agents.":"GenLayer review failed. No payment was authorized; its reservation is being cancelled.";
+  const values=table==="requests"?{status:"RETRYING",cancelTarget:"CANCELLED",reviewFailure:error}:{state:"FAILED"};
+  await this.store.complete(table,job._id,job.leaseToken!,{...values,error,attempts:0,nextAt:0,updatedAt:Date.now()});
+  console.error("GenLayer job reached terminal failure",{table,id:job._id});
+ }else{
+  const pending=e instanceof PendingFinality;const attempts=Number(job.attempts??0)+1;
+  await this.store.complete(table,job._id,job.leaseToken!,{error:pending?null:"Processing is delayed. The worker will retry safely.",attempts,nextAt:Date.now()+(pending?5000:Math.min(60000,1000*2**Math.min(attempts,6))),updatedAt:Date.now()});
+  if(!pending)console.error("IntentGuard job failed",{table,id:job._id,error:e instanceof Error?e.message:String(e)});
+ }
+}
  return true;
  }return false;
  }finally{await this.store.complete("locks","worker",lock.leaseToken!,{nextAt:0});}
@@ -44,9 +55,9 @@ export class Worker{
  const c=await this.store.get<Card>("cards",p.cardId);if(!c)throw Error("Card record missing");
  const chain=await this.evm.request(c,p._id);
  if(chain.status===2)return {status:"PAID",paymentTxHash:this.evm.paidHash?await this.evm.paidHash(c,p):(await this.store.get<Doc>("transactions",p._id+":settle"))?.hash??p.paymentTxHash};
- if(chain.status===3||chain.status===4)return {status:chain.status===4?"EXPIRED":p.cancelTarget??"CANCELLED"};
+ if(chain.status===3||chain.status===4)return {status:chain.status===4?"EXPIRED":p.cancelTarget??"CANCELLED",...(p.reviewFailure?{error:p.reviewFailure}:{})};
  const key=await this.store.get<Doc>("keys",p.keyId);const now=Math.floor(Date.now()/1000);
- if(p.cancelRequested||!key||key.revoked||(Object.hasOwn(c,"activeKeyId")&&c.activeKeyId!==p.keyId)||p.cancelTarget){await this.evm.cancel(c,p);return {status:p.cancelTarget??"CANCELLED"};}
+ if(p.cancelRequested||!key||key.revoked||(Object.hasOwn(c,"activeKeyId")&&c.activeKeyId!==p.keyId)||p.cancelTarget){await this.evm.cancel(c,p);return {status:p.cancelTarget??"CANCELLED",...(p.reviewFailure?{error:p.reviewFailure}:{})};}
  if(p.canonical&&p.canonical.expiresAt<=now){await this.evm.cancel(c,p);return {status:"EXPIRED"};}
  if(c.state!=="READY")throw new PendingFinality("Reviewer is being initialized");
  if(!p.canonical){

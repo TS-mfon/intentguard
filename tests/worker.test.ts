@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {digest} from "../packages/shared";
 import {MemoryStore} from "../apps/web/lib/store";
 import {Worker,requestId} from "../apps/web/lib/worker";
-import {PendingFinality} from "../apps/web/lib/genlayer";
+import {PendingFinality,GenLayerTerminalError,GenLayer} from "../apps/web/lib/genlayer";
 import type {Payment} from "../apps/web/lib/models";
 import {card,owner,input,invoice,FakeEvm,FakeGenLayer} from "./fixtures";
 async function setup(){const s=new MemoryStore(),evm=new FakeEvm(),gl=new FakeGenLayer();await s.create("cards",card);await s.create("keys",{_id:"key",cardId:card._id,owner,revoked:false});const p:Payment={_id:requestId(),owner,cardId:card._id,keyId:"key",input,inputHash:digest(input),status:"QUEUED",createdAt:Date.now(),updatedAt:Date.now()};await s.create("requests",p);const worker=new Worker(s,evm,gl,async()=>invoice());const step=async()=>{const current=(await s.get<Payment>("requests",p._id))!;const values=await worker.payment(current);await s.patch("requests",p._id,values);return (await s.get<Payment>("requests",p._id))!};return{s,evm,gl,p,worker,step}}
@@ -17,3 +17,40 @@ test("merchant invoice contradiction and stale evidence never reserve funds",asy
 test("crash after reservation is reconciled without reserving a second time",async()=>{const t=await setup();const p=await t.step();await t.evm.reserve(card,p);const resumed=new Worker(t.s,t.evm,t.gl,async()=>invoice());const values=await resumed.payment(p);assert.equal(values.status,"AWAITING_FINALITY");assert.equal(t.evm.reserves,1)});
 test("changing a finalized approval between authorization and settlement fails closed",async()=>{const t=await setup();await t.step();await t.step();await t.step();await t.step();t.gl.modify=r=>({...r,reason:"Different finalized result"});await assert.rejects(t.step());assert.equal(t.evm.settlements,0)});
 test("two workers claim one job and write one evidence commitment",async()=>{const t=await setup();const other=new Worker(t.s,t.evm,t.gl,async()=>invoice());const results=await Promise.all([t.worker.tick(),other.tick()]);assert.equal(results.filter(Boolean).length,1);const p=await t.s.get<Payment>("requests",t.p._id);assert.ok(p?.canonical);assert.equal(t.evm.reserves,0)});
+
+test("a permanently failed proposal terminates without rebroadcasting its transaction",async()=>{
+ const s=new MemoryStore(),gl=new FakeGenLayer(),id=requestId(),tx="0x"+"ab".repeat(32);
+ await s.create("drafts",{_id:id,owner,input:{description:"Buy protocol research data"},inputHash:digest({description:"Buy protocol research data"}),genLayerTxHash:tx,state:"AWAITING_FINALITY",createdAt:1,updatedAt:1});
+ let reads=0;gl.draft=async()=>{reads++;throw new GenLayerTerminalError("GenLayer VM execution was not successful")};
+ const w=new Worker(s,new FakeEvm(),gl);assert.equal(await w.tick(),true);
+ const d=await s.get("drafts",id);assert.equal(d?.state,"FAILED");assert.equal(d?.genLayerTxHash,tx);assert.match(String(d?.error),/submit a new proposal/);
+ assert.equal(await w.tick(),false);assert.equal(reads,1);assert.equal(gl.submissions,0);
+});
+test("a permanently failed reviewer is marked failed and cannot initialize indefinitely",async()=>{
+ const s=new MemoryStore(),gl=new FakeGenLayer();await s.create("cards",{...card,state:"SETTING_UP",reviewerAddress:undefined,reviewerTx:"0x"+"ab".repeat(32)});
+ gl.reviewer=async()=>{throw new GenLayerTerminalError("Validator consensus failed")};
+ const w=new Worker(s,new FakeEvm(),gl);await w.tick();const c=await s.get("cards",card._id);assert.equal(c?.state,"FAILED");assert.match(String(c?.error),/Retry initialization/);
+ assert.equal(await w.tick(),false);
+});
+test("terminal payment review failure persists cancellation and never settles",async()=>{
+ const t=await setup();await t.step();await t.step();await t.step();t.gl.error=new GenLayerTerminalError("Finalized VM error");
+ await t.worker.tick();let p=await t.s.get<Payment>("requests",t.p._id);assert.equal(p?.status,"RETRYING");assert.equal(p?.cancelTarget,"CANCELLED");assert.ok(p?.genLayerTxHash);assert.equal(t.evm.settlements,0);
+ // Recover a cancellation that broadcast before its database completion.
+ await t.evm.cancel(card,p!);await t.worker.tick();p=await t.s.get<Payment>("requests",t.p._id);
+ assert.equal(p?.status,"CANCELLED");assert.match(String(p?.error),/No payment was authorized/);assert.equal(t.evm.settlements,0);assert.equal(t.evm.cancellations,1);assert.equal(await t.worker.tick(),false);
+});
+test("transient failures and pending finality remain safely retryable",async()=>{
+ for(const e of [Error("Temporary RPC timeout"),new PendingFinality("Waiting for validators")]){
+  const s=new MemoryStore(),gl=new FakeGenLayer(),id=requestId();
+  await s.create("drafts",{_id:id,owner,input:{description:"Buy protocol research data"},inputHash:"hash",genLayerTxHash:"tx",state:"AWAITING_FINALITY",createdAt:1,updatedAt:1});
+  gl.draft=async()=>{throw e};const w=new Worker(s,new FakeEvm(),gl);await w.tick();const first=await s.get("drafts",id);
+  assert.equal(first?.state,"AWAITING_FINALITY");assert.equal(e instanceof PendingFinality?first?.error:null,null);
+  gl.draft=new FakeGenLayer().draft;await s.patch("drafts",id,{nextAt:0});await w.tick();assert.equal((await s.get("drafts",id))?.state,"FINALIZED");
+ }
+});
+test("reviewer retries have distinct journals and the same attempt remains idempotent",async()=>{
+ const gl=new GenLayer(new MemoryStore()),ids:string[]=[];
+ gl.send=async id=>{ids.push(id);return "0x"+"ab".repeat(32)};
+ await gl.deployReviewer(card);await gl.deployReviewer({...card,reviewerAttempt:1});await gl.deployReviewer({...card,reviewerAttempt:1});
+ assert.notEqual(ids[0],ids[1]);assert.equal(ids[1],ids[2]);
+});

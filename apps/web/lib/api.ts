@@ -64,8 +64,17 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  if(!await store.create("cards",card)){const existing=await owned(card._id);if(existing.address!==card.address)throw new ApiError(409,"DRAFT_ALREADY_ACTIVATED","This draft already has a spending card");if(existing.state==="SETTING_UP")await notifyWorker();return json({card:await evm.view(existing)});}
  await notifyWorker();return json({card:await evm.view(card)},201);
  }
+ match=path.match(/^\/owner\/cards\/([^/]+)\/reviewer$/);
+ if(match&&method==="POST"){
+  const card=await owned(match[1]);if(card.state!=="FAILED")throw new ApiError(409,"REVIEWER_NOT_FAILED","Reviewer initialization can be retried only after a failed deployment");
+  const claim=await store.claim<Card>("cards",{_id:card._id,state:"FAILED"},Date.now(),10000);
+  if(!claim)throw new ApiError(409,"REVIEWER_RETRY_PENDING","Another reviewer retry is already in progress");
+  const updated={state:"SETTING_UP",reviewerAttempt:Number(claim.reviewerAttempt??0)+1,reviewerTx:null,reviewerAddress:null,error:null,nextAt:0,updatedAt:Date.now()};
+  if(!await store.complete("cards",card._id,claim.leaseToken!,updated))throw new ApiError(409,"REVIEWER_RETRY_PENDING","Retry ownership changed; refresh the agent");
+  await notifyWorker();const current=await owned(card._id);return json({card:await evm.view(current)},202);
+ }
  match=path.match(/^\/owner\/cards\/([^/]+)\/keys$/);
- if(match){const card=await owned(match[1]);if(method==="POST"){if(card.state!=="READY")throw new ApiError(409,"REVIEWER_PENDING","GenLayer reviewer is still being initialized");const view=await evm.view(card);if(view.status!=="ACTIVE")throw new ApiError(409,"CARD_DISABLED","Enable this card before issuing a key");const apiKey=await issueKey(store,card._id,owner);await store.patch("cards",card._id,{keyStatus:"ACTIVE"});return json({apiKey},201);}
+ if(match){const card=await owned(match[1]);if(method==="POST"){if(card.state==="FAILED")throw new ApiError(409,"REVIEWER_FAILED","GenLayer reviewer initialization failed. Retry it in My agents");if(card.state!=="READY")throw new ApiError(409,"REVIEWER_PENDING","GenLayer reviewer is still being initialized");const view=await evm.view(card);if(view.status!=="ACTIVE")throw new ApiError(409,"CARD_DISABLED","Enable this card before issuing a key");const apiKey=await issueKey(store,card._id,owner);await store.patch("cards",card._id,{keyStatus:"ACTIVE"});return json({apiKey},201);}
  if(method==="DELETE"){await revokeKeys(store,card._id);await store.patch("cards",card._id,{keyStatus:"REVOKED"});for(const p of await store.find<Payment>("requests",{cardId:card._id,status:{$in:activeStatuses}}))await store.patch("requests",p._id,{cancelRequested:true});await notifyWorker();return new Response(null,{status:204});}}
  if(path==="/owner/requests"&&method==="GET"){const requests=await store.find<Payment>("requests",{owner});if(requests.some(p=>activeStatuses.includes(p.status)))await notifyWorker();return json({requests:await Promise.all(requests.sort((a,b)=>b.createdAt-a.createdAt).map(p=>requestView(store,p)))});}
  match=path.match(/^\/owner\/requests\/([^/]+)$/);
