@@ -1,0 +1,34 @@
+{
+  "name": "@intentguard/motion",
+  "version": "1.0.0",
+  "description": "Reproducible original IntentGuard ATM agent background film",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.538",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.538"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.538",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "10.12.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "zod": "4.6.6"
+  },
+  "scripts": {
+    "dev": "remotion studio --no-open",
+    "build": "remotion bundle",
+    "lint": "eslint src && tsc",
+    "render": "remotion render src/index.ts AgentCard ../web/public/motion/agent-card.mp4 --codec=h264 --crf=22 --pixel-format=yuv420p --concurrency=2",
+    "poster": "remotion still src/index.ts AgentCard ../web/public/motion/agent-card-poster.jpg --frame=30 --image-format=jpeg --jpeg-quality=88"
+  }
+}

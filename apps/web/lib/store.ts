@@ -1,7 +1,10 @@
 import {MongoClient,type Document} from "mongodb";
 import {randomUUID} from "node:crypto";
+import {parseAmount,formatAmount} from "../../../packages/shared";
+export type UsageTotals={counts:Record<string,number>;fundsMoved:string};
 export type Doc={_id:string;[key:string]:unknown};
 export interface Store{
+ usage(cardId:string):Promise<UsageTotals>;
  get<T extends Doc>(table:string,id:string):Promise<T|null>;
  find<T extends Doc>(table:string,query:Record<string,unknown>,options?:{limit?:number}):Promise<T[]>;
  create<T extends Doc>(table:string,doc:T):Promise<boolean>;
@@ -13,6 +16,14 @@ export interface Store{
 }
 export class MongoStore implements Store{
  constructor(private client:MongoClient,private database:string){}
+ async usage(cardId:string):Promise<UsageTotals>{
+  const rows=await this.c("requests").aggregate<{_id:string;count:number;paid:import("mongodb").Decimal128}>([
+   {$match:{cardId}},{$group:{_id:"$status",count:{$sum:1},paid:{$sum:{$cond:[{$eq:["$status","PAID"]},{$toDecimal:"$input.amount"},{$toDecimal:"0"}]}}}}
+  ]).toArray();
+  const counts:Record<string,number>={};let paid="0";
+  for(const row of rows){counts[row._id]=row.count;if(row._id==="PAID")paid=row.paid.toString()}
+  return {counts,fundsMoved:normalizeDecimal(paid)};
+ }
  private c(table:string){return this.client.db(this.database).collection<Document>(table)}
  async get<T extends Doc>(t:string,id:string){return await this.c(t).findOne({_id:id as never}) as unknown as T|null}
  async find<T extends Doc>(t:string,q:Record<string,unknown>,options:{limit?:number}={}){return await this.c(t).find(q).sort({createdAt:-1,_id:-1}).limit(options.limit??200).toArray() as unknown as T[]}
@@ -31,6 +42,7 @@ function matches(d:Doc,q:Record<string,unknown>):boolean{return Object.entries(q
 })}
 export class MemoryStore implements Store{
  private data=new Map<string,Map<string,Doc>>();
+ async usage(cardId:string):Promise<UsageTotals>{const counts:Record<string,number>={};let total=0n;for(const d of this.c("requests").values()){if(d.cardId!==cardId)continue;const status=String(d.status);counts[status]=(counts[status]??0)+1;if(status==="PAID")total+=parseAmount(String((d.input as {amount:string}).amount))}return {counts,fundsMoved:formatAmount(total)};}
  private c(t:string){let c=this.data.get(t);if(!c)this.data.set(t,c=new Map());return c}
  async get<T extends Doc>(t:string,id:string){const d=this.c(t).get(id);return d?structuredClone(d) as T:null}
  async find<T extends Doc>(t:string,q:Record<string,unknown>,options:{limit?:number}={}){return[...this.c(t).values()].filter(d=>matches(d,q)).sort((a,b)=>Number(b.createdAt??0)-Number(a.createdAt??0)||(a._id<b._id?1:a._id>b._id?-1:0)).slice(0,options.limit??200).map(d=>structuredClone(d) as T)}
@@ -43,3 +55,6 @@ export class MemoryStore implements Store{
 }
 let pending:Promise<Store>|undefined;
 export function database():Promise<Store>{if(!process.env.MONGODB_URI)throw Error("MONGODB_URI is required");return pending??=new MongoClient(process.env.MONGODB_URI,{serverSelectionTimeoutMS:10000,maxPoolSize:5,minPoolSize:0,maxIdleTimeMS:30000}).connect().then(async c=>{const db=process.env.MONGODB_DB??"intentguard";await c.db(db).collection("rate").createIndex({expiresAt:1},{expireAfterSeconds:0});return new MongoStore(c,db)}).catch(e=>{pending=undefined;throw e})}
+
+// Decimal128 may format an exact sum in scientific notation; convert without Number.
+function normalizeDecimal(raw:string){const m=raw.match(/^(\d+)(?:\.(\d+))?(?:E([+-]?\d+))?$/i);if(!m)throw Error("Invalid paid amount aggregate");const digits=m[1]+(m[2]??""),point=m[1].length+Number(m[3]??0);const expanded=point<=0?"0."+"0".repeat(-point)+digits:point>=digits.length?digits+"0".repeat(point-digits.length):digits.slice(0,point)+"."+digits.slice(point);return expanded.replace(/(\.\d*?)0+$/,"$1").replace(/\.$/,"");}

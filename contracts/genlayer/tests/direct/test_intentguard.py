@@ -438,3 +438,22 @@ def test_testnet_reviewer_binds_payment_chain_and_token(direct_vm, direct_deploy
     result = call_review(contract, bundle, req)
     assert result["decision"] == ("APPROVE" if matching_network else "REJECT")
     assert result["requestHash"] == digest(req)
+
+def test_deterministic_category_denial_needs_no_model_or_citations(direct_vm, direct_deploy, direct_alice):
+    contract, bundle = setup_reviewer(direct_vm, direct_deploy, direct_alice)
+    direct_vm.clear_mocks()
+    for item in bundle:
+        direct_vm.mock_web("^" + __import__("re").escape(item["url"]) + "$", {"status": 200, "body": item["content"]})
+    # Intentionally no LLM mock. A deterministic denial must not depend on one.
+    result = call_review(contract, bundle, request(bundle, category="advertising"))
+    assert result["decision"] == "REJECT"
+    assert all(item["status"] == "FAIL" and item["sources"] == [] for item in result["criteria"])
+    assert direct_vm.run_validator() is True
+
+def test_missing_evidence_needs_no_model_to_commit_insufficient(direct_vm, direct_deploy, direct_alice):
+    contract, bundle = setup_reviewer(direct_vm, direct_deploy, direct_alice)
+    direct_vm.clear_mocks()
+    direct_vm.mock_web(r".*", {"status": 503, "body": ""})
+    result = call_review(contract, bundle)
+    assert result["decision"] == "NEEDS_EVIDENCE"
+    assert direct_vm.run_validator() is True

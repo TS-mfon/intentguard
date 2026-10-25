@@ -1,47 +1,48 @@
 ---
 project: IntentGuard
-revision: 2
 register: product
-aesthetic_direction: luxury / refined
+aesthetic_direction: industrial / signage
 color_strategy: restrained
-design_system: Radix primitives
-design_variance: 7
-motion_intensity: 2
+design_system: Radix primitives + locked CSS tokens
+design_variance: 8
+motion_intensity: 6
 visual_density: 5
 ---
-# Locked design language
 ## Design Read
-A quiet dark spending console where a human mandate stays legible beside every financial decision.
-## Revision authority
-The user explicitly rejected the previous steel-white ATM dashboard and selected "Dark premium console: charcoal, crisp type, restrained green". This deliberately replaces revision1. No reference URLs supplied.
+Issued identity. A precision spending instrument with a memorable mechanical agent and engraved ATM card.
 ## Signature
-A fine permission edge: a vertical muted-green rule connects mandate, budget gate, evidence review and transfer in transaction details. The same visual logic anchors the landing architecture diagram and agent setup progress. It represents protocol decisions, never decoration or invented status.
-Counterfactual: the owner mandate and two independent gates are specific to this product; avoid cryptocurrency price-dashboard tropes, meshes, glowing tokens, ornamental chips, fake balances, or a command-terminal imitation.
-Every screen must read as the same product if placed side by side.
-## Color
-60% charcoal background;30% subtly tinted dark surfaces;10% accent maximum. The selected green is desaturated pale mint, not acid green. The user explicitly requested dark with restrained green. No gradients, glow, glassmorphism or blue-purple accent.
-| Role | Hex | OKLCH | Contrast on surface |
+The split-slot monogram combines a card's chip contacts with a permission gate: two offset vertical rails with a crossbar and an open passage. No shield or generic hexagon logo.
+An ATM card is the actual domain object. The physical card vocabulary carries identity and measured usage, not decorative dashboard nesting. Agent character: a small graphite terminal with two warm silver eyes and a slot holding its issued card.
+## Inspiration
+https://chog-evolution.vercel.app/: inspected in Playwright on 2026-10-25 (1440×1000 screenshot /tmp/intentguard-reference.png).
+Took oversized wordmark, character foreground, editorial story rhythm, and purposeful entry motion. Rejected purple palette, collectible/game language, circular stickers, numbered eyebrows, and repeated columns.
+Synthesis: industrial ATM issuance rather than a reskinned mascot collectible site. The hero is a typographic cover with the card-and-agent motion below/behind the display, not a two-column text/image template.
+## Locked tokens
+| Role | Hex | OKLCH approx | Usage |
 |---|---|---|---|
-| background | #101414 | oklch(18.69% 0.00625 196.63) | 1.08:1 |
-| surface | #171d1b | oklch(22.38% 0.00970 173.26) | 1.00:1 |
-| elevated | #202925 | oklch(27.08% 0.01463 166.52) | 1.14:1 |
-| text | #f1f5f2 | oklch(96.63% 0.00580 153.78) | 15.54:1 |
-| muted | #a4b2aa | oklch(75.03% 0.01927 160.95) | 7.76:1 |
-| subtle | #84978b | oklch(65.78% 0.02791 157.84) | 5.52:1 |
-| border | #36463e | oklch(37.75% 0.02460 163.30) | 1.71:1 |
-| controlBorder | #678073 | oklch(57.61% 0.03510 162.45) | 4.00:1 |
-| accent | #80c9a3 | oklch(77.72% 0.09177 160.55) | 8.80:1 |
-| warning | #e2b571 | oklch(79.89% 0.10049 76.85) | 9.02:1 |
-| danger | #ef8b8b | oklch(74.31% 0.12210 20.39) | 7.11:1 |
-Structural dividers use border; functional control boundaries use controlBorder or accent to exceed3:1. Text uses text/muted/subtle at >=4.5:1; status never depends only on color. Primary green controls use background text.
+| background | #101716 | .197 .012 168 | graphite field |
+| surface | #192321 | .247 .015 170 | equipment surfaces |
+| elevated | #26332f | .307 .020 168 | controls |
+| text | #edf2ec | .954 .009 140 | primary |
+| muted | #b2beb5 | .791 .018 150 | secondary readable text |
+| subtle | #98a89c | .716 .025 151 | captions |
+| border | #526359 | .481 .029 154 | visible UI dividers |
+| accent | #b5d7ae | .845 .068 139 | stamped permission green |
+| success | #b5d7ae | .845 .068 139 | approved |
+| warning | #eed09a | .867 .076 82 | evidence/action needed |
+| danger | #f4a8a3 | .807 .092 24 | rejected/error |
+| info | #b5cbd4 | .827 .030 226 | pending/available |
+Text on background 15.8:1; muted 9.3:1; subtle 7.2:1; dark button text on accent 11.6:1; border on background ≥3:1. All secondary text uses these roles, never opacity for text.
+Surface treatments: brushed linear engraving and ruled outlines; no purple glow, gradient text, generic glassmorphism, or green-on-black tech neon.
 ## Type
-IBM Plex Sans 400/500/600 for display, body and navigation;IBM Plex Mono for money, addresses and code. Already locally bundled. Humanist sans contrasts with machine-readable mono; preserve crisp engineering character without monospace paragraphs. Display desktop64/68, mobile40/44;page title40/48;section24/32;body16/26;table14/22;utility12/18. Display tracking -0.02em;reading measure72ch. Tabular balances.
+Display IBM Plex Sans Condensed (install local @fontsource if needed), 600, compressed industrial signage. Body IBM Plex Sans 400/500. Utility IBM Plex Mono. Contrast is condensed signage versus humanist reading and exact mono amounts. Display tracking floor -0.02em. Body measure max 72ch.
+Brand display 72–160px responsive; product h1 40–64px; h2 24–40px; body 16px line-height 1.6; labels 12–14px.
 ## Scales
-Spacing0,2,4,8,12,16,20,24,32,40,48,64,80,96,128. Radius4,8,12,16,9999;prefer8 for controls and12 for meaningful panels. One icon family lucide-react, restrained18–20px. Controls minimum48px. Max content1280;content padding desktop48/mobile20;docs reading max800. Navigation max5 items. Sticky header72;workspace sidebar208 optional desktop only.
-Motion100/300/500ms cubic-bezier(.16,1,.3,1), only disclosure/focus/page entrance;no infinite animation. Respect prefers-reduced-motion. Layers base0/dropdown20/sticky30/modal50/toast70/skip80.
+Spacing 0,2,4,8,12,16,20,24,32,40,48,64,80,96,128 px.
+Radius 4,8,12,16,9999; ATM card 16, buttons 8. No arbitrary pills except identity tags.
+Breakpoints 640,768,1024,1280,1536. Content max 1280px; reading max 72ch.
+Motion fast 150ms, base 300ms, emphasis 500ms; cubic-bezier(.16,1,.3,1). Page entry stagger 60ms. Scroll reveal once, opacity/translate ≤32px. ATM tilt responds lightly to pointer and scroll. Never animate ledger values, controls, or financial states speculatively.
+With reduced motion: no autoplay, no transforms or shimmer, visible poster and static content. Video pauses offscreen. Offer persistent pause control for looping hero. Hero media <=5MB, poster <=300KB.
+Focus 2px accent offset 4px. Touch controls at least 48px. Semantic buttons/links, Radix modal/tab behavior, keyboard navigation retained.
 ## Voice
-Plain product language. Create agent, Propose policy, Review policy, Activate agent, Fund vault, Issue API key, View transaction, Pause, Revoke, Withdraw. Never imply APPROVED means PAID. Label X Layer Testnet/TEST-USDT from runtime. No demo/sample preview, fabricated names, metrics, transaction rows or fictional quotes. Empty states invite a real action.
-## Composition
-Landing: editorial cover type, actual chain strip, live ruled transaction list, asymmetric protocol explanation, compact closing action. No repeated three-card feature grid. Workspace: clear data-first heading, real agent list and context panel. Setup: dedicated route with staged form and persistent review summary. Docs: sticky grouped table of contents and readable article. Public explorers: searchable/filterable ruled lists, useful empty/error states, detail deep links.
-## Preflight
-Spec reviewed:0 default banned fonts;0 prohibited colors (user-selected restrained dark/green exception documented);0 fake names/metrics/data;0 glow/gradient/glass;0 nested-card or repeated three-card pattern;0 decorative numbering. State and keyboard requirements below. All meaningful text/UI pair contrasts measured above. Three landing composition families. One primary action per view. Scores distinctiveness3,hierarchy4,consistency4,accessibility3,states4,copy4,restraint4,motion3(total29/32). Revised prior ATM stamps and blue accents because the user rejected that identity.
+Plain, specific, technical. Create agent → agent created. Download card, Share on X, Review skipped, Review failed, Needs evidence, Paid. No sample identities, sample financial data, or unverified performance claims. TEST-USDT always labeled testnet with no monetary value.

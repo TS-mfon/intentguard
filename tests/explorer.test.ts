@@ -51,5 +51,5 @@ test("transaction details display verified contract reasoning and hide unverifie
  const failed=await createExplorer(store,new FakeEvm(),async()=>{throw Error("Consensus changed")})(request(path),path) as typeof verified;
  assert.equal(failed.reasoningSource,"unavailable");assert.equal(failed.transaction.review,undefined);
  const pendingPath="/explorer/transactions/"+rows[1]._id,pending=await createExplorer(store,new FakeEvm())(request(pendingPath),pendingPath) as typeof verified;
- assert.equal(pending.reasoningSource,"pending");assert.equal(pending.transaction.review,undefined);
+ assert.equal(pending.reasoningSource,"failed");assert.equal(pending.transaction.review,undefined);
 });

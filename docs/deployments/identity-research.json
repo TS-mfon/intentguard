@@ -1,0 +1,43 @@
+{
+  "verifiedAt": "2026-10-25T07:00:36.670Z",
+  "incident": {
+    "source": "https://news.google.com/rss/search?q=%22Lobstar+Wilde%22&hl=en-US&gl=US&ceid=US:en",
+    "headlines": [
+      {
+        "publisher": "CCN",
+        "date": "2026-02-23",
+        "title": "OpenAI Dev’s Crypto AI Agent Accidentally Sends 5% Memecoin Supply in $250K Mistake — What Happened?"
+      },
+      {
+        "publisher": "The Block",
+        "date": "2026-02-22",
+        "title": "AI agent created by OpenAI dev 'accidentally' sends entire memecoin holdings to reply guy"
+      }
+    ],
+    "limitation": "Publisher article bodies returned HTTP403. Landing attributes the reported $250K holdings mistake, omits unverified 4 SOL details, and does not claim its own incident or funds value."
+  },
+  "consensus": {
+    "source": "https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy.md",
+    "confirmed": [
+      "random leader",
+      "stake-weighted committee",
+      "majority independent validation",
+      "appeal windows and finality",
+      "accepted errors differ from successful VM execution"
+    ],
+    "limitation": "No guarantee of exactly five independent LLMs or zero hallucinations."
+  },
+  "tapeout": {
+    "provenance": "https://github.com/OoJae/covenant/tree/main/contracts/vendor/tapeout-xlayer",
+    "onchainEvidence": "docs/deployments/testnet.json",
+    "kind": "TESTNET_ADAPTER_UNMODIFIED_TAPEOUT_NETLIST_VM",
+    "chainId": 1952,
+    "uses": [
+      "unchanged TapeOut NetlistVM",
+      "generated pinned circuit",
+      "onchain budget evaluations before reserve and settle"
+    ],
+    "officialRegistry": false,
+    "deweb": false
+  }
+}

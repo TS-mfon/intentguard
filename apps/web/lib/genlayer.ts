@@ -107,10 +107,11 @@ export class GenLayer implements GenLayerPort{
  if(!["PROPOSED","NEEDS_CLARIFICATION"].includes(result.status)||!Array.isArray(result.questions)||typeof result.interpretation!=="string")throw Error("Invalid draft result");
  if(result.status==="PROPOSED")result.policy=policySchema.parse(result.policy);else if(result.policy!==null)throw Error("Clarification must not authorize policy");return result;}
  reviewerArgs(c:Card){return [genLayerAddress(this.account().address),canonical(c.policy),c.policyHash,Number(c.chainId??this.cfg.chainId),String(c.token??this.cfg.token).toLowerCase()]}
- async deployReviewer(c:Card){const source=await readFile(new URL("../../../contracts/genlayer/purchase_reviewer.py",import.meta.url));return this.send("reviewer:"+c._id+(c.reviewerAttempt?":attempt:"+Number(c.reviewerAttempt):""),client=>client.deployContract({code:source,args:this.reviewerArgs(c)}))}
+ async reviewerSource(version:number){if(![1,2].includes(version))throw Error("Unsupported reviewer source version");return readFile(new URL(version===1?"../../../contracts/genlayer/versions/purchase_reviewer_v1.py":"../../../contracts/genlayer/purchase_reviewer.py",import.meta.url));}
+ async deployReviewer(c:Card){const source=await this.reviewerSource(Number(c.reviewerVersion??2));return this.send("reviewer:"+c._id+(c.reviewerAttempt?":attempt:"+Number(c.reviewerAttempt):""),client=>client.deployContract({code:source,args:this.reviewerArgs(c)}))}
  async reviewer(c:Card){if(!c.reviewerTx)throw Error("Missing reviewer deployment");const tx=await this.client.getTransaction({hash:c.reviewerTx as GLHash});assertFinalized(tx);const decoded=tx.txDataDecoded;
  if(!decoded||decoded.type!=="deploy"||!("contractAddress" in decoded))throw Error("Expected reviewer deployment transaction");
- const source=await readFile(new URL("../../../contracts/genlayer/purchase_reviewer.py",import.meta.url),"utf8");
+ const source=(await this.reviewerSource(Number(c.reviewerVersion??1))).toString("utf8");
  const constructor=normalizedCalldata(decoded.constructorArgs) as {args?:unknown[]};
  if(decoded.code!==source||canonical(constructor?.args??[])!==canonical(normalizedCalldata(this.reviewerArgs(c))))throw Error("Reviewer deployment code or constructor mismatch");
  const address=decoded.contractAddress??tx.recipient??tx.to_address;if(!address)throw Error("Missing reviewer address");

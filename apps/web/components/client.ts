@@ -7,12 +7,18 @@ export type Config = {mode:"live"|"local"|"testnet";rpcUrl?:string;networkName?:
 export type ActivationDraft = DraftView & {activation?:{factoryAddress:string;config:Record<string,unknown>}};
 type Provider = {request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,handler:(...args:unknown[])=>void)=>void;removeListener?:(event:string,handler:(...args:unknown[])=>void)=>void};
 declare global {interface Window {ethereum?:Provider}}
+export class ProductApiError extends Error{
+ constructor(message:string,public status:number,public code:string,public requestId:string|null,public retryable:boolean,public retryAfter:number|null){super(message)}
+}
 export async function api<T>(path:string, init?:RequestInit):Promise<T>{
-  const response=await fetch("/api/v1"+path,{...init,headers:{"Content-Type":"application/json",...init?.headers},credentials:"same-origin",cache:"no-store"});
-  if(response.status===204&&response.ok)return undefined as T;
-  let body:unknown;try{body=await response.json()}catch{throw new Error("The service returned an unreadable response. Please retry.")}
-  if(!response.ok){const err=body as {error?:{message?:string;code?:string}};const e=new Error(err.error?.message||"The request could not be completed.") as Error&{status:number};e.status=response.status;throw e}
-  return body as T;
+ const headers=new Headers(init?.headers);if(!headers.has("Content-Type"))headers.set("Content-Type","application/json");
+ const timeout=AbortSignal.timeout(25000),signal=init?.signal?AbortSignal.any([init.signal,timeout]):timeout;
+ let response:Response;
+ try{response=await fetch("/api/v1"+path,{...init,signal,headers,credentials:"same-origin",cache:"no-store"})}catch(e){if(init?.signal?.aborted)throw e;throw new ProductApiError(signal.aborted?"The service took too long to respond. Retry or refresh to recover an admitted request.":"The service could not be reached. Check your connection and retry.",0,signal.aborted?"REQUEST_TIMEOUT":"NETWORK_ERROR",null,true,null)}
+ if(response.status===204&&response.ok)return undefined as T;
+ let body:unknown;try{body=await response.json()}catch{throw new ProductApiError("The service returned an unreadable response. Retry or share its request ID with the operator.",response.status,"INVALID_RESPONSE",response.headers.get("X-Request-Id"),true,null)}
+ if(!response.ok){const error=(body as {error?:{message?:string;code?:string;requestId?:string;retryable?:boolean}}).error;const code=error?.code??"REQUEST_FAILED",requestId=error?.requestId??response.headers.get("X-Request-Id");const after=response.headers.get("Retry-After");throw new ProductApiError((error?.message||"The request could not be completed.")+" ["+code+"]"+(requestId?" Request ID: "+requestId:""),response.status,code,requestId,error?.retryable??response.status>=500,after!==null&&Number.isFinite(Number(after))?Number(after):null)}
+ return body as T;
 }
 export function parseUnitsExact(v:string):bigint{if(!/^(0|[1-9]\d*)(\.\d{1,6})?$/.test(v))throw Error("Use a positive USDT amount with up to six decimal places.");const[a,b=""]=v.split(".");const n=BigInt(a)*1000000n+BigInt(b.padEnd(6,"0"));if(n>(1n<<64n)-1n)throw Error("This amount exceeds the supported limit.");return n}
 export function amount(v:string|undefined, decimals=2):string{if(v===undefined||v===null||!/^\d+(\.\d{1,6})?$/.test(v))return "Unavailable";const [whole,fraction=""]=v.split(".");const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,",");return grouped+(decimals?"."+fraction.padEnd(decimals,"0").slice(0,Math.max(decimals,fraction.replace(/0+$/,"").length)):"")}

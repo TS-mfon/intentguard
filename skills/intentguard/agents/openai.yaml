@@ -1,0 +1,4 @@
+interface:
+  display_name: "IntentGuard"
+  short_description: "Integrate constrained agent payments and finalized proofs"
+  default_prompt: "Use $intentguard to inspect the agent policy and integrate an invoice-backed payment with stable idempotency."

@@ -1,0 +1,4428 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IntentGuard agent spending API",
+    "version": "0.2.0",
+    "description": "Owner-approved testnet vaults. TapeOut gates reservation/settlement on X Layer 1952; GenLayer Studionet 61999 reviews evidence. PAID alone confirms transfer. Complete protocol and MCP resources are bundled."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    },
+    {
+      "url": "https://intentguard-tapeout.vercel.app/api/v1",
+      "description": "Canonical testnet deployment"
+    }
+  ],
+  "paths": {
+    "/config": {
+      "get": {
+        "operationId": "getConfig",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Config"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/challenge": {
+      "post": {
+        "operationId": "walletChallenge",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_JSON: missing/malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "BODY_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid schema, amounts, evidence or activation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                  }
+                },
+                "required": [
+                  "address"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "walletLogin",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-fA-F]{40}$"
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_JSON: missing/malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "BODY_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid schema, amounts, evidence or activation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "address",
+                  "signature"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/session": {
+      "get": {
+        "operationId": "walletSession",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^0x[0-9a-fA-F]{40}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "walletLogout",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/drafts": {
+      "post": {
+        "operationId": "createDraft",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-fA-F]{64}$"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_JSON: missing/malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "BODY_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid schema, amounts, evidence or activation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 12000
+                  },
+                  "guidance": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/drafts/{id}": {
+      "get": {
+        "operationId": "getDraft",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftView"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/owner/cards": {
+      "get": {
+        "operationId": "listCards",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CardView"
+                      }
+                    }
+                  },
+                  "required": [
+                    "cards"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "registerCard",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "card": {
+                      "$ref": "#/components/schemas/CardView"
+                    }
+                  },
+                  "required": [
+                    "card"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_JSON: missing/malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "BODY_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid schema, amounts, evidence or activation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "draftId": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$"
+                  },
+                  "cardAddress": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                  },
+                  "activationTx": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$"
+                  }
+                },
+                "required": [
+                  "draftId",
+                  "cardAddress",
+                  "activationTx"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/cards/{id}/keys": {
+      "post": {
+        "operationId": "issueAgentKey",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiKey": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "apiKey"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "revokeAgentKeys",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/owner/requests": {
+      "get": {
+        "operationId": "listOwnerRequests",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RequestView"
+                      }
+                    }
+                  },
+                  "required": [
+                    "requests"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/requests/{id}": {
+      "get": {
+        "operationId": "getOwnerRequest",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestView"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/me": {
+      "get": {
+        "operationId": "agentCard",
+        "security": [
+          {
+            "AgentKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "card": {
+                      "$ref": "#/components/schemas/CardView"
+                    }
+                  },
+                  "required": [
+                    "card"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests": {
+      "post": {
+        "operationId": "requestMerchantPayment",
+        "security": [
+          {
+            "AgentKey": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Operation admitted or identical existing operation returned. Funds are delivered only after GET /requests/{id} reports PAID with a confirmed paymentTxHash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-fA-F]{64}$"
+                    },
+                    "status": {
+                      "enum": [
+                        "QUEUED",
+                        "RESERVED",
+                        "REVIEWING",
+                        "AWAITING_FINALITY",
+                        "APPROVED",
+                        "PAID",
+                        "BLOCKED",
+                        "REJECTED",
+                        "NEEDS_EVIDENCE",
+                        "EXPIRED",
+                        "CANCELLED",
+                        "RETRYING"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_JSON: missing/malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "BODY_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid schema, amounts, evidence or activation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "Reuse for identical payment details; conflicting content returns HTTP 409."
+          }
+        ]
+      }
+    },
+    "/requests/{id}": {
+      "get": {
+        "operationId": "getAgentRequest",
+        "security": [
+          {
+            "AgentKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestView"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/demo/invoices": {
+      "post": {
+        "operationId": "createDemoInvoice",
+        "description": "Testnet only. Publishes a new immutable TEST-USDT invoice for the configured reference merchant. Requires its separate MerchantAdmin bearer credential; an agent payment key does not authorize issuance.",
+        "security": [
+          {
+            "MerchantAdmin": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "buyer": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                  },
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "buyer",
+                  "amount",
+                  "description"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Immutable invoice published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoice": {
+                      "$ref": "#/components/schemas/DemoInvoice"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "required": [
+                    "invoice",
+                    "url"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_JSON: missing/malformed JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "BODY_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: use application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid schema, amounts, evidence or activation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demo/invoices/{id}": {
+      "get": {
+        "operationId": "getDemoInvoice",
+        "description": "Testnet only. Public byte-stable invoice used by independent GenLayer validators.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Immutable invoice bytes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoInvoice"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explorer/agents": {
+      "get": {
+        "operationId": "publicAgents",
+        "security": [],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque cursor from the preceding page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual durable records only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicAgent"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "agents",
+                    "nextCursor"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explorer/transactions": {
+      "get": {
+        "operationId": "publicTransactions",
+        "description": "Newest actual activity first. Set limit4 for landing activity. Credentials, signed bytes, snapshots and private justifications are excluded.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque cursor from the preceding page."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "QUEUED",
+                "RESERVED",
+                "REVIEWING",
+                "AWAITING_FINALITY",
+                "APPROVED",
+                "PAID",
+                "BLOCKED",
+                "REJECTED",
+                "NEEDS_EVIDENCE",
+                "EXPIRED",
+                "CANCELLED",
+                "RETRYING"
+              ]
+            }
+          },
+          {
+            "name": "agentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual durable records only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicTransaction"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "transactions",
+                    "nextCursor"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explorer/transactions/{id}": {
+      "get": {
+        "operationId": "publicTransactionDetail",
+        "description": "Verifies finalized GenLayer transaction calldata and reads decision/reasons from the per-agent review contract. Unverified reasoning is withheld.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual durable records only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transaction": {
+                      "$ref": "#/components/schemas/PublicTransaction"
+                    },
+                    "agent": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/PublicAgent"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reasoningSource": {
+                      "enum": [
+                        "genlayer-finalized-contract",
+                        "pending",
+                        "unavailable",
+                        "skipped",
+                        "failed"
+                      ]
+                    },
+                    "reviewStage": {
+                      "$ref": "#/components/schemas/ReviewStage"
+                    }
+                  },
+                  "required": [
+                    "transaction",
+                    "agent",
+                    "reasoningSource",
+                    "reviewStage"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/cards/{id}/reviewer": {
+      "post": {
+        "operationId": "retryReviewer",
+        "security": [
+          {
+            "OwnerSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Failed reviewer reset for a new verified deployment; vault and policy are preserved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "card": {
+                      "$ref": "#/components/schemas/CardView"
+                    }
+                  },
+                  "required": [
+                    "card"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMIT: fixed-minute quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured API error, including 409 for a reviewer that is not failed or a retry already in progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explorer/agents/{id}/card": {
+      "get": {
+        "operationId": "publicAgentCard",
+        "description": "Actual identity and cumulative usage snapshot. No credentials.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual admitted counts and PAID funds only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCardSnapshot"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured machine error; inspect code, retryable, requestId and optional field details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explorer/agents/{id}/card.svg": {
+      "get": {
+        "operationId": "downloadAgentCard",
+        "description": "Standalone downloadable SVG ATM card with actual identity/usage/time and no private keys or invoices.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scalable ATM card image attachment",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment; filename=..."
+              },
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route, wrong method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured machine error; inspect code, retryable, requestId and optional field details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Request correlation identifier",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds before appropriate retry; absent for nonretryable errors",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AgentKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "ig_<random key>"
+      },
+      "OwnerSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "ig_session"
+      },
+      "MerchantAdmin": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Testnet merchant administration credential; never an agent key."
+      }
+    },
+    "schemas": {
+      "Policy": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "const": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "mission": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 4000
+          },
+          "taskContext": {
+            "type": "string",
+            "maxLength": 6000
+          },
+          "allowedCategories": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "prohibitedPurchases": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          "exceptions": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          "financial": {
+            "type": "object",
+            "properties": {
+              "totalBudget": {
+                "type": "string"
+              },
+              "perPaymentLimit": {
+                "type": "string"
+              },
+              "periodBudget": {
+                "type": "string"
+              },
+              "periodSeconds": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 31536000
+              },
+              "validFrom": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "validUntil": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "totalBudget",
+              "perPaymentLimit",
+              "periodBudget",
+              "periodSeconds",
+              "validFrom",
+              "validUntil"
+            ],
+            "additionalProperties": false
+          },
+          "merchants": {
+            "minItems": 1,
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "recipient": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-fA-F]{40}$"
+                },
+                "origins": {
+                  "minItems": 1,
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "format": "uri"
+                  }
+                },
+                "products": {
+                  "maxItems": 30,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "recipient",
+                "origins",
+                "products"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "requiredTypes": {
+                "minItems": 1,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "approvedOrigins": {
+                "minItems": 1,
+                "maxItems": 30,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "format": "uri"
+                }
+              },
+              "maxAgeSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 31536000
+              }
+            },
+            "required": [
+              "requiredTypes",
+              "approvedOrigins",
+              "maxAgeSeconds"
+            ],
+            "additionalProperties": false
+          },
+          "criteria": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9_-]{1,40}$"
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "id",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "version",
+          "name",
+          "mission",
+          "taskContext",
+          "allowedCategories",
+          "prohibitedPurchases",
+          "exceptions",
+          "financial",
+          "merchants",
+          "evidence",
+          "criteria"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentInput": {
+        "type": "object",
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "purchaseDescription": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 6000
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "invoiceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "evidence": {
+            "minItems": 1,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "format": "uri"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^(0x)?[0-9a-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "recipient",
+          "amount",
+          "purchaseDescription",
+          "justification",
+          "category",
+          "invoiceId",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "retryable": {
+                "type": "boolean"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "retryable",
+              "requestId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "ReviewDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "enum": [
+              "APPROVE",
+              "REJECT",
+              "NEEDS_EVIDENCE"
+            ]
+          },
+          "requestHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "policyHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "evidenceHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "PASS",
+                    "FAIL",
+                    "INSUFFICIENT"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "status",
+                "reason",
+                "sources"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "requestHash",
+          "policyHash",
+          "evidenceHash",
+          "criteria",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CardView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mission": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "policyHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "REVOKED"
+            ]
+          },
+          "balances": {
+            "type": "object",
+            "properties": {
+              "funded": {
+                "type": "string",
+                "description": "Current vault token balance; decreases after settlement. Not cumulative deposits."
+              },
+              "spent": {
+                "type": "string",
+                "description": "Lifetime amount settled."
+              },
+              "reserved": {
+                "type": "string",
+                "description": "Lifetime amount currently reserved by pending requests."
+              },
+              "available": {
+                "type": "string",
+                "description": "Physical token balance minus pending reservations; independent of remaining budget capacity."
+              },
+              "periodSpent": {
+                "type": "string",
+                "description": "Amount settled in the current budget period."
+              },
+              "periodReserved": {
+                "type": "string",
+                "description": "Pending amount reserved in the current budget period."
+              }
+            },
+            "required": [
+              "funded",
+              "spent",
+              "reserved",
+              "available",
+              "periodSpent",
+              "periodReserved"
+            ],
+            "additionalProperties": false
+          },
+          "keyStatus": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "reviewerAddress": {
+            "type": "string"
+          },
+          "reviewerTx": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "activationTx": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "setupState": {
+            "type": "string",
+            "enum": [
+              "SETTING_UP",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "setupError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mission",
+          "address",
+          "policyHash",
+          "policy",
+          "status",
+          "balances",
+          "keyStatus",
+          "chainId",
+          "token",
+          "reviewerAddress"
+        ],
+        "additionalProperties": false
+      },
+      "RequestView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "cardId": {
+            "type": "string"
+          },
+          "cardName": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RESERVED",
+              "REVIEWING",
+              "AWAITING_FINALITY",
+              "APPROVED",
+              "PAID",
+              "BLOCKED",
+              "REJECTED",
+              "NEEDS_EVIDENCE",
+              "EXPIRED",
+              "CANCELLED",
+              "RETRYING"
+            ]
+          },
+          "request": {
+            "$ref": "#/components/schemas/PaymentInput"
+          },
+          "requestHash": {
+            "type": "string"
+          },
+          "evidenceHash": {
+            "type": "string"
+          },
+          "guard": {
+            "type": "object",
+            "properties": {
+              "allow": {
+                "type": "boolean"
+              },
+              "failures": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "txHash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+              }
+            },
+            "required": [
+              "allow",
+              "failures"
+            ],
+            "additionalProperties": false
+          },
+          "review": {
+            "$ref": "#/components/schemas/ReviewDecision"
+          },
+          "genLayerTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "paymentTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "error": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "type": "integer"
+          },
+          "reviewStage": {
+            "$ref": "#/components/schemas/ReviewStage"
+          }
+        },
+        "required": [
+          "id",
+          "cardId",
+          "cardName",
+          "status",
+          "request",
+          "requestHash",
+          "evidenceHash",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "DraftView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROPOSED",
+              "NEEDS_CLARIFICATION"
+            ]
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Policy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interpretation": {
+            "type": "string"
+          },
+          "genLayerTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "error": {
+            "type": "string"
+          },
+          "activation": {
+            "type": "object",
+            "properties": {
+              "factoryAddress": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              },
+              "config": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "factoryAddress",
+              "config"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "status",
+          "policy",
+          "questions",
+          "interpretation"
+        ],
+        "additionalProperties": false
+      },
+      "Config": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "live",
+              "local",
+              "testnet"
+            ]
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "factoryAddress": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "configured": {
+            "type": "boolean"
+          },
+          "explorerUrl": {
+            "type": "string"
+          },
+          "genLayerExplorerUrl": {
+            "type": "string"
+          },
+          "guard": {
+            "type": "object"
+          },
+          "rpcUrl": {
+            "type": "string"
+          },
+          "networkName": {
+            "type": "string"
+          },
+          "paymentSymbol": {
+            "type": "string"
+          },
+          "applicationUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "mode",
+          "chainId",
+          "token",
+          "factoryAddress",
+          "configured",
+          "explorerUrl",
+          "genLayerExplorerUrl",
+          "rpcUrl",
+          "networkName",
+          "paymentSymbol",
+          "applicationUrl"
+        ],
+        "additionalProperties": false
+      },
+      "DemoInvoice": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "invoiceId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "buyer": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "chainId": {
+            "const": 1952
+          },
+          "recipient": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "integer"
+          },
+          "expiresAt": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invoiceId",
+          "buyer",
+          "token",
+          "chainId",
+          "recipient",
+          "amount",
+          "description",
+          "issuedAt",
+          "expiresAt"
+        ]
+      },
+      "PublicAgent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mission": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "policyHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "REVOKED",
+              "UNAVAILABLE"
+            ]
+          },
+          "setupState": {
+            "type": "string"
+          },
+          "reviewerAddress": {
+            "type": "string"
+          },
+          "financial": {
+            "type": "object",
+            "properties": {
+              "totalBudget": {
+                "type": "string"
+              },
+              "perPaymentLimit": {
+                "type": "string"
+              },
+              "periodBudget": {
+                "type": "string"
+              },
+              "periodSeconds": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 31536000
+              },
+              "validFrom": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "validUntil": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "totalBudget",
+              "perPaymentLimit",
+              "periodBudget",
+              "periodSeconds",
+              "validFrom",
+              "validUntil"
+            ],
+            "additionalProperties": false
+          },
+          "balances": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "funded": {
+                    "type": "string"
+                  },
+                  "spent": {
+                    "type": "string"
+                  },
+                  "reserved": {
+                    "type": "string"
+                  },
+                  "available": {
+                    "type": "string"
+                  },
+                  "periodSpent": {
+                    "type": "string"
+                  },
+                  "periodReserved": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "funded",
+                  "spent",
+                  "reserved",
+                  "available",
+                  "periodSpent",
+                  "periodReserved"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "reviewerTx": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "criteria": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9_-]{1,40}$"
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "id",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "allowedCategories": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mission",
+          "address",
+          "owner",
+          "policyHash",
+          "chainId",
+          "token",
+          "status",
+          "setupState",
+          "reviewerAddress",
+          "financial",
+          "balances",
+          "createdAt",
+          "reviewerTx",
+          "criteria",
+          "allowedCategories"
+        ]
+      },
+      "PublicTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "cardId": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "agentName": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RESERVED",
+              "REVIEWING",
+              "AWAITING_FINALITY",
+              "APPROVED",
+              "PAID",
+              "BLOCKED",
+              "REJECTED",
+              "NEEDS_EVIDENCE",
+              "EXPIRED",
+              "CANCELLED",
+              "RETRYING"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "recipient": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "category": {
+            "type": "string"
+          },
+          "purchaseDescription": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "type": "integer"
+          },
+          "guard": {
+            "type": "object",
+            "properties": {
+              "allow": {
+                "type": "boolean"
+              },
+              "failures": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "txHash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+              }
+            },
+            "required": [
+              "allow",
+              "failures"
+            ],
+            "additionalProperties": false
+          },
+          "review": {
+            "$ref": "#/components/schemas/ReviewDecision"
+          },
+          "genLayerTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "paymentTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "requestHash": {
+            "type": "string"
+          },
+          "evidenceHash": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "reviewStage": {
+            "$ref": "#/components/schemas/ReviewStage"
+          }
+        },
+        "required": [
+          "id",
+          "cardId",
+          "agentName",
+          "status",
+          "amount",
+          "recipient",
+          "category",
+          "purchaseDescription",
+          "createdAt",
+          "updatedAt",
+          "requestHash",
+          "evidenceHash",
+          "chainId",
+          "token"
+        ]
+      },
+      "ReviewStage": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "PENDING",
+              "COMPLETE",
+              "SKIPPED",
+              "FAILED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AgentUsage": {
+        "type": "object",
+        "description": "Actual admitted operations; identical retries do not inflate counts. fundsMoved sums PAID records only. Timestamped snapshot, not solvency proof.",
+        "properties": {
+          "requestCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paidCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blockedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rejectedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "needsEvidenceCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cancelledCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fundsMoved": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$",
+            "description": "Exact configured-token sum of PAID amounts"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "asOf": {
+            "type": "integer",
+            "description": "Snapshot Unix milliseconds"
+          }
+        },
+        "required": [
+          "requestCount",
+          "paidCount",
+          "blockedCount",
+          "rejectedCount",
+          "needsEvidenceCount",
+          "cancelledCount",
+          "activeCount",
+          "fundsMoved",
+          "token",
+          "chainId",
+          "asOf"
+        ]
+      },
+      "AgentCardSnapshot": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/PublicAgent"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AgentUsage"
+          },
+          "shareUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "agent",
+          "usage",
+          "shareUrl"
+        ]
+      }
+    }
+  }
+}

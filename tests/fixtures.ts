@@ -21,7 +21,7 @@ export class FakeGenLayer implements GenLayerPort{
  submissions=0;result:"APPROVE"|"REJECT"|"NEEDS_EVIDENCE"="APPROVE";error?:Error;modify?:(r:ReviewDecision)=>ReviewDecision;
  async propose(){return "0x"+"77".repeat(32)}
  async draft(_d:Draft){return {status:"PROPOSED" as const,policy,questions:[],interpretation:"Research purchases within defined limits"}}
- async deployReviewer(){return "0x"+"88".repeat(32)}
+ async deployReviewer(_card:Card){return "0x"+"88".repeat(32)}
  async reviewer(){return card.reviewerAddress!}
  async submit(){this.submissions++;return "0x"+"99".repeat(32)}
  async decision(_c:Card,p:Payment){if(this.error)throw this.error;const r:ReviewDecision={decision:this.result,requestHash:p.requestHash!,policyHash:card.policyHash,evidenceHash:p.evidenceHash!,criteria:[{id:"mission",status:this.result==="APPROVE"?"PASS":"FAIL",reason:"Evidence reviewed",sources:[input.evidence[0].url]}],reason:"Independent test fixture decision"};return this.modify?this.modify(r):r}

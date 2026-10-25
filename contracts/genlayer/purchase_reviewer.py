@@ -315,14 +315,15 @@ def review_prompt(role, policy, request, evidence, proposed=None):
 
 def assemble_decision(model, policy, request, evidence, request_hash):
     valid_urls = {item["url"] for item in evidence["verified"]}
-    require(isinstance(model, dict) and set(model) == {"criteria", "reason"} and text(model["reason"], 4000), "Invalid review model result")
-    criterion_results_valid(model["criteria"], policy, valid_urls)
-    results = sorted(model["criteria"], key=lambda result: next(i for i, criterion in enumerate(policy["criteria"]) if criterion["id"] == result["id"]))
-    reason = model["reason"]
     if evidence["failures"] or evidence["missing"]:
         status = "FAIL" if evidence["failures"] else "INSUFFICIENT"
         reason = " ".join(evidence["failures"] if evidence["failures"] else evidence["missing"])[:4000]
         results = [{"id": criterion["id"], "status": status, "reason": reason[:2000], "sources": []} for criterion in policy["criteria"]]
+        return {"decision": derive_decision(results), "requestHash": request_hash, "policyHash": request["policyHash"], "evidenceHash": request["evidenceHash"], "criteria": results, "reason": reason}
+    require(isinstance(model, dict) and set(model) == {"criteria", "reason"} and text(model["reason"], 4000), "Invalid review model result")
+    criterion_results_valid(model["criteria"], policy, valid_urls)
+    results = sorted(model["criteria"], key=lambda result: next(i for i, criterion in enumerate(policy["criteria"]) if criterion["id"] == result["id"]))
+    reason = model["reason"]
     return {"decision": derive_decision(results), "requestHash": request_hash, "policyHash": request["policyHash"], "evidenceHash": request["evidenceHash"], "criteria": results, "reason": reason}
 
 
@@ -382,7 +383,8 @@ class PurchaseReviewer(gl.Contract):
 
         def leader():
             evidence = fetch_and_verify(policy, request, snapshots, now, payment_chain, payment_token)
-            result = model_json(review_prompt("PURCHASE REVIEWER", policy, request, evidence))
+            # Deterministic denials and missing proof do not depend on model output.
+            result = None if evidence["failures"] or evidence["missing"] else model_json(review_prompt("PURCHASE REVIEWER", policy, request, evidence))
             return canonical(assemble_decision(result, policy, request, evidence, request_hash))
 
         def validator(leader_result):
@@ -393,6 +395,8 @@ class PurchaseReviewer(gl.Contract):
                 # Every validator refetches the original URLs and checks bytes and invoice fields.
                 evidence = fetch_and_verify(policy, request, snapshots, now, payment_chain, payment_token)
                 decision_valid(proposed, policy, request, request_hash, evidence)
+                if evidence["failures"] or evidence["missing"]:
+                    return canonical(proposed) == canonical(assemble_decision(None, policy, request, evidence, request_hash))
                 evaluation = model_json(review_prompt("INDEPENDENT PURCHASE VALIDATOR", policy, request, evidence, proposed))
                 require(isinstance(evaluation, dict) and set(evaluation) == {"criteria", "reason", "faithful"} and evaluation["faithful"] is True, "Independent semantic evaluation disagrees")
                 own = assemble_decision({"criteria": evaluation["criteria"], "reason": evaluation["reason"]}, policy, request, evidence, request_hash)

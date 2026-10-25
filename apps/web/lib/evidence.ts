@@ -1,3 +1,4 @@
+export class EvidenceFailure extends Error{constructor(public code:string,message:string){super(message)}}
 
 import {lookup} from "node:dns/promises";
 import {isIP,type LookupFunction} from "node:net";
@@ -27,4 +28,4 @@ export async function safeFetch(raw:string):Promise<string>{
  request.on("timeout",()=>request.destroy(Error("Evidence fetch timed out")));request.on("error",reject);request.end();
  });
 }
-export async function capture(input:PaymentInput,fetcher=safeFetch):Promise<Snapshot[]>{const snapshots:Snapshot[]=[];let total=0;for(const item of input.evidence){const content=await fetcher(item.url);if(!content||Buffer.byteLength(content)>65536)throw Error("Evidence source exceeds 64 KiB or is empty");if(snapshots.some(s=>s.url===item.url))throw Error("Evidence URLs must be unique");total+=Buffer.byteLength(content);if(total>131072)throw Error("Evidence bundle exceeds 128 KiB");const hash=contentDigest(content);if(item.sha256&&hash.toLowerCase()!==("0x"+item.sha256.replace(/^0x/,"")).toLowerCase())throw Error("Declared evidence digest mismatch");snapshots.push({url:item.url,sha256:hash,content,fetchedAt:Math.floor(Date.now()/1000)})}return snapshots}
+export async function capture(input:PaymentInput,fetcher=safeFetch):Promise<Snapshot[]>{const snapshots:Snapshot[]=[];let total=0;for(const item of input.evidence){const content=await fetcher(item.url);if(!content||Buffer.byteLength(content)>65536)throw Error("Evidence source exceeds 64 KiB or is empty");if(snapshots.some(s=>s.url===item.url))throw Error("Evidence URLs must be unique");total+=Buffer.byteLength(content);if(total>131072)throw Error("Evidence bundle exceeds 128 KiB");const hash=contentDigest(content);if(item.sha256&&hash.toLowerCase()!==("0x"+item.sha256.replace(/^0x/,"")).toLowerCase())throw new EvidenceFailure("EVIDENCE_HASH_MISMATCH","Declared evidence SHA-256 does not match the fetched bytes.");snapshots.push({url:item.url,sha256:hash,content,fetchedAt:Math.floor(Date.now()/1000)})}return snapshots}

@@ -1,0 +1,42 @@
+name: IntentGuard protocol validation
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: protocol-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: npm ci --ignore-scripts --prefix packages/mcp
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: node tools/check.mjs circuit
+      - run: node tools/check.mjs release
+      - run: pnpm exec tsx scripts/verify-protocol-docs.ts
+      - run: pnpm build
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - run: node tools/check.mjs evm
+      - uses: astral-sh/setup-uv@v6
+      - name: GenLayer contract and independent validator checks
+        run: |
+          uvx --from genvm-linter genvm-lint check contracts/genlayer/permission_interpreter.py
+          uvx --from genvm-linter genvm-lint check contracts/genlayer/purchase_reviewer.py
+          uvx --from genlayer-test gltest contracts/genlayer/tests/direct -v

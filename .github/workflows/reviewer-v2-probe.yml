@@ -1,0 +1,55 @@
+name: GenLayer reviewer v2 live verification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: intentguard-reviewer-v2-probe
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify legacy source, deploy v2 and finalize a no-payment denial
+        env:
+          GITHUB_WORKER_TOKEN: ${{ github.token }}
+          GITHUB_WORKER_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKER_WORKFLOW: worker.yml
+          GITHUB_WORKER_REF: main
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}
+          REVIEW_ATTESTOR_PRIVATE_KEY: ${{ secrets.REVIEW_ATTESTOR_PRIVATE_KEY }}
+          GENLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.GENLAYER_OPERATOR_PRIVATE_KEY }}
+          INTENTGUARD_MODE: ${{ vars.INTENTGUARD_MODE }}
+          XLAYER_CHAIN_ID: ${{ vars.XLAYER_CHAIN_ID }}
+          XLAYER_RPC_URL: ${{ vars.XLAYER_RPC_URL }}
+          PAYMENT_TOKEN: ${{ vars.PAYMENT_TOKEN }}
+          CARD_FACTORY_ADDRESS: ${{ vars.CARD_FACTORY_ADDRESS }}
+          GATEWAY_ADDRESS: ${{ vars.GATEWAY_ADDRESS }}
+          ATTESTOR_ADDRESS: ${{ vars.ATTESTOR_ADDRESS }}
+          TAPEOUT_PROCESSOR: ${{ vars.TAPEOUT_PROCESSOR }}
+          TAPEOUT_CIRCUIT_ID: ${{ vars.TAPEOUT_CIRCUIT_ID }}
+          TAPEOUT_BEACON: ${{ vars.TAPEOUT_BEACON }}
+          TAPEOUT_IMPLEMENTATION: ${{ vars.TAPEOUT_IMPLEMENTATION }}
+          TAPEOUT_NETLIST_HASH: ${{ vars.TAPEOUT_NETLIST_HASH }}
+          GENLAYER_INTERPRETER_ADDRESS: ${{ vars.GENLAYER_INTERPRETER_ADDRESS }}
+          GENLAYER_RPC_URL: ${{ vars.GENLAYER_RPC_URL }}
+          MONGODB_DB: ${{ vars.MONGODB_DB }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: pnpm exec tsx scripts/reviewer-v2-probe.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reviewer-v2-live-proof
+          path: .local/reviewer-v2-proof/result.json
+          if-no-files-found: warn

@@ -54,3 +54,22 @@ test("reviewer retries have distinct journals and the same attempt remains idemp
  await gl.deployReviewer(card);await gl.deployReviewer({...card,reviewerAttempt:1});await gl.deployReviewer({...card,reviewerAttempt:1});
  assert.notEqual(ids[0],ids[1]);assert.equal(ids[1],ids[2]);
 });
+
+test("a GenLayer finality wait exceeding thirty minutes terminates with an actionable timeout",async()=>{
+ const s=new MemoryStore(),gl=new FakeGenLayer(),id=requestId();
+ await s.create("drafts",{_id:id,owner,input:{description:"Buy protocol research"},inputHash:"hash",genLayerTxHash:"tx",state:"AWAITING_FINALITY",waitStartedAt:Date.now()-31*60000,createdAt:1,updatedAt:1});
+ gl.draft=async()=>{throw new PendingFinality("Network has not finalized")};
+ const worker=new Worker(s,new FakeEvm(),gl);await worker.tick();const d=await s.get("drafts",id);assert.equal(d?.state,"FAILED");assert.equal(d?.errorCode,"PROCESSING_TIMEOUT");assert.equal(await worker.tick(),false);
+});
+test("new reviewers use version two while legacy source remains available for exact readiness checks",async()=>{
+ const s=new MemoryStore(),gl=new FakeGenLayer();await s.create("cards",{...card,state:"SETTING_UP",reviewerTx:undefined});
+ let version:unknown;gl.deployReviewer=async c=>{version=c.reviewerVersion;return "0x"+"ab".repeat(32)};
+ await new Worker(s,new FakeEvm(),gl).tick();assert.equal(version,2);assert.equal((await s.get("cards",card._id))?.reviewerVersion,2);
+ const real=new GenLayer(s);const v1=await real.reviewerSource(1),v2=await real.reviewerSource(2);assert.notEqual(v1.toString(),v2.toString());await assert.rejects(()=>real.reviewerSource(9));
+});
+
+test("continuous new proposals do not starve admitted payment work",async()=>{
+ const t=await setup();for(let i=0;i<12;i++)await t.s.create("drafts",{_id:requestId(),owner,input:{description:"Protocol research proposal "+i},inputHash:digest(i),state:"QUEUED",createdAt:i,updatedAt:i});
+ for(let i=0;i<4;i++)await t.worker.tick();
+ assert.ok((await t.s.get<Payment>("requests",t.p._id))?.canonical,"Payment must advance despite a backlog of queued proposals");assert.equal(t.evm.settlements,0);
+});

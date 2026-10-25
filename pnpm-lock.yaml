@@ -10,16 +10,16 @@ importers:
     dependencies:
       genlayer-js:
         specifier: 1.1.8
-        version: 1.1.8(eslint@9.39.5)(typescript@5.9.3)(zod@4.4.3)
+        version: 1.1.8(eslint@9.39.5)(typescript@5.9.3)(zod@4.6.7)
       mongodb:
         specifier: 7.6.0
         version: 7.6.0
       viem:
         specifier: 2.56.0
-        version: 2.56.0(typescript@5.9.3)(zod@4.4.3)
+        version: 2.56.0(typescript@5.9.3)(zod@4.6.7)
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@playwright/test':
         specifier: ^1.56.0
@@ -48,6 +48,9 @@ importers:
       '@fontsource/ibm-plex-sans':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/ibm-plex-sans-condensed':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.3.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -68,10 +71,10 @@ importers:
         version: 19.2.8(react@19.2.8)
       viem:
         specifier: 2.56.0
-        version: 2.56.0(typescript@5.9.3)(zod@4.4.3)
+        version: 2.56.0(typescript@5.9.3)(zod@4.6.7)
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.7
+        version: 4.6.7
 
 packages:
 
@@ -277,6 +280,9 @@ packages:
 
   '@fontsource/ibm-plex-mono@5.3.0':
     resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
+
+  '@fontsource/ibm-plex-sans-condensed@5.3.0':
+    resolution: {integrity: sha512-fQyBpwbkguP4azjq7Cw8h/J3C/d8MFAzXOiSoFxyKCUK4x0XKrWEh3tGdTxhDM0HctVRQilQo1zGoyxDHLm5jQ==}
 
   '@fontsource/ibm-plex-sans@5.3.0':
     resolution: {integrity: sha512-CbE4CbbEEZJX860XyUiRpsksXIQR8Rp2XDva2VO53NJox9tVNtusrysd2x5YkUEY3ErQ66W1IiiQL8/wihhw5w==}
@@ -1854,8 +1860,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
 snapshots:
 
@@ -1991,6 +1997,8 @@ snapshots:
       levn: 0.4.1
 
   '@fontsource/ibm-plex-mono@5.3.0': {}
+
+  '@fontsource/ibm-plex-sans-condensed@5.3.0': {}
 
   '@fontsource/ibm-plex-sans@5.3.0': {}
 
@@ -2400,10 +2408,10 @@ snapshots:
     dependencies:
       '@types/webidl-conversions': 7.0.3
 
-  abitype@1.2.3(typescript@5.9.3)(zod@4.4.3):
+  abitype@1.2.3(typescript@5.9.3)(zod@4.6.7):
     optionalDependencies:
       typescript: 5.9.3
-      zod: 4.4.3
+      zod: 4.6.7
 
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
@@ -2876,11 +2884,11 @@ snapshots:
 
   generator-function@2.0.1: {}
 
-  genlayer-js@1.1.8(eslint@9.39.5)(typescript@5.9.3)(zod@4.4.3):
+  genlayer-js@1.1.8(eslint@9.39.5)(typescript@5.9.3)(zod@4.6.7):
     dependencies:
       eslint-plugin-import: 2.32.0(eslint@9.39.5)
       typescript-parsec: 0.3.4
-      viem: 2.56.0(typescript@5.9.3)(zod@4.4.3)
+      viem: 2.56.0(typescript@5.9.3)(zod@4.6.7)
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
       - bufferutil
@@ -3235,7 +3243,7 @@ snapshots:
       object-keys: 1.1.1
       safe-push-apply: 1.0.0
 
-  ox@0.14.34(typescript@5.9.3)(zod@4.4.3):
+  ox@0.14.34(typescript@5.9.3)(zod@4.6.7):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/ciphers': 1.3.0
@@ -3243,7 +3251,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.4.3)
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.6.7)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.9.3
@@ -3606,15 +3614,15 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  viem@2.56.0(typescript@5.9.3)(zod@4.4.3):
+  viem@2.56.0(typescript@5.9.3)(zod@4.6.7):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.4.3)
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.6.7)
       isows: 1.0.7(ws@8.21.0)
-      ox: 0.14.34(typescript@5.9.3)(zod@4.4.3)
+      ox: 0.14.34(typescript@5.9.3)(zod@4.6.7)
       ws: 8.21.0
     optionalDependencies:
       typescript: 5.9.3
@@ -3681,4 +3689,4 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@4.4.3: {}
+  zod@4.6.7: {}

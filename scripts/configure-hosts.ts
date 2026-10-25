@@ -16,7 +16,14 @@ async function run(command:string,args:string[],input?:string){
  child.stdin.end(input);
  });
 }
-if(action==="mongo"||action==="prepare"){
+if(action==="origin"){
+ const origin="https://intentguard-tapeout.vercel.app";
+ const saved=await readFile(envPath,"utf8");
+ await writeFile(envPath,saved.replace(/^APP_URL=.*$/m,"APP_URL="+origin),{mode:0o600});
+ await run("gh",["variable","set","APP_URL","--repo",repo],origin);
+ await run("vercel",["env","add","APP_URL","production","--force"],origin);
+ console.log("Canonical application origin configured: "+origin);
+}else if(action==="mongo"||action==="prepare"){
  let saved=await readFile(envPath,"utf8").catch(()=>"");
  if(!saved){
   const password=randomBytes(32).toString("hex");
