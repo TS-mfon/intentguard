@@ -79,6 +79,9 @@ try{
   await page.goto(base+"/agent-setup");await page.getByLabel("Agent name",{exact:true}).waitFor();
   assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),"");
   await page.goto(base+"/docs");await page.getByRole("heading",{name:"Complete policy reference"}).waitFor();
+  await page.getByRole("heading",{name:"Read balances and spending capacity",exact:true}).waitFor();
+  await page.getByRole("heading",{name:"Rate limits",exact:true}).waitFor();
+  await page.getByRole("heading",{name:"Obtain an invoice",exact:true}).waitFor();
   assert.equal(await page.locator(".docs-article>section").count(),19);
   assert.ok((await page.locator(".docs-article").innerText()).length>22000);
   await page.goto(base+"/explorer");await page.getByRole("tab",{name:"Agents",exact:true}).click();

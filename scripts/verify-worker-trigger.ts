@@ -45,7 +45,7 @@ try{
  const deadline=Date.now()+660000;let previous="";
  while(Date.now()<deadline){
   const candidates=runs().filter(run=>!state!.before.includes(run.id)&&Date.parse(run.created_at)>=Date.parse(state!.startedAt)-1000);
-  const run=candidates.find(r=>r.head_sha===state!.head&&r.event==="workflow_dispatch");if(run){state.workerRun=run;await save(state);}
+  const run=candidates.find(r=>r.id===state!.workerRun?.id)??candidates.find(r=>r.head_sha===state!.head&&r.event==="workflow_dispatch");if(run){state.workerRun=run;await save(state);}
   const draft=await store.get<Draft>("drafts",state.draftId);assert.ok(draft);if(draft.state==="FAILED")throw Error("GenLayer proposal reached terminal failure; its record is preserved");
   const progress=JSON.stringify({draftId:state.draftId,draftState:draft.state,workerRun:run?.id,workerStatus:run?.status,workerConclusion:run?.conclusion});
   if(progress!==previous){console.log(progress);previous=progress;}

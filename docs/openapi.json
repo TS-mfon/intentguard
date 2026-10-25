@@ -674,7 +674,7 @@
         ],
         "responses": {
           "202": {
-            "description": "Success",
+            "description": "Operation admitted or identical existing operation returned. Funds are delivered only after GET /requests/{id} reports PAID with a confirmed paymentTxHash.",
             "content": {
               "application/json": {
                 "schema": {
@@ -791,7 +791,7 @@
     "/demo/invoices": {
       "post": {
         "operationId": "createDemoInvoice",
-        "description": "Testnet only. Publishes an immutable TEST-USDT invoice for the configured demonstration merchant.",
+        "description": "Testnet only. Publishes a new immutable TEST-USDT invoice for the configured reference merchant. Requires its separate MerchantAdmin bearer credential; an agent payment key does not authorize issuance.",
         "security": [
           {
             "MerchantAdmin": []
@@ -1603,22 +1603,28 @@
             "type": "object",
             "properties": {
               "funded": {
-                "type": "string"
+                "type": "string",
+                "description": "Current vault token balance; decreases after settlement. Not cumulative deposits."
               },
               "spent": {
-                "type": "string"
+                "type": "string",
+                "description": "Lifetime amount settled."
               },
               "reserved": {
-                "type": "string"
+                "type": "string",
+                "description": "Lifetime amount currently reserved by pending requests."
               },
               "available": {
-                "type": "string"
+                "type": "string",
+                "description": "Physical token balance minus pending reservations; independent of remaining budget capacity."
               },
               "periodSpent": {
-                "type": "string"
+                "type": "string",
+                "description": "Amount settled in the current budget period."
               },
               "periodReserved": {
-                "type": "string"
+                "type": "string",
+                "description": "Pending amount reserved in the current budget period."
               }
             },
             "required": [

@@ -1,15 +1,15 @@
 {
   "version": 1,
-  "phase": "AWAITING_USER_AGENT_AND_KEY",
+  "phase": "EXECUTED_WITH_FINDINGS",
   "appUrl": "https://intentguard-gen-daves-projects.vercel.app",
   "network": {
     "chainId": 1952,
     "genLayerChainId": 61999,
     "token": "0x47f846c659b4df565d2e8b1cd32f610e68d11b9a"
   },
-  "funding": "10",
+  "funding": "100",
   "submissionCount": 12,
-  "countDefinition": "Exactly12 payment POST submissions including intentional retries and invalid inputs; status polls, invoice issuance and read-only protocol checks are additional.",
+  "countDefinition": "Exactly 12 payment POST attempts including intentional retries and invalid inputs; status polls, invoice issuance and read-only protocol checks are additional. One response was uncaptured; its exact admission was reconciled without a replay.",
   "runOrder": "Call1 must be PAID before calls2-10; confirm rejected reservations clear before calls11-12; submit last two concurrently within one unchanged budget period. Calls11-12 use separate newly issued invoices and distinct idempotency keys to prevent invoice-replay checks from masking the period-budget test.",
   "expectedFinal": {
     "uniqueLedgerRecords": 9,
@@ -19,7 +19,9 @@
     "needsEvidence": 2,
     "spent": "3.000001",
     "reserved": "0",
-    "available": "6.999999"
+    "available": "96.999999",
+    "remainingLifetimeCapacity": "6.999999",
+    "remainingPeriodCapacity": "0.999999"
   },
   "cases": [
     {
@@ -116,5 +118,8 @@
     "Check API key/owner/card isolation using read-only calls.",
     "Review SSRF, invoice replay, key rotation, stale finality and expiry paths in source/tests; identify which need further live owner actions.",
     "Record each confirmed bug with severity, reproduction, expected/actual behavior and suggested fix; separate findings from untested hypotheses."
-  ]
+  ],
+  "referenceFunding": "10",
+  "results": "audit-12-results.json",
+  "findings": "../AUDIT-12-FINDINGS.md"
 }

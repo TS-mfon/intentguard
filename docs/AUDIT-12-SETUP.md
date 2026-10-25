@@ -1,6 +1,6 @@
 # Agent configuration for the 12-request audit
 
-Open https://intentguard-gen-daves-projects.vercel.app/agent-setup and create a new agent. This policy is specific to a controlled testnet audit. The audit is awaiting your new agent and API key; no new payment submissions have been run yet.
+This is the configuration recipe used for the completed 12-request testnet audit. The owner created Dave with these purchase criteria and limits, funded its vault with 100 TEST-USDT, and supplied its agent key. See [actual results](audits/audit-12-results.json) and [findings](AUDIT-12-FINDINGS.md). The setup values below preserve the original 10-token reference deposit; no replacement agent is needed for the completed run.
 
 Name: **IntentGuard Research Audit 12**
 
@@ -87,7 +87,7 @@ Send the new agent's vault address and confirm the key is saved. The key will be
 
 Calls2-4 intentionally exercise admission/deduplication, so12 submissions should produce9 ledger records. Status polling, invoice issuance and read-only checks are additional. Requests1-10 are ordered to prevent temporary reservations masking other failures. The last two use separate newly issued invoices and distinct idempotency keys. Submit them concurrently after rejected reservations clear, so invoice-replay checks cannot mask the budget test.
 
-With this unchanged policy and one unchanged budget period, the expected final result is spent3.000001, reserved0 and available6.999999 TEST-USDT. The winning concurrent request may be either call11 or12.
+With the original reference deposit of 10 and one unchanged budget period, expected spent is 3.000001, reserved is 0 and physical available is 6.999999 TEST-USDT. The actual 100-token deposit ended at 96.999999 physical available, with 6.999999 lifetime capacity and 0.999999 weekly capacity remaining. The winning concurrent request may be either call11 or12.
 
 ## Audit evidence and findings
 For each admitted request record its input fingerprint, HTTP response, stored status transitions, guard result, reservation, finalized GenLayer transaction/reasons/criteria, cancellation/payment receipt and independent balance delta. Correlate the worker's GitHub commit/run and recovery behavior.
