@@ -35,7 +35,7 @@ When using a local environment file, load it explicitly, for example `node --env
 
 ## Hosted testnet build
 
-The current installation uses the verified configuration in [TESTNET.md](TESTNET.md) and [public manifest](deployments/testnet.json). The GitHub Actions workflow is the queue worker; see [ACTIONS-WORKER.md](ACTIONS-WORKER.md). It runs five-minute scheduled bursts and supports manual dispatch. GenLayer finality can span multiple bursts, so payment latency includes the next scheduled run.
+The current installation uses the verified configuration in [TESTNET.md](TESTNET.md) and [public manifest](deployments/testnet.json). The GitHub Actions workflow is the queue worker; see [ACTIONS-WORKER.md](ACTIONS-WORKER.md). API admissions and pending authenticated reads automatically dispatch bounded 180-second bursts. A finishing worker dispatches a continuation when work remains. The five-minute schedule and manual dispatch remain recovery paths. GitHub runner availability and GenLayer finality determine completion latency.
 
 Vercel uses project root `apps/web`. The app configuration builds with `pnpm exec next build --webpack` because the current Vercel adapter requires the server NFT trace absent from its Turbopack build. `pnpm-workspace.yaml` explicitly permits esbuild’s install script. Deploy from the repository root with `npx --yes vercel@latest deploy --prod --yes --archive=tgz` after linking the project and configuring production environment variables.
 

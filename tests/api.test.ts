@@ -38,3 +38,54 @@ test("testnet merchant invoices require admin authorization and serve immutable 
  assert.equal((await api(new Request(url),"/demo/invoices/"+"00".repeat(16))).status,404);
  }finally{for(const [k,v]of Object.entries(previous)){if(v===undefined)delete process.env[k];else process.env[k]=v}}
 });
+
+test("draft persists before wake and a failed trigger does not lose it",async()=>{
+ const store=new MemoryStore();let wakes=0;
+ const api=createApi(store,new FakeEvm(),{requireConfigured:false,wake:async()=>{wakes++;assert.equal((await store.find("drafts",{})).length,1);throw Error("Upstream unavailable")}});
+ const r=new Request("http://localhost:3000/api/v1/owner/drafts",{method:"POST",headers:{cookie:"ig_session="+session(owner),origin:"http://localhost:3000","Content-Type":"application/json"},body:JSON.stringify({description:"Purchase research datasets within owner limits"})});
+ const result=await api(r,"/owner/drafts");assert.equal(result.status,202);assert.equal(wakes,1);assert.equal((await store.get("drafts",(await result.json()).id))?.state,"QUEUED");
+});
+test("only authenticated pending draft reads recover a worker",async()=>{
+ const store=new MemoryStore(),id="0x"+"99".repeat(32);await store.create("drafts",{_id:id,owner,state:"QUEUED"});let wakes=0;
+ const api=createApi(store,new FakeEvm(),{requireConfigured:false,wake:()=>{wakes++}});
+ const read=(account:string)=>api(new Request("http://localhost:3000/api/v1/owner/drafts/"+id,{headers:{cookie:"ig_session="+session(account)}}),"/owner/drafts/"+id);
+ assert.equal((await read("0x"+"77".repeat(20))).status,404);assert.equal(wakes,0);
+ assert.equal((await read(owner)).status,200);assert.equal(wakes,1);
+ await store.patch("drafts",id,{state:"FINALIZED"});assert.equal((await read(owner)).status,200);assert.equal(wakes,1);
+});
+test("requests and active idempotent retries wake after persistence",async()=>{
+ const store=new MemoryStore();await store.create("cards",card);const key=await issueKey(store,card._id,owner);let wakes=0;
+ const api=createApi(store,new FakeEvm(),{requireConfigured:false,wake:async()=>{assert.equal((await store.find("requests",{})).length,1);wakes++}});
+ const first=await api(req("/requests",key,input),"/requests");assert.equal(first.status,202);const id=(await first.json()).id;assert.equal(wakes,1);
+ assert.equal((await api(req("/requests",key,input),"/requests")).status,202);assert.equal(wakes,2);
+ assert.equal((await api(req("/requests",key,{...input,amount:"6"}),"/requests")).status,409);assert.equal(wakes,2);
+ await store.patch("requests",id,{status:"PAID"});assert.equal((await api(req("/requests",key,input),"/requests")).status,202);assert.equal(wakes,2);
+});
+test("authenticated request polling recovers a worker and preserves isolation",async()=>{
+ const store=new MemoryStore();await store.create("cards",card);const key=await issueKey(store,card._id,owner);let wakes=0;
+ const api=createApi(store,new FakeEvm(),{requireConfigured:false,wake:()=>{wakes++}});
+ const id=(await (await api(req("/requests",key,input),"/requests")).json()).id;
+ assert.equal((await api(req("/requests/"+id,"invalid"),"/requests/"+id)).status,401);assert.equal(wakes,1);
+ assert.equal((await api(req("/requests/"+id,key),"/requests/"+id)).status,200);assert.equal(wakes,2);
+ await store.patch("requests",id,{status:"PAID"});assert.equal((await api(req("/requests/"+id,key),"/requests/"+id)).status,200);assert.equal(wakes,2);
+});
+test("reviewer setup and revocation schedule recovery",async()=>{
+ const store=new MemoryStore();await store.create("cards",card);const key=await issueKey(store,card._id,owner);let wakes=0;
+ const api=createApi(store,new FakeEvm(),{requireConfigured:false,wake:()=>{wakes++}});
+ await api(req("/requests",key,input),"/requests");assert.equal(wakes,1);
+ const del=new Request("http://localhost:3000/api/v1/owner/cards/"+card._id+"/keys",{method:"DELETE",headers:{cookie:"ig_session="+session(owner),origin:"http://localhost:3000"}});
+ assert.equal((await api(del,"/owner/cards/"+card._id+"/keys")).status,204);assert.equal(wakes,2);
+ await store.patch("cards",card._id,{state:"SETTING_UP"});
+ const read=new Request("http://localhost:3000/api/v1/owner/cards",{headers:{cookie:"ig_session="+session(owner)}});
+ assert.equal((await api(read,"/owner/cards")).status,200);assert.equal(wakes,3);
+});
+
+test("owner payment reads recover pending work without waking for terminal records",async()=>{
+ const store=new MemoryStore();await store.create("cards",card);const key=await issueKey(store,card._id,owner);let wakes=0;
+ const api=createApi(store,new FakeEvm(),{requireConfigured:false,wake:()=>{wakes++}});
+ const id=(await (await api(req("/requests",key,input),"/requests")).json()).id;
+ const read=(path:string)=>api(new Request("http://localhost:3000/api/v1"+path,{headers:{cookie:"ig_session="+session(owner)}}),path);
+ assert.equal((await read("/owner/requests")).status,200);assert.equal(wakes,2);
+ assert.equal((await read("/owner/requests/"+id)).status,200);assert.equal(wakes,3);
+ await store.patch("requests",id,{status:"PAID"});await read("/owner/requests");await read("/owner/requests/"+id);assert.equal(wakes,3);
+});

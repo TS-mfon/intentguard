@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: intentguard-worker
@@ -35,6 +36,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Process the durable queue
         env:
+          GITHUB_WORKER_TOKEN: ${{ github.token }}
+          GITHUB_WORKER_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKER_WORKFLOW: worker.yml
+          GITHUB_WORKER_REF: main
           WORKER_RUN_SECONDS: ${{ inputs.duration_seconds || '180' }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}

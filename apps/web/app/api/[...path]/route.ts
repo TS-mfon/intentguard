@@ -1,6 +1,9 @@
+import {after} from "next/server";
 import {route} from "../../../lib/api";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
-export const GET=route;
-export const POST=route;
-export const DELETE=route;
+export const maxDuration=60;
+const handle=(req:Request)=>route(req,task=>after(task));
+export const GET=handle;
+export const POST=handle;
+export const DELETE=handle;

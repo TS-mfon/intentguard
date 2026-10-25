@@ -33,6 +33,15 @@ if(action==="mongo"||action==="prepare"){
  console.log("Dedicated application database user created");
  await run(atlas,["accessLists","create","0.0.0.0/0","--type","cidrBlock","--comment","IntentGuard dedicated testnet demo: Vercel and GitHub dynamic egress","--projectId",project,"--profile","intentguard","--output","json"]);
  console.log("Dedicated demo cluster network access configured");
+}else if(action==="worker-wake"){
+ const token=(await run("gh",["auth","token"])).trim();if(!token)throw Error("GitHub CLI authentication is required");
+ const settings={GITHUB_WORKER_TOKEN:token,GITHUB_WORKER_REPOSITORY:repo,GITHUB_WORKER_WORKFLOW:"worker.yml",GITHUB_WORKER_REF:"main"};
+ await writeFile(new URL(".local/worker-wake.env",root),Object.entries(settings).map(([name,value])=>name+"="+value).join("\n")+"\n",{mode:0o600});
+ await chmod(new URL(".local/worker-wake.env",root),0o600);
+ for(const [name,value]of Object.entries(settings)){
+  await run("vercel",["env","add",name,"production","--force"],value);
+  console.log("Worker wake setting configured: "+name);
+ }
 }else if(action==="github"||action==="vercel"){
  loadEnvFile(new URL(".local/testnet-secrets.env",root));loadEnvFile(envPath);
  const variables=["INTENTGUARD_MODE","XLAYER_CHAIN_ID","XLAYER_RPC_URL","PAYMENT_TOKEN","CARD_FACTORY_ADDRESS","GATEWAY_ADDRESS","ATTESTOR_ADDRESS","TAPEOUT_PROCESSOR","TAPEOUT_CIRCUIT_ID","TAPEOUT_BEACON","TAPEOUT_IMPLEMENTATION","TAPEOUT_NETLIST_HASH","GENLAYER_INTERPRETER_ADDRESS","GENLAYER_RPC_URL","MONGODB_DB","APP_URL",...(action==="vercel"?["DEMO_MERCHANT_RECIPIENT"]:[])];
@@ -44,5 +53,5 @@ if(action==="mongo"||action==="prepare"){
   else await run("npx",["--yes","vercel@latest","env","add",name,"production","--force"],value);
   console.log(action+" setting configured: "+name);
  }
-}else throw Error("Use mongo, github or vercel");
+}else throw Error("Use mongo, github, vercel or worker-wake");
 
