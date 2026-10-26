@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "contractRevision": 1,
+  "contractRevision": 4,
   "baselineCommit": "63ecc771b3313419f6df7f483e1b2964024570a6",
   "originalFeedbackSha256": "e66b5383ad6aa6a56500e1ea9710e01da9a4ffc4d9949e9494e47bfa727856bf",
   "status": "IMPLEMENTING",
@@ -23,7 +23,10 @@
       59144,
       480,
       999
-    ]
+    ],
+    "reviewNetwork": "studionet",
+    "reviewChainId": 61999,
+    "reviewInfrastructure": "studionet-simulator"
   },
   "findings": [
     {
@@ -171,8 +174,16 @@
           "line": 952
         }
       ],
-      "evidence": [],
-      "fixCommits": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/MANIFEST-VALIDATION.md",
+          "check": "pnpm exec tsx --test tests/strict-json.test.ts",
+          "scope": "Parser primitive; final release manifest verification pending"
+        }
+      ],
+      "fixCommits": [
+        "fd7de30"
+      ],
       "retestCommits": [],
       "baselineClassification": "Allegation refuted for current12 manifests: strict parser found no duplicate keys. Canonical schema and negative controls outstanding."
     },
@@ -250,8 +261,8 @@
       "priority": "P0",
       "title": "Create the new mainnet database and least-privilege principals.",
       "acceptance": "Empty initial database, verified indexes, bounded connection behavior, denied testnet access, and successful backup/restore exercise.",
-      "ownerLeaf": "2.1",
-      "observingGate": "leaf-2.1:R09",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R09",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -273,9 +284,9 @@
       "priority": "P0",
       "title": "Verify both mainnet assets and all ten CCTP routes.",
       "acceptance": "Issuer provenance, chain identity, code/implementation hashes, decimals, messenger relationships, domains, pauses, fees, and route mappings.",
-      "ownerLeaf": "2.1",
-      "observingGate": "leaf-2.1:R10",
-      "status": "OPEN",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R10",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -290,8 +301,21 @@
           "line": 1100
         }
       ],
-      "evidence": [],
-      "fixCommits": [],
+      "evidence": [
+        {
+          "artifact": "contracts/evm/V4-VALIDATION.md",
+          "check": "node tools/production/verify-mainnet-contracts.mjs",
+          "scope": "133 local EVM tests; issuer/deployment/canaries pending"
+        },
+        {
+          "artifact": "docs/production/ISSUER-VERIFICATION.md",
+          "check": "node tools/production/verify-issuer.mjs",
+          "scope": "17 parent-verified registry/tooling regressions. Exploratory live snapshots are not a release capability."
+        }
+      ],
+      "fixCommits": [
+        "61ed634"
+      ],
       "retestCommits": [],
       "baselineClassification": "Partial: native-USDC testnet routes verified; official mainnet assets and ten destination routes require expanded live proof."
     },
@@ -317,8 +341,16 @@
           "line": 893
         }
       ],
-      "evidence": [],
-      "fixCommits": [],
+      "evidence": [
+        {
+          "artifact": "contracts/genlayer/versions/purchase_reviewer_v4.audit.json",
+          "check": "node tools/production/verify-reviewer.mjs",
+          "scope": "206 direct SDK tests, parent reverified; runtime and live audits pending"
+        }
+      ],
+      "fixCommits": [
+        "f928a27"
+      ],
       "retestCommits": [],
       "baselineClassification": "Partial: receipt-normalization and prohibited-purpose rejection proved; new reviewer network/asset profile and broad injection reliability outstanding."
     },
@@ -501,8 +533,8 @@
       "priority": "P0",
       "title": "Deploy the circuit through official TapeOut mainnet infrastructure.",
       "acceptance": "CPU/circuit identifiers, transaction receipts, processor and beacon pins, vendor provenance, and independently reproduced live vectors.",
-      "ownerLeaf": "1.3",
-      "observingGate": "leaf-1.3:R18",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R18",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -770,8 +802,16 @@
           "line": 1319
         }
       ],
-      "evidence": [],
-      "fixCommits": [],
+      "evidence": [
+        {
+          "artifact": "contracts/evm/V4-VALIDATION.md",
+          "check": "node tools/production/verify-mainnet-contracts.mjs",
+          "scope": "133 local EVM tests; issuer/deployment/canaries pending"
+        }
+      ],
+      "fixCommits": [
+        "61ed634"
+      ],
       "retestCommits": [],
       "baselineClassification": "New mainnet beta requirement: native mainnet contracts/data, GenLayer testnet review, ten EVM destinations; quote-before-spending retained."
     },
