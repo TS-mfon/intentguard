@@ -85,9 +85,18 @@ try{
  const cases:any[]=state.cases as any[];
  for(const [name,chainId,amount,expected]of [["xlayer",1952,"0.1","PAID"],["base",84532,"0.1","PAID"],["arbitrum",421614,"0.1","PAID"],["mainnet",8453,"0.1","DESTINATION_NOT_ALLOWED"],["limit",84532,"1.000001","BLOCKED"],["prohibited",1952,"0.1","REJECTED"],["evidence",84532,"0.1","NEEDS_EVIDENCE"]] as const){
   let c=cases.find(c=>c.name===name);
+  let failedAttempts=(c?.failedAttempts??[]) as any[];
+  if(expected==="PAID"&&c?.result?.status==="CANCELLED"&&c.result.errorCode==="GENLAYER_REVIEW_FAILED"){
+   // Only recover the observed receipt-normalization bug: independently prove
+   // the old review finalized APPROVE and its cancelled reservation paid nothing.
+   // Genuine failed reviews are never silently resubmitted or relabelled.
+   const old=(await store.get<Payment>("requests",c.requestId))!;assert.ok(old?.canonical&&old.requestHash);assert.equal((await evm.request(card,old._id)).status,3);assert.equal(old.paymentTxHash,undefined);
+   const decision=validateDecision(await gl.decision(card,old),card.policy,old.canonical,old.requestHash);assert.equal(decision.decision,"APPROVE");assert.ok(failedAttempts.length<1);
+   const {failedAttempts:previous,...attempt}=c;failedAttempts=[...failedAttempts,{...attempt,verifiedFinalizedDecision:decision,recoveryReason:"Final leader succeeded; the previous worker incorrectly classified a trailing idle validator as VM failure."}];c=undefined;
+  }
   if(!c){
    const native=CCTP_TESTNETS[(chainId===8453?84532:chainId) as 84532],invoice=await api("/demo/invoices",{method:"POST",adminAuth:true,body:{buyer:name==="evidence"?owner:card.address,amount,description:(name==="prohibited"?"Personal data for advertising on ":"Native USDC settlement verification on ")+native.name+". This is a protocol testnet transfer, with no monetary value.",chainId:native.chainId,token:native.token}});assert.equal(invoice.response.status,201);
-   c={name,expected,idem:id+"-"+name,payload:{destinationChainId:chainId,recipient:merchant,amount,purchaseDescription:name==="prohibited"?"Personal data for advertising":"Native USDC settlement verification",justification:name==="prohibited"?"Purchase personal data for an advertising campaign.":"Verify the approved protocol testnet payment route and its exact receipt.",category:"protocol-verification",invoiceId:invoice.data.invoice.invoiceId,evidence:[{url:invoice.data.url}]}};cases.push(c);await save({cases});
+   c={name,expected,failedAttempts,idem:id+"-"+name+(failedAttempts.length?"-retry"+failedAttempts.length:""),payload:{destinationChainId:chainId,recipient:merchant,amount,purchaseDescription:name==="prohibited"?"Personal data for advertising":"Native USDC settlement verification",justification:name==="prohibited"?"Purchase personal data for an advertising campaign.":"Verify the approved protocol testnet payment route and its exact receipt.",category:"protocol-verification",invoiceId:invoice.data.invoice.invoiceId,evidence:[{url:invoice.data.url}]}};const index=cases.findIndex(c=>c.name===name);if(index<0)cases.push(c);else cases[index]=c;await save({cases});
   }
   if(!c.admission){const submitted=await api("/requests",{method:"POST",agentAuth:true,idem:c.idem,body:c.payload});c.admission=submitted.log;c.requestId=submitted.data.id;await save({cases});}
   if(expected==="DESTINATION_NOT_ALLOWED"){assert.equal(c.admission.response.status,422);assert.equal(c.admission.response.body.error.code,expected);continue;}

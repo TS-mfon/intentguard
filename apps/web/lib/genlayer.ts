@@ -28,11 +28,16 @@ export function normalizeStudioTransaction(tx:GenLayerTransaction,expectedHash?:
  const decoded=decodeInputData(encoded,raw.recipient??raw.to_address);
  const leaders=raw.consensus_data?.leader_receipt;
  const receipts=Array.isArray(leaders)?leaders:leaders?[leaders]:[];
- const latest=receipts.at(-1);
+ // Studio can append an idle validator receipt to the leader_receipt array.
+ // Its execution error is not the leader's VM outcome. Select the final leader
+ // in explicitly labelled arrays; legacy unlabelled arrays retain their order.
+ const labelled=receipts.some(receipt=>typeof receipt?.mode==="string");
+ const latest=(labelled?receipts.filter(receipt=>receipt?.mode==="leader"):receipts).at(-1);
+ const returned=latest?.execution_result==="SUCCESS"&&(!latest.result?.status||latest.result.status==="return");
  return {...tx,
   statusName:raw.status_name??raw.statusName??raw.status,
   resultName:raw.result_name??raw.resultName,
-  txExecutionResultName:latest?.execution_result==="SUCCESS"?"FINISHED_WITH_RETURN":"FINISHED_WITH_ERROR",
+  txExecutionResultName:returned?"FINISHED_WITH_RETURN":"FINISHED_WITH_ERROR",
   txDataDecoded:decoded,
  } as GenLayerTransaction;
 }

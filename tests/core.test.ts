@@ -34,6 +34,24 @@ test("Studionet committed call normalization preserves finality, VM failure and 
 
 test("GenLayer decoded constructor integers normalize exactly and reject unsafe JSON values",()=>{assert.deepEqual(normalizedCalldata(new Map([["args",[genLayerAddress("0x"+"12".repeat(20)),"policy","hash",1952n]]])),{args:["0x"+"12".repeat(20),"policy","hash",1952]});assert.throws(()=>normalizedCalldata(9007199254740993n),/exact JSON range/)});
 
+test("Studionet final leader outcome is preserved when idle validators trail a rotated leader",async()=>{
+ const {abi:{calldata}}=await import("genlayer-js");const {toHex,toRlp}=await import("viem");
+ const hash="0x"+"ab".repeat(32),target="0x"+"11".repeat(20),sender="0x"+"22".repeat(20),args=["request","{}","[]"];
+ const tx_data=toRlp([toHex(calldata.encode({method:"review",args})),"0x"]).slice(2);
+ const leader={mode:"leader",execution_result:"SUCCESS",result:{status:"return"}},idle={mode:"validator",execution_result:"ERROR",vote:"idle",result:{status:"contract_error",payload:"idle"}};
+ const raw={hash,status:"FINALIZED",result_name:"MAJORITY_AGREE",recipient:target,sender,tx_data};
+ const normalized=(receipts:unknown[],extra:Record<string,unknown>={})=>normalizeStudioTransaction({...raw,...extra,consensus_data:{leader_receipt:receipts}} as never,hash);
+ const expected={target,method:"review",args,sender};
+ assert.doesNotThrow(()=>assertFinalized(normalized([leader,idle]),expected));
+ assert.doesNotThrow(()=>assertFinalized(normalized([{mode:"leader",execution_result:"ERROR"},leader,idle]),expected));
+ assert.throws(()=>assertFinalized(normalized([leader,{mode:"leader",execution_result:"ERROR"},idle]),expected),GenLayerTerminalError);
+ assert.throws(()=>assertFinalized(normalized([{mode:"validator",execution_result:"SUCCESS"},idle]),expected),GenLayerTerminalError);
+ assert.throws(()=>assertFinalized(normalized([{...leader,result:{status:"rollback"}},idle]),expected),GenLayerTerminalError);
+ assert.throws(()=>assertFinalized(normalized([leader,idle],{result_name:"MAJORITY_DISAGREE"}),expected),GenLayerTerminalError);
+ assert.throws(()=>assertFinalized(normalized([leader,idle],{status:"ACCEPTED"}),expected),PendingFinality);
+ assert.throws(()=>assertFinalized(normalized([leader,idle]),{...expected,args:["changed"]}));
+});
+
 test("pinned DNS lookup supports Node dual-stack and single-address callback contracts",()=>{
  for(const chosen of [{address:"1.1.1.1",family:4},{address:"2606:4700:4700::1111",family:6}]){
   for(const all of [true,false]){
