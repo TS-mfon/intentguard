@@ -105,21 +105,51 @@ try{
   if(expected==="DESTINATION_NOT_ALLOWED"){assert.equal(c.admission.response.status,422);assert.equal(c.admission.response.body.error.code,expected);continue;}
   assert.equal(c.admission.response.status,202);
  }
- for(const [name,chainId,amount,expected]of scenarios){
+ // Replay the accepted request immediately; bridge finality cannot postpone
+ // idempotency coverage or cause a replacement payment to be admitted.
+ if(!cases.find(c=>c.name==="idempotent")){const first=cases.find(c=>c.name==="xlayer"),retry=await api("/requests",{method:"POST",agentAuth:true,idem:first.idem,body:first.payload});assert.equal(retry.response.status,202);assert.equal(retry.data.id,first.requestId);cases.push({name:"idempotent",expected:"SAME_REQUEST",requestId:retry.data.id,admission:retry.log,receiptVerified:true});await save({cases});}
+ async function verifyCase(name:string,chainId:number,expected:string){
   const c=cases.find(c=>c.name===name);assert.ok(c);
-  if(expected==="DESTINATION_NOT_ALLOWED")continue;
-  if(!c.result){c.result=await wait(async()=>{const x=await api("/requests/"+c.requestId,{agentAuth:true});assert.equal(x.response.status,200);console.log("CCTP_AUDIT_STATUS",JSON.stringify({case:name,status:x.data.status,errorCode:x.data.errorCode}));if(["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"].includes(x.data.status))c.terminalLog=x.log;return x.data as RequestView;},x=>["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"].includes(x.status));await save({cases});}
-  assert.equal(c.result.status,expected);
-  if(expected==="BLOCKED"){assert.equal(c.result.reviewStage.status,"SKIPPED");assert.equal(c.result.genLayerTxHash,undefined);assert.ok(c.result.guard.failures.includes("Payment limit"));continue;}
-  if(expected==="NEEDS_EVIDENCE"){assert.equal(c.result.errorCode,"INVOICE_BUYER_MISMATCH");assert.equal(c.result.reviewStage.status,"SKIPPED");assert.equal(c.result.genLayerTxHash,undefined);assert.equal((await evm.request(card,c.requestId)).status,0);c.receiptVerified=true;await save({cases});continue;}
- const payment=(await store.get<Payment>("requests",c.requestId))!;
- if(expected==="REJECTED"){assert.equal((await evm.request(card,payment._id)).status,3);assert.equal(payment.requestHash,digest(payment.canonical));const review=validateDecision(await gl.decision(card,payment),card.policy,payment.canonical!,payment.requestHash!);assert.equal(review.decision,"REJECT");assert.equal(digest(review),digest(payment.review));assert.equal(c.result.reviewStage.status,"COMPLETE");assert.equal(payment.paymentTxHash,undefined);c.receiptVerified=true;await save({cases});continue;}
-assert.equal((await evm.request(card,payment._id)).status,2);assert.equal(payment.requestHash,digest(payment.canonical));const review=validateDecision(await gl.decision(card,payment),card.policy,payment.canonical!,payment.requestHash!);assert.equal(review.decision,"APPROVE");assert.equal(digest(review),digest(payment.review));
-  if(chainId!==1952){const verified=await evm.reconcileBridge(card,payment);assert.equal(verified.status,"PAID");assert.equal(verified.paymentTxHash,payment.paymentTxHash);c.receiptVerified=true;}
-  else{assert.equal(await evm.paidHash(card,payment),payment.paymentTxHash);c.receiptVerified=true;}
-  await save({cases});
+  if(c.receiptVerified)return;
+  if(expected==="DESTINATION_NOT_ALLOWED"){assert.equal(c.admission.response.status,422);assert.equal(c.admission.response.body.error.code,expected);assert.ok(c.requestId==null,"Rejected admission must not create a request");}
+  else{
+   assert.ok(c.result);assert.equal(c.result.status,expected);
+   if(expected==="BLOCKED"||expected==="NEEDS_EVIDENCE"){
+    assert.equal(c.result.reviewStage.status,"SKIPPED");assert.equal(c.result.genLayerTxHash,undefined);assert.equal(c.result.paymentTxHash,undefined);assert.equal((await evm.request(card,c.requestId)).status,0);
+    if(expected==="BLOCKED")assert.ok(c.result.guard.failures.includes("Payment limit"));
+    else assert.equal(c.result.errorCode,"INVOICE_BUYER_MISMATCH");
+   }else{
+    const payment=(await store.get<Payment>("requests",c.requestId))!;assert.ok(payment);assert.equal(payment.requestHash,digest(payment.canonical));
+    const review=validateDecision(await gl.decision(card,payment),card.policy,payment.canonical!,payment.requestHash!);assert.equal(digest(review),digest(payment.review));
+    assert.equal(c.result.reviewStage.status,"COMPLETE");
+    if(expected==="REJECTED"){
+     assert.equal((await evm.request(card,payment._id)).status,3);assert.equal(review.decision,"REJECT");assert.equal(payment.paymentTxHash,undefined);
+    }else{
+     assert.equal((await evm.request(card,payment._id)).status,2);assert.equal(review.decision,"APPROVE");
+     if(chainId!==1952){const verified=await evm.reconcileBridge(card,payment);assert.equal(verified.status,"PAID");assert.equal(verified.paymentTxHash,payment.paymentTxHash);}
+     else assert.equal(await evm.paidHash(card,payment),payment.paymentTxHash);
+    }
+   }
+  }
+  c.receiptVerified=true;c.verifiedAt=new Date().toISOString();await save({cases});
+  console.log("CCTP_AUDIT_CASE_VERIFIED",JSON.stringify({case:name,status:c.result?.status??expected}));
  }
- if(!cases.find(c=>c.name==="idempotent")){const first=cases[0],retry=await api("/requests",{method:"POST",agentAuth:true,idem:first.idem,body:first.payload});assert.equal(retry.response.status,202);assert.equal(retry.data.id,first.requestId);cases.push({name:"idempotent",expected:"SAME_REQUEST",requestId:retry.data.id,admission:retry.log,receiptVerified:true});await save({cases});}
+ const terminal=new Set(["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"]);
+ await wait(async()=>{
+  const pending=scenarios.filter(([name,,,expected])=>expected!=="DESTINATION_NOT_ALLOWED"&&!cases.find(c=>c.name===name)?.result);
+  const reads=await Promise.allSettled(pending.map(async([name])=>({name,value:await api("/requests/"+cases.find(c=>c.name===name).requestId,{agentAuth:true})})));
+  for(let index=0;index<reads.length;index++){
+   const item=reads[index],c=cases.find(c=>c.name===pending[index][0]);
+   if(item.status==="rejected"){c.pollErrorCode="AUDIT_POLL_UNAVAILABLE";continue;}
+   const x=item.value.value;assert.equal(x.response.status,200);c.pollErrorCode=null;c.lastObservation=x.log;
+   console.log("CCTP_AUDIT_STATUS",JSON.stringify({case:c.name,status:x.data.status,errorCode:x.data.errorCode}));
+   if(terminal.has(x.data.status)){c.result=x.data;c.terminalLog=x.log;}
+  }
+  await save({cases});
+  // Verify each completed case now, independently of the pending routes.
+  for(const [name,chainId,,expected]of scenarios){const c=cases.find(c=>c.name===name);if(expected==="DESTINATION_NOT_ALLOWED"||c.result)await verifyCase(name,chainId,expected);}
+  return scenarios.every(([name])=>cases.find(c=>c.name===name)?.receiptVerified);
+ },complete=>complete);
  const final=await balances(card);assert.equal(final.ledger.spent,"0.3");assert.equal(final.ledger.reserved,"0");assert.equal(final.ledger.available,"0.7");
  for(const chainId of [1952,84532,421614])assert.equal(BigInt(final.merchantBalances[chainId])-BigInt((state.baseline as any).merchantBalances[chainId]),parseAmount("0.1"));
  await save({final,status:"PASSED",errorCode:null});console.log("CCTP_LIVE_API_AUDIT_PASSED");
