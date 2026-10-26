@@ -1,5 +1,7 @@
 import {MongoClient,type Document} from "mongodb";
-import {randomUUID} from "node:crypto";
+import {randomUUID,createHash} from "node:crypto";
+import {configuration} from "./config";
+import {assertDatabaseIdentity,verifyDatabaseIndexes} from "./database-profile";
 import {parseAmount,formatAmount} from "../../../packages/shared";
 export type UsageTotals={counts:Record<string,number>;fundsMoved:string};
 export type Doc={_id:string;[key:string]:unknown};
@@ -53,8 +55,25 @@ export class MemoryStore implements Store{
  async claim<T extends Doc>(t:string,q:Record<string,unknown>,now:number,leaseMs:number){const d=[...this.c(t).values()].find(d=>matches(d,q)&&Number(d.leaseUntil??0)<now&&Number(d.nextAt??0)<=now);if(!d)return null;Object.assign(d,{leaseToken:randomUUID(),leaseUntil:now+leaseMs});return structuredClone(d) as T}
  async complete(t:string,id:string,token:string,v:Record<string,unknown>){const d=this.c(t).get(id);if(!d||d.leaseToken!==token)return false;Object.assign(d,structuredClone(v),{leaseUntil:0,leaseToken:null});return true}
 }
-let pending:Promise<Store>|undefined;
-export function database():Promise<Store>{if(!process.env.MONGODB_URI)throw Error("MONGODB_URI is required");return pending??=new MongoClient(process.env.MONGODB_URI,{serverSelectionTimeoutMS:10000,maxPoolSize:5,minPoolSize:0,maxIdleTimeMS:30000}).connect().then(async c=>{const db=process.env.MONGODB_DB??"intentguard";await c.db(db).collection("rate").createIndex({expiresAt:1},{expireAfterSeconds:0});return new MongoStore(c,db)}).catch(e=>{pending=undefined;throw e})}
+// Vercel instances and short Actions runs use small reusable pools. Total operation
+// time is capped at15s, below the120s worker lease, and queue wait at5s.
+export const mongoClientOptions={serverSelectionTimeoutMS:10000,connectTimeoutMS:10000,timeoutMS:15000,waitQueueTimeoutMS:5000,maxPoolSize:5,minPoolSize:0,maxIdleTimeMS:30000,appName:"intentguard"};
+const pending=new Map<string,Promise<Store>>();
+export function database():Promise<Store>{
+ const uri=process.env.MONGODB_URI;if(!uri)throw Error("MONGODB_URI is required");
+ const cfg=configuration(),identity=JSON.stringify({uri,db:cfg.databaseName,environment:cfg.paymentEnvironment,release:cfg.releaseId,gateway:cfg.gateway,attestor:cfg.attestor,origin:cfg.origin});
+ const key=createHash("sha256").update(identity).digest("hex");
+ const existing=pending.get(key);if(existing)return existing;
+ const client=new MongoClient(uri,mongoClientOptions);
+ const result=client.connect().then(async c=>{
+  const db=c.db(cfg.databaseName);
+  await assertDatabaseIdentity(db,cfg,uri);
+  if(cfg.mainnet)await verifyDatabaseIndexes(db);
+  else await db.collection("rate").createIndex({expiresAt:1},{expireAfterSeconds:0});
+  return new MongoStore(c,cfg.databaseName);
+ }).catch(async()=>{pending.delete(key);await client.close().catch(()=>{});throw Error("Database connection or environment verification failed");});
+ pending.set(key,result);return result;
+}
 
 // Decimal128 may format an exact sum in scientific notation; convert without Number.
 function normalizeDecimal(raw:string){const m=raw.match(/^(\d+)(?:\.(\d+))?(?:E([+-]?\d+))?$/i);if(!m)throw Error("Invalid paid amount aggregate");const digits=m[1]+(m[2]??""),point=m[1].length+Number(m[3]??0);const expanded=point<=0?"0."+"0".repeat(-point)+digits:point>=digits.length?digits+"0".repeat(point-digits.length):digits.slice(0,point)+"."+digits.slice(point);return expanded.replace(/(\.\d*?)0+$/,"$1").replace(/\.$/,"");}

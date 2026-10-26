@@ -2,8 +2,9 @@ import {createPublicClient,createWalletClient,defineChain,http,parseAbi,encodeFu
 import {privateKeyToAccount} from "viem/accounts";
 import artifacts from "../../../contracts/evm/abi.json";
 import {CCTP_TESTNETS,CCTP_IRIS_TESTNET,type TestnetChainId} from "../../../packages/shared/assets";
-import {digest,type BridgeView,type CanonicalRequest} from "../../../packages/shared";
-import {isBridge} from "./settlement";
+import {digest,isSettlementV2,type BridgeView,type CanonicalRequest} from "../../../packages/shared";
+import {isBridge,cardContractVersion,assertCardEnvironment} from "./settlement";
+import {paymentRoute,CCTP_IRIS} from "../../../packages/shared/payment-profiles";
 import type {Evm} from "./evm";
 import type {Store,Doc} from "./store";
 import type {Card,Payment} from "./models";
@@ -11,6 +12,15 @@ const zero=padHex("0x0",{size:32}),addr=(s:string)=>s as Address,hex=(s:string)=
 const transmitterAbi=parseAbi(["function localDomain() view returns (uint32)","function usedNonces(bytes32) view returns (uint256)","function receiveMessage(bytes,bytes) returns (bool)","event MessageSent(bytes message)","event MessageReceived(address indexed caller,uint32 sourceDomain,bytes32 indexed nonce,bytes32 sender,uint32 indexed finalityThresholdExecuted,bytes messageBody)"]);
 const tokenAbi=parseAbi(["event Transfer(address indexed from,address indexed to,uint256 value)"]);
 const bridgeAbi=artifacts.CctpSpendingCard as Abi;
+function bridgeAbiFor(card:Card){return cardContractVersion(card)===4?artifacts.CctpSpendingCardV4 as Abi:bridgeAbi;}
+function routeForCard(card:Card|undefined,id:number){
+ const s=card?.settlement;
+ const candidate=s&&isSettlementV2(s)?paymentRoute(s.paymentEnvironment,id):CCTP_TESTNETS[id];
+ requireValue(candidate,"Unsupported destination for this payment environment.");
+ return {...candidate,token:addr(candidate.token),messenger:addr(candidate.messenger),transmitter:addr(candidate.transmitter),minter:addr(candidate.minter)};
+}
+function sourceChain(card?:Card){return Number(card?.chainId??1952);}
+
 export class BridgePending extends Error{constructor(public code:string,message:string){super(message)}}
 export class BridgeFailure extends Error{constructor(public code:string,message:string){super(message)}}
 export function bridgeRouteHash(domain:number,recipient:string,amount:bigint){
@@ -25,9 +35,9 @@ export function parseCctpMessage(message:string){
  return {sourceDomain:Number(uint(4,4)),destinationDomain:Number(uint(8,4)),nonce:at(12,32),sender:at(44,32),recipient:at(76,32),destinationCaller:at(108,32),minFinality:Number(uint(140,4)),finalityExecuted:Number(uint(144,4)),burnToken:at(152,32),mintRecipient:at(184,32),amount:uint(216,32),messageSender:at(248,32),maxFee:uint(280,32),feeExecuted:uint(312,32),expirationBlock:uint(344,32),message:hex(message),body:hex(message.slice(0,2)+message.slice(2+148*2))};
 }
 export function verifyCctpMessage(message:string,card:Card,r:CanonicalRequest,attested:boolean,sourceMessage?:string){
- const v=parseCctpMessage(message),source=CCTP_TESTNETS[1952],target=CCTP_TESTNETS[r.destinationChainId as TestnetChainId];
- requireValue(r.chainId===1952&&r.token.toLowerCase()===source.token.toLowerCase()&&card.settlement&&r.settlementHash===digest(card.settlement),"Source asset/settlement differs from the immutable USDC mandate.");
- requireValue(target&&target.chainId!==1952&&r.destinationToken?.toLowerCase()===target.token.toLowerCase()&&r.destinationDomain===target.domain,"Destination token/domain differs from the committed request.");
+ const v=parseCctpMessage(message),source=routeForCard(card,sourceChain(card)),target=routeForCard(card,r.destinationChainId!);
+ requireValue(r.chainId===sourceChain(card)&&r.token.toLowerCase()===source.token.toLowerCase()&&card.settlement?.asset==="USDC"&&r.settlementHash===digest(card.settlement),"Source asset/settlement differs from the immutable USDC mandate.");
+ requireValue(target&&target.chainId!==sourceChain(card)&&r.destinationToken?.toLowerCase()===target.token.toLowerCase()&&r.destinationDomain===target.domain,"Destination token/domain differs from the committed request.");
  requireValue(v.sourceDomain===37&&v.destinationDomain===target.domain&&v.sender===padHex(source.messenger,{size:32}).toLowerCase()&&v.recipient===padHex(target.messenger,{size:32}).toLowerCase(),"CCTP source, destination or messenger mismatch.");
  requireValue(v.destinationCaller===zero&&v.minFinality===2000&&v.burnToken===padHex(source.token,{size:32}).toLowerCase()&&v.mintRecipient===padHex(addr(r.recipient),{size:32}).toLowerCase()&&v.messageSender===padHex(addr(card.address),{size:32}).toLowerCase()&&v.amount===BigInt(r.amountAtomic),"CCTP amount, owner vault or merchant mismatch.");
  requireValue(v.maxFee===0n&&v.feeExecuted===0n&&v.expirationBlock===0n,"This exact-payment standard route does not authorize fees or expiring fast-transfer messages.");
@@ -37,7 +47,7 @@ export function verifyCctpMessage(message:string,card:Card,r:CanonicalRequest,at
  return v;
 }
 export function verifyDestinationReceipt(receipt:TransactionReceipt,message:string,card:Card,r:CanonicalRequest){
- const v=verifyCctpMessage(message,card,r,true),target=CCTP_TESTNETS[r.destinationChainId as TestnetChainId];
+ const v=verifyCctpMessage(message,card,r,true),target=routeForCard(card,r.destinationChainId!);
  requireValue(receipt.status==="success","Destination receive transaction reverted.");
  let received=0,minted=0;
  for(const log of receipt.logs){
@@ -49,19 +59,23 @@ export function verifyDestinationReceipt(receipt:TransactionReceipt,message:stri
 }
 export class Cctp{
  constructor(private evm:Evm,private store:Store,private fetcher:typeof fetch=fetch){}
- destination(id:TestnetChainId){const c=CCTP_TESTNETS[id];requireValue(c&&id!==1952,"Unsupported destination testnet.");const rpc=process.env[id===84532?"BASE_SEPOLIA_RPC_URL":"ARBITRUM_SEPOLIA_RPC_URL"]?.trim()||c.rpcUrl,chain=defineChain({id,name:c.name,testnet:true,nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18},rpcUrls:{default:{http:[rpc]}}});return {c,chain,rpc,public:createPublicClient({chain,transport:http(rpc,{timeout:12000,retryCount:0}),cacheTime:0})};}
+ destination(id:number,card?:Card){const c=routeForCard(card,id);requireValue(id!==sourceChain(card),"CCTP requires a different destination chain.");
+ const environmentKey=card?.settlement&&isSettlementV2(card.settlement)?paymentRoute(card.settlement.paymentEnvironment,id).rpcEnvironmentKey:id===84532?"BASE_SEPOLIA_RPC_URL":"ARBITRUM_SEPOLIA_RPC_URL";
+ const rpc=process.env[environmentKey]?.trim()||c.rpcUrl,native=id===43114||id===43113?"AVAX":id===999||id===998?"HYPE":"ETH",chain=defineChain({id,name:c.name,testnet:c.testnet,nativeCurrency:{name:native,symbol:native,decimals:18},rpcUrls:{default:{http:[rpc]}}});
+ return {c,chain,rpc,public:createPublicClient({chain,transport:http(rpc,{timeout:12000,retryCount:0}),cacheTime:0})};}
  async sourceMessage(card:Card,p:Payment){
   const tx=await this.store.get<Doc&{hash:string}>("transactions",p._id+":settle"),sourceHash=p.bridge?.sourceTxHash??tx?.hash;requireValue(sourceHash&&/^0x[0-9a-fA-F]{64}$/.test(sourceHash),"Source burn transaction journal is missing; funds remain in reconciliation.");
   await this.evm.identity();const receipt=await this.evm.public.getTransactionReceipt({hash:hex(sourceHash)});requireValue(receipt.status==="success","Source burn reverted.");requireValue(await this.evm.public.getBlockNumber()>=receipt.blockNumber+1n,"Source burn is awaiting confirmation.");
   const messages:string[]=[];let started=0;
   for(const log of receipt.logs){
-   if(log.address.toLowerCase()===CCTP_TESTNETS[1952].transmitter.toLowerCase()){try{const e=decodeEventLog({abi:transmitterAbi,data:log.data,topics:log.topics});if(e.eventName==="MessageSent")messages.push((e.args as {message:string}).message)}catch{}}
-   if(log.address.toLowerCase()===card.address.toLowerCase()){try{const e=decodeEventLog({abi:bridgeAbi,data:log.data,topics:log.topics});if(e.eventName==="BridgeStarted"){const x=e.args as unknown as {requestId:string;destinationDomain:number;routeHash:string;recipient:string;amount:bigint;decisionHash:string;genLayerTxHash:string};if(x.requestId.toLowerCase()===p._id.toLowerCase()&&x.destinationDomain===p.canonical!.destinationDomain&&x.routeHash.toLowerCase()===bridgeRouteHash(x.destinationDomain,p.canonical!.recipient,BigInt(p.canonical!.amountAtomic))&&x.recipient.toLowerCase()===p.canonical!.recipient.toLowerCase()&&x.amount===BigInt(p.canonical!.amountAtomic)&&p.review&&x.decisionHash.toLowerCase()===digest(p.review)&&x.genLayerTxHash.toLowerCase()===p.genLayerTxHash?.toLowerCase())started++;}}catch{}}
+   if(log.address.toLowerCase()===routeForCard(card,sourceChain(card)).transmitter.toLowerCase()){try{const e=decodeEventLog({abi:transmitterAbi,data:log.data,topics:log.topics});if(e.eventName==="MessageSent")messages.push((e.args as {message:string}).message)}catch{}}
+   if(log.address.toLowerCase()===card.address.toLowerCase()){try{const e=decodeEventLog({abi:bridgeAbiFor(card),data:log.data,topics:log.topics});if(e.eventName==="BridgeStarted"){const x=e.args as unknown as {requestId:string;destinationDomain:number;routeHash:string;recipient:string;amount:bigint;decisionHash:string;genLayerTxHash:string};if(x.requestId.toLowerCase()===p._id.toLowerCase()&&x.destinationDomain===p.canonical!.destinationDomain&&x.routeHash.toLowerCase()===bridgeRouteHash(x.destinationDomain,p.canonical!.recipient,BigInt(p.canonical!.amountAtomic))&&x.recipient.toLowerCase()===p.canonical!.recipient.toLowerCase()&&x.amount===BigInt(p.canonical!.amountAtomic)&&p.review&&x.decisionHash.toLowerCase()===digest(p.review)&&x.genLayerTxHash.toLowerCase()===p.genLayerTxHash?.toLowerCase())started++;}}catch{}}
   }
   requireValue(started===1&&messages.length===1,"Source receipt does not prove a unique authorized CCTP burn.");verifyCctpMessage(messages[0],card,p.canonical!,false);return {sourceHash,message:messages[0]};
  }
- async attestation(sourceHash:string){
-  const response=await this.fetcher(CCTP_IRIS_TESTNET+"/v2/messages/37?transactionHash="+encodeURIComponent(sourceHash),{signal:AbortSignal.timeout(12000),redirect:"error",headers:{Accept:"application/json"}});
+ async attestation(sourceHash:string,card?:Card){
+ const iris=card?.settlement&&isSettlementV2(card.settlement)?CCTP_IRIS[card.settlement.paymentEnvironment]:CCTP_IRIS_TESTNET;
+  const response=await this.fetcher(iris+"/v2/messages/37?transactionHash="+encodeURIComponent(sourceHash),{signal:AbortSignal.timeout(12000),redirect:"error",headers:{Accept:"application/json"}});
   if(response.status===404)return null;
   if(!response.ok)throw new BridgePending(response.status===429?"CCTP_RATE_LIMIT":"CCTP_ATTESTATION_UNAVAILABLE","Circle attestation service is temporarily unavailable; the existing burn will be retried.");
   const reader=response.body?.getReader();requireValue(reader,"Circle returned no attestation body.");let size=0;const parts:Uint8Array[]=[];
@@ -71,9 +85,9 @@ export class Cctp{
   const available=result.messages.filter((x:any)=>x.cctpVersion===2&&x.status==="complete"&&typeof x.message==="string"&&/^0x[0-9a-fA-F]+$/.test(x.message)&&typeof x.attestation==="string"&&/^0x(?:[0-9a-fA-F]{130})+$/.test(x.attestation));
   if(!available.length)return null;requireValue(available.length===1,"Ambiguous CCTP burn attestations.");return available[0] as {message:string;attestation:string};
  }
- async sendMint(card:Card,p:Payment,id:TestnetChainId,message:string,attestation:string){
+ async sendMint(card:Card,p:Payment,id:number,message:string,attestation:string){
   if(process.env.GITHUB_ACTIONS!=="true")throw new BridgeFailure("ACTIONS_WORKER_REQUIRED","CCTP signing is restricted to the GitHub Actions worker.");
-  const d=this.destination(id);requireValue(await d.public.getChainId()===id,"Destination RPC chain mismatch.");
+  const d=this.destination(id,card);requireValue(await d.public.getChainId()===id,"Destination RPC chain mismatch.");
   const privateKey=process.env.XLAYER_OPERATOR_PRIVATE_KEY;requireValue(privateKey,"Worker bridge signing key is unavailable.");const account=privateKeyToAccount(hex(privateKey));requireValue(account.address.toLowerCase()===this.evm.cfg.gateway?.toLowerCase(),"Destination relayer key mismatch.");
   const wallet=createWalletClient({chain:d.chain,account,transport:http(d.rpc,{timeout:12000,retryCount:0})}),key="cctp:"+id+":"+p._id+":receive";
   let saved=await this.store.get<Doc&{hash:Hex;raw:Hex}>("transactions",key),receipt=saved?await d.public.getTransactionReceipt({hash:saved.hash}).catch(()=>null):null;
@@ -88,14 +102,14 @@ export class Cctp{
   if(!receipt){await wallet.sendRawTransaction({serializedTransaction:saved.raw}).catch(async error=>{if(!await d.public.getTransaction({hash:saved!.hash}).catch(()=>null))throw error;});receipt=await d.public.waitForTransactionReceipt({hash:saved.hash,confirmations:2,timeout:25000,pollingInterval:1000});}
   return verifyDestinationReceipt(receipt,message,card,p.canonical!);
  }
- async reconcile(card:Card,p:Payment):Promise<Record<string,unknown>>{
+ async reconcile(card:Card,p:Payment):Promise<Record<string,unknown>>{assertCardEnvironment(card);
   requireValue(p.canonical&&p.review&&p.requestHash&&isBridge(card,p),"Bridge reconciliation requires a committed reviewed request.");
-  const r=p.canonical,d=this.destination(r.destinationChainId as TestnetChainId);requireValue(await d.public.getChainId()===r.destinationChainId,"Destination RPC chain mismatch.");requireValue(await d.public.readContract({address:d.c.transmitter,abi:transmitterAbi,functionName:"localDomain"})===r.destinationDomain,"Destination transmitter domain mismatch.");
-  const source=await this.sourceMessage(card,p),base:BridgeView={protocol:"CCTP_V2",phase:"BURNED",sourceChainId:1952,destinationChainId:r.destinationChainId!,destinationDomain:r.destinationDomain!,sourceToken:CCTP_TESTNETS[1952].token,destinationToken:d.c.token,amount:p.input.amount,sourceTxHash:source.sourceHash,updatedAt:Date.now(),...p.bridge};
+  const r=p.canonical,d=this.destination(r.destinationChainId!,card);requireValue(await d.public.getChainId()===r.destinationChainId,"Destination RPC chain mismatch.");requireValue(await d.public.readContract({address:d.c.transmitter,abi:transmitterAbi,functionName:"localDomain"})===r.destinationDomain,"Destination transmitter domain mismatch.");
+  const source=await this.sourceMessage(card,p),base:BridgeView={protocol:"CCTP_V2",phase:"BURNED",sourceChainId:sourceChain(card),destinationChainId:r.destinationChainId!,destinationDomain:r.destinationDomain!,sourceToken:routeForCard(card,sourceChain(card)).token,destinationToken:d.c.token,amount:p.input.amount,sourceTxHash:source.sourceHash,updatedAt:Date.now(),...p.bridge};
   let message=p.cctpMessage,attestation=p.cctpAttestation;
-  if(!message||!attestation){const proof=await this.attestation(source.sourceHash);if(!proof)return {status:"AWAITING_ATTESTATION",bridge:{...base,phase:"ATTESTATION_PENDING",updatedAt:Date.now()}};const parsed=verifyCctpMessage(proof.message,card,r,true,source.message);return {status:"MINTING",cctpMessage:proof.message,cctpAttestation:proof.attestation,bridge:{...base,phase:"ATTESTED",messageHash:keccak256(hex(proof.message)),nonce:parsed.nonce,updatedAt:Date.now()}};}
+  if(!message||!attestation){const proof=await this.attestation(source.sourceHash,card);if(!proof)return {status:"AWAITING_ATTESTATION",bridge:{...base,phase:"ATTESTATION_PENDING",updatedAt:Date.now()}};const parsed=verifyCctpMessage(proof.message,card,r,true,source.message);return {status:"MINTING",cctpMessage:proof.message,cctpAttestation:proof.attestation,bridge:{...base,phase:"ATTESTED",messageHash:keccak256(hex(proof.message)),nonce:parsed.nonce,updatedAt:Date.now()}};}
   const parsed=verifyCctpMessage(message,card,r,true,source.message),messageHash=keccak256(hex(message));requireValue(!base.messageHash||base.messageHash===messageHash,"Stored attestation hash changed.");
-  const receiptInfo=await this.evm.public.readContract({address:addr(card.address),abi:bridgeAbi,functionName:"getBridgeRequest",args:[hex(p._id)]}) as {destinationTxHash:Hex;sourceTxHash:Hex;messageHash:Hex;routeHash:Hex};
+  const receiptInfo=await this.evm.public.readContract({address:addr(card.address),abi:bridgeAbiFor(card),functionName:"getBridgeRequest",args:[hex(p._id)]}) as {destinationTxHash:Hex;sourceTxHash:Hex;messageHash:Hex;routeHash:Hex};
   requireValue(receiptInfo.routeHash===bridgeRouteHash(r.destinationDomain!,r.recipient,BigInt(r.amountAtomic)),"Source route commitment changed.");
   let destinationHash=base.destinationTxHash as Hex|undefined;
   const journal=await this.store.get<Doc&{hash:Hex;blockStart?:string}>("transactions","cctp:"+d.c.chainId+":"+p._id+":receive");
@@ -121,8 +135,8 @@ export class Cctp{
   // Persist observed destination receipt before issuing an acknowledgement.
   if(!p.bridge?.destinationTxHash)return {status:"MINTING",bridge:{...base,phase:"MINT_SUBMITTED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,updatedAt:Date.now()}};
   const privateKey=process.env.REVIEW_ATTESTOR_PRIVATE_KEY;requireValue(privateKey,"Bridge receipt attestor key is unavailable.");requireValue(process.env.GITHUB_ACTIONS==="true","Bridge acknowledgement must originate from the Actions worker.");const signer=privateKeyToAccount(hex(privateKey));requireValue(signer.address.toLowerCase()===this.evm.cfg.attestor?.toLowerCase(),"Bridge receipt attestor mismatch.");
-  const signature=await signer.signTypedData({domain:{name:"IntentGuard",version:"2",chainId:1952,verifyingContract:addr(card.address)},primaryType:"BridgeReceipt",types:{BridgeReceipt:artifacts.bridgeReceipt.fields.map(([name,type])=>({name,type}))},message:{requestId:hex(p._id),requestHash:hex(p.requestHash),routeHash:bridgeRouteHash(r.destinationDomain!,r.recipient,BigInt(r.amountAtomic)),sourceTxHash:hex(source.sourceHash),destinationTxHash:destinationHash,messageHash,amount:BigInt(r.amountAtomic)}});
-  const confirmationTxHash=await this.evm.execute(p._id+":bridge-confirm",card.address,"confirmBridge",[hex(p._id),hex(source.sourceHash),destinationHash,messageHash,signature],bridgeAbi);
+  const signature=await signer.signTypedData({domain:{name:"IntentGuard",version:String(cardContractVersion(card)),chainId:sourceChain(card),verifyingContract:addr(card.address)},primaryType:"BridgeReceipt",types:{BridgeReceipt:artifacts.bridgeReceipt.fields.map(([name,type])=>({name,type}))},message:{requestId:hex(p._id),requestHash:hex(p.requestHash),routeHash:bridgeRouteHash(r.destinationDomain!,r.recipient,BigInt(r.amountAtomic)),sourceTxHash:hex(source.sourceHash),destinationTxHash:destinationHash,messageHash,amount:BigInt(r.amountAtomic)}});
+  const confirmationTxHash=await this.evm.execute(p._id+":bridge-confirm",card.address,"confirmBridge",[hex(p._id),hex(source.sourceHash),destinationHash,messageHash,signature],bridgeAbiFor(card));
   return {status:"PAID",paymentTxHash:destinationHash,bridge:{...base,phase:"CONFIRMED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,confirmationTxHash,updatedAt:Date.now()}};
  }
 }

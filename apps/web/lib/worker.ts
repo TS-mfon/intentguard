@@ -1,11 +1,11 @@
 import {randomBytes} from "node:crypto";
-import {digest,parseAmount,validateDecision,type RequestStatus,type PaymentInput} from "../../../packages/shared";
+import {isSettlementV2,digest,parseAmount,validateDecision,type RequestStatus,type PaymentInput} from "../../../packages/shared";
 import type {Store,Doc} from "./store";
 import type {Card,Payment,Draft,Job} from "./models";
 import {activeStatuses,terminal} from "./models";
 import type {EvmPort} from "./evm";
 import {PendingFinality,GenLayerTerminalError,type GenLayerPort} from "./genlayer";
-import {canonicalDestination,paymentDestination,isBridge} from "./settlement";
+import {canonicalDestination,paymentDestination,isBridge,assertCardEnvironment} from "./settlement";
 import {BridgePending,BridgeFailure} from "./cctp";
 import {capture,EvidenceFailure} from "./evidence";
 export const requestId=()=>"0x"+randomBytes(32).toString("hex");
@@ -65,9 +65,9 @@ export class Worker{
  }finally{await this.store.complete("locks","worker",lock.leaseToken!,{nextAt:0,nextQueue});}
  }
  private async draft(d:Draft){if(!d.genLayerTxHash)return {state:"AWAITING_FINALITY",genLayerTxHash:await this.gl.propose(d)};const result=await this.gl.draft(d);return {state:"FINALIZED",result};}
- private async card(c:Card){if(!c.reviewerTx)return {reviewerTx:await this.gl.deployReviewer({...c,reviewerVersion:c.settlement?3:2}),reviewerVersion:c.settlement?3:2};return {state:"READY",reviewerAddress:await this.gl.reviewer(c)}}
+ private async card(c:Card){assertCardEnvironment(c);const reviewerVersion=c.settlement&&isSettlementV2(c.settlement)?4:c.settlement?3:2;if(!c.reviewerTx)return {reviewerTx:await this.gl.deployReviewer({...c,reviewerVersion}),reviewerVersion};return {state:"READY",reviewerAddress:await this.gl.reviewer(c)}}
  async payment(p:Payment):Promise<Record<string,unknown>>{
- const c=await this.store.get<Card>("cards",p.cardId);if(!c)throw Error("Card record missing");
+ const c=await this.store.get<Card>("cards",p.cardId);if(!c)throw Error("Card record missing");assertCardEnvironment(c);
  const chain=await this.evm.request(c,p._id);
  if(chain.status===5||(chain.status===2&&isBridge(c,p))){if(!p.canonical||!p.requestHash||digest(p.canonical)!==p.requestHash||chain.requestHash!==p.requestHash||chain.evidenceHash!==p.evidenceHash||chain.recipient.toLowerCase()!==p.canonical.recipient.toLowerCase()||chain.amount!==BigInt(p.canonical.amountAtomic))throw new BridgeFailure("BRIDGE_COMMITMENT_MISMATCH","The bridge request differs from its immutable source reservation.");if(!this.evm.reconcileBridge)throw new BridgePending("BRIDGE_WORKER_UNAVAILABLE","The bridge worker is not available yet. Preserve this request ID.");try{return await this.evm.reconcileBridge(c,p)}catch(error){if(error instanceof BridgePending||error instanceof BridgeFailure)throw error;throw new BridgePending("BRIDGE_PROCESSING_DELAYED","Bridge processing is delayed. The existing burn remains durable; the worker will resume the same message.");}}
  if(chain.status===2)return {status:"PAID",paymentTxHash:this.evm.paidHash?await this.evm.paidHash(c,p):(await this.store.get<Doc>("transactions",p._id+":settle"))?.hash??p.paymentTxHash};
@@ -81,7 +81,7 @@ export class Worker{
  const guard=await this.evm.preview(c,p.input,expiry);
  if(!guard.allow)return {status:"BLOCKED",guard};
  let snapshots,expiresAt;
- try{evidenceAllowed(c,p.input);snapshots=await capture(p.input,this.fetcher);expiresAt=invoiceExpiry(c,p,snapshots,now);}
+ try{evidenceAllowed(c,p.input);snapshots=await capture(p.input,this.fetcher);expiresAt=invoiceExpiry(c,p,snapshots,Math.floor(Date.now()/1000));}
  catch(error){return {status:"NEEDS_EVIDENCE",guard,error:error instanceof EvidenceFailure?error.message:"Evidence could not be verified. Provide matching, current public merchant evidence and retry with a new idempotency key.",errorCode:error instanceof EvidenceFailure?error.code:"EVIDENCE_UNAVAILABLE"};}
  const evidenceHash=digest(snapshots);
  const {destinationChainId:submittedDestination,...original}=p.input;
@@ -104,7 +104,7 @@ export class Worker{
  // Finality and exact commitment are rechecked immediately before attesting.
  const latest=validateDecision(await this.gl.decision(c,p),c.policy,p.canonical,p.requestHash!);
  if(digest(latest)!==digest(p.review))throw Error("Finalized stored review changed");
- if(isBridge(c,p)){const sourceTxHash=await this.evm.settle(c,{...p,review:latest}),destination=paymentDestination(c,p.input);return {status:"BRIDGING",bridge:{protocol:"CCTP_V2",phase:"BURNED",sourceChainId:1952,destinationChainId:destination.chainId,destinationDomain:destination.domain,sourceToken:processToken(c),destinationToken:destination.token,amount:p.input.amount,sourceTxHash,updatedAt:Date.now()}};}
+ if(isBridge(c,p)){const sourceTxHash=await this.evm.settle(c,{...p,review:latest}),destination=paymentDestination(c,p.input);return {status:"BRIDGING",bridge:{protocol:"CCTP_V2",phase:"BURNED",sourceChainId:cardChain(c),destinationChainId:destination.chainId,destinationDomain:destination.domain,sourceToken:processToken(c),destinationToken:destination.token,amount:p.input.amount,sourceTxHash,updatedAt:Date.now()}};}
  return {status:"PAID",paymentTxHash:await this.evm.settle(c,{...p,review:latest})};
  }
 }

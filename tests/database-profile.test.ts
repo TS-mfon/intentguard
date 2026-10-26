@@ -1,0 +1,19 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import type {Db} from "mongodb";
+import {expectedDatabaseIdentity,validateDatabaseIdentity,validateDatabasePrincipal,bootstrapMainnetDatabase,verifyDatabaseIndexes,requiredIndexes} from "../apps/web/lib/database-profile";
+import {mongoClientOptions} from "../apps/web/lib/store";
+import type {configuration} from "../apps/web/lib/config";
+const cfg={mainnet:true,releaseId:"mainnet-beta-1",origin:"https://mainnet.intentguard.example",gateway:"0x"+"11".repeat(20),attestor:"0x"+"22".repeat(20)} as ReturnType<typeof configuration>;
+const identity=expectedDatabaseIdentity(cfg);
+function mockDb(seed:Record<string,unknown[]>={}){
+ const rows=new Map(Object.entries(seed)),indexes=new Map<string,unknown[]>();
+ function collection(table:string){if(!rows.has(table))rows.set(table,[]);return {findOne:async(q:Record<string,unknown>)=>rows.get(table)!.find(row=>Object.entries(q).every(([k,v])=>(row as Record<string,unknown>)[k]===v))??null,insertOne:async(row:unknown)=>{rows.get(table)!.push(row)},createIndexes:async(i:unknown[])=>indexes.set(table,i),listIndexes:()=>({toArray:async()=>indexes.get(table)??[]})};}
+ return {db:{collection,listCollections:()=>({toArray:async()=>[...rows.keys()].map(name=>({name}))})} as unknown as Db,rows,indexes};
+}
+test("mainnet identity rejects every cross-environment or signing-role mismatch",()=>{validateDatabaseIdentity(identity,identity);for(const[k,v]of Object.entries({...identity,paymentEnvironment:"testnet",paymentChainId:1952,databaseName:"intentguard",releaseId:"other",origin:"https://testnet.intentguard.example",gateway:cfg.attestor,attestor:cfg.gateway})){if(identity[k as keyof typeof identity]===v)continue;assert.throws(()=>validateDatabaseIdentity({...identity,[k]:v},identity))}assert.throws(()=>validateDatabaseIdentity(null,identity));});
+test("dedicated principals cannot name the existing testnet database",()=>{for(const role of ["api","worker"])validateDatabasePrincipal("mongodb://intentguard_mainnet_"+role+":private@localhost/intentguard_mainnet");for(const uri of ["mongodb://intentguard_app:private@localhost/intentguard_mainnet","mongodb://intentguard_mainnet_api:private@localhost/intentguard","mongodb://intentguard_mainnet_admin:private@localhost/intentguard_mainnet"])assert.throws(()=>validateDatabasePrincipal(uri));});
+test("bootstrap creates only metadata and indexes and is resumable",async()=>{const {db,rows,indexes}=mockDb();await bootstrapMainnetDatabase(db,cfg);await bootstrapMainnetDatabase(db,cfg);assert.deepEqual(rows.get("metadata"),[identity]);assert.equal(rows.get("requests")!.length,0);assert.equal(indexes.size,Object.keys(requiredIndexes).length);await verifyDatabaseIndexes(db);});
+test("bootstrap refuses to relabel a populated or differently bound database",async()=>{await assert.rejects(bootstrapMainnetDatabase(mockDb({requests:[{_id:"old-testnet-request"}]}).db,cfg));await assert.rejects(bootstrapMainnetDatabase(mockDb({metadata:[{...identity,paymentEnvironment:"testnet"}]}).db,cfg));});
+test("missing or altered TTL indexes fail readiness; unresolved financial records have no TTL",async()=>{const {db,indexes}=mockDb();await bootstrapMainnetDatabase(db,cfg);indexes.set("rate",[{...requiredIndexes.rate[0],expireAfterSeconds:3600}]);await assert.rejects(verifyDatabaseIndexes(db));for(const table of ["cards","drafts","requests","keys"])assert.ok(requiredIndexes[table].every(index=>index.expireAfterSeconds===undefined));});
+test("MongoDB pool and operations stay bounded for serverless and short workers",()=>{assert.equal(mongoClientOptions.maxPoolSize,5);assert.equal(mongoClientOptions.minPoolSize,0);assert.equal(mongoClientOptions.timeoutMS,15000);assert.ok(mongoClientOptions.waitQueueTimeoutMS<mongoClientOptions.timeoutMS);assert.ok(mongoClientOptions.timeoutMS<120000);});

@@ -1,5 +1,6 @@
 import type {Store,Doc} from "./store";
 import {activeStatuses} from "./models";
+import {configuration} from "./config";
 
 export type WakeConfiguration={token:string;repository:string;workflow:string;ref:string};
 export type WakeOutcome="disabled"|"coalesced"|"idle"|"active"|"dispatched"|"failed";
@@ -14,9 +15,11 @@ export async function hasPendingWork(store:Store){
  return false;
 }
 export function wakeConfiguration():WakeConfiguration|undefined{
- const token=process.env.GITHUB_WORKER_TOKEN,repository=process.env.GITHUB_WORKER_REPOSITORY;
+ const cfg=configuration(),token=process.env.GITHUB_WORKER_TOKEN,repository=process.env.GITHUB_WORKER_REPOSITORY;
  if(!token||!repository)return undefined;
- return {token,repository,workflow:process.env.GITHUB_WORKER_WORKFLOW??"worker.yml",ref:process.env.GITHUB_WORKER_REF??"main"};
+ const workflow=process.env.GITHUB_WORKER_WORKFLOW??(cfg.mainnet?"worker-mainnet.yml":"worker.yml"),ref=process.env.GITHUB_WORKER_REF??"main";
+ if(cfg.mainnet&&(workflow!=="worker-mainnet.yml"||ref!=="main"||!cfg.sourceCommit))throw Error("Mainnet wake requires the isolated worker and pinned release");
+ return {token,repository,workflow,ref};
 }
 /** A durable, short-lived coordinator prevents a burst of API admissions from
  * dispatching one Actions run per request. Queue records remain authoritative. */
@@ -47,7 +50,7 @@ export async function wakeWorker(store:Store,options:Options={}):Promise<WakeOut
    return Number.isFinite(started)&&started>now()-90000;
   });
   if(active){outcome="active";return outcome;}
-  const dispatched=await fetcher(base+"/dispatches",{method:"POST",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({ref:cfg.ref,inputs:{duration_seconds:"180"}}),redirect:"error",signal:AbortSignal.timeout(8000)});
+  const dispatched=await fetcher(base+"/dispatches",{method:"POST",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({ref:cfg.ref,inputs:{duration_seconds:"180",...(cfg.workflow==="worker-mainnet.yml"?{release_ref:configuration().sourceCommit}:{})}}),redirect:"error",signal:AbortSignal.timeout(8000)});
   if(dispatched.status!==204)throw Error("GitHub worker dispatch failed");
   outcome="dispatched";return outcome;
  }catch{

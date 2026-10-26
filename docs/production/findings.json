@@ -240,7 +240,7 @@
       "acceptance": "Cross-environment credentials, databases, receipts, routes, and signing operations are rejected.",
       "ownerLeaf": "2.1",
       "observingGate": "leaf-2.1:R08",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -251,7 +251,13 @@
           "line": 1083
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/RUNTIME-ISOLATION.md",
+          "check": "node tools/production/verify-runtime.mjs",
+          "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Confirmed: default live configuration combines mainnet asset with Studio review; worker explicitly permits testnet only."
@@ -263,7 +269,7 @@
       "acceptance": "Empty initial database, verified indexes, bounded connection behavior, denied testnet access, and successful backup/restore exercise.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R09",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -274,7 +280,13 @@
           "line": 1083
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/RUNTIME-ISOLATION.md",
+          "check": "node tools/production/verify-runtime.mjs",
+          "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "New requirement: mainnet database does not exist in tracked evidence; runtime currently defaults to a shared database name."
@@ -314,7 +326,8 @@
         }
       ],
       "fixCommits": [
-        "61ed634"
+        "61ed634",
+        "790e2f5"
       ],
       "retestCommits": [],
       "baselineClassification": "Partial: native-USDC testnet routes verified; official mainnet assets and ten destination routes require expanded live proof."
@@ -326,7 +339,7 @@
       "acceptance": "Deterministic failures avoid model generation; validators independently verify results; malformed/finally failed receipts cannot authorize payment.",
       "ownerLeaf": "1.4",
       "observingGate": "leaf-1.4:R11",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -346,6 +359,11 @@
           "artifact": "contracts/genlayer/versions/purchase_reviewer_v4.audit.json",
           "check": "node tools/production/verify-reviewer.mjs",
           "scope": "206 direct SDK tests, parent reverified; runtime and live audits pending"
+        },
+        {
+          "artifact": "docs/production/RUNTIME-ISOLATION.md",
+          "check": "node tools/production/verify-runtime.mjs",
+          "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
         }
       ],
       "fixCommits": [

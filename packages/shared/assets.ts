@@ -12,7 +12,8 @@ const contracts = {
   transmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
   minter: "0xb43db544E2c27092c107639Ad201b3dEfAbcF192",
 } as const;
-export const CCTP_TESTNETS = {
+type LegacyRoute={chainId:TestnetChainId;name:string;domain:number;rpcUrl:string;explorerUrl:string;token:`0x${string}`;testnet:true;messenger:`0x${string}`;transmitter:`0x${string}`;minter:`0x${string}`};
+export const CCTP_TESTNETS:Readonly<Record<number,LegacyRoute>> = {
   1952: { chainId: 1952, name: "X Layer Testnet", domain: 37, rpcUrl: "https://testrpc.xlayer.tech", explorerUrl: "https://www.okx.com/web3/explorer/xlayer-test", token: "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3", testnet: true, ...contracts },
   84532: { chainId: 84532, name: "Base Sepolia", domain: 6, rpcUrl: "https://sepolia.base.org", explorerUrl: "https://sepolia.basescan.org", token: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", testnet: true, ...contracts },
   421614: { chainId: 421614, name: "Arbitrum Sepolia", domain: 3, rpcUrl: "https://sepolia-rollup.arbitrum.io/rpc", explorerUrl: "https://sepolia.arbiscan.io", token: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", testnet: true, ...contracts },

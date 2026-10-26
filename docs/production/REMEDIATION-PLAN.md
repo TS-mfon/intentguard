@@ -10,13 +10,13 @@ Maintain two separate environments:
 | Assets | Native testnet USDC; existing synthetic cards remain labelled | Native USDC and USDT0 |
 | Cross-chain spending | Expand and validate matching testnet routes | USDC through CCTP to ten EVM networks |
 | USDT0 spending | Disabled until an official testnet deployment exists | X Layer settlement only |
-| Semantic review | Existing versioned GenLayer reviewers | GenLayer testnet review, prominently disclosed |
+| Semantic review | Existing versioned GenLayer reviewers | GenLayer Studionet (61999) review, prominently disclosed |
 | Database | Preserve existing database | Create `intentguard_mainnet` with separate credentials |
 | Execution | GitHub Actions | GitHub Actions until a VPS is affordable |
 | Frontend | Preserve current Vercel application | Publish through X Layer DeWEB/TapeKit |
 | Spending policy | Testnet execution | Prepare quotes before paid provisioning or broadcasts |
 
-Your clarification establishes a **mainnet payment beta with GenLayer testnet review**. Payment receipts and financial data will be mainnet; the review network will remain explicitly identified as testnet.
+Your clarification establishes a **mainnet payment beta with GenLayer Studionet testnet review**. Payment receipts and financial data will be mainnet; the review network will remain explicitly identified as testnet.
 
 The plan starts from commit `63ecc77`. Its [GitHub validation run passed](https://github.com/TS-mfon/intentguard/actions/runs/40263168673). The latest evidence records 8/8 native-USDC scenarios, including prohibited-purchase rejection. The original 12-case audit remains 10/12; general prompt-injection reliability and legacy reviewer replacement remain outstanding.
 
@@ -72,7 +72,7 @@ Verify every route against official issuer documentation and live RPC state befo
 - Give each card one immutable asset. USDC cards may allow local and CCTP settlement; USDT0 cards allow X Layer settlement only. Funding uses the card’s actual token.
 - Deploy new mainnet contract versions with verified immutable token, messenger, domain, route, processor, and signature configuration. Preserve existing testnet contracts.
 - Use a versioned reviewer that binds the mainnet payment chain, token, policy, request, evidence, and destination permission despite running on GenLayer testnet.
-- Target verified Bradbury testnet for the new reviewer. Pin its network identity, including genesis and consensus deployment. If unavailable, leave spending disabled; do not silently substitute another network.
+- Target verified Studionet testnet for the new reviewer. Pin its network identity, including chain61999, the simulator genesis response and the SDK consensus address. Studionet currently returns a zero genesis hash and no EVM bytecode at that address; these pins are configuration checks, not proof of a deployed EVM consensus contract. If unavailable, leave spending disabled; do not silently substitute another network.
 
 ### API, SDK, and MCP changes
 
@@ -270,3 +270,7 @@ Before implementation, expand every checklist item into leaf gates with exact ow
 Apply the four passes: complete implementation, expert reread, defect hunt, and polish/retest. Preserve every external blocker or abandonment as a visible handoff.
 
 Completion requires both deployments to have current release evidence, isolated data, verified financial behavior, passing security regressions, accurate documentation/tooling, and a fully reconciled findings register. The final report will state measured gate counts and remaining architectural trust; it will not claim that testing proves the absence of every possible vulnerability.
+
+## User amendment:2026-10-26
+
+The user explicitly selected Studionet for semantic review because GenLayer has no mainnet. X Layer196 payments and MongoDB mainnet financial records remain mainnet. The earlier proposed Bradbury migration is removed by this instruction. Live reviewer/source/receipt verification remains mandatory on Studionet.
