@@ -1,0 +1,35 @@
+name: IntentGuard hosted story verification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hosted-story-verification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Verify hosted story, media and recovery
+        env:
+          STORY_BASE_URL: https://intentguard-tapeout.vercel.app
+        run: pnpm exec tsx scripts/story-browser.ts
+      - name: Preserve hosted browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-story-browser-evidence
+          path: .local/story-screenshots
+          if-no-files-found: ignore
+          retention-days: 7
