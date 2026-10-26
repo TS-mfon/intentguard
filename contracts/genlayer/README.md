@@ -84,3 +84,61 @@ Run node tools/check.mjs genlayer from the project root. The four implementation
 passes covered full delivery, substantive validator/domain review, integration
 and adversarial defects (including JS Unicode canonicalization), then SDK/schema
 and documentation polish.
+
+## Version 4 settlement profile and control preflight
+
+New cards use `versions/purchase_reviewer_v4.py`. The constructor takes seven
+explicit positional arguments:
+
+```text
+operator, policyJson, policyHash, chainId, token, settlementJson, profileJson
+```
+
+`settlementJson` is canonical JSON with
+`{version:2,paymentEnvironment:"mainnet"|"testnet",asset:"USDC"|"USDT0",destinationChainIds:[sorted unique IDs]}`.
+`profileJson` is canonical JSON with
+`{version:4,paymentEnvironment:"mainnet"|"testnet",reviewEnvironment:"testnet"}`.
+The two payment environments must agree. Mainnet payments bind X Layer196
+and the official native token; testnet payments bind X Layer1952 and native
+testnet USDC. USDT0 supports mainnet X Layer settlement only. USDC admits only
+the fixed source and ten EVM destinations from the accepted plan, within the
+owner's immutable subset. Destination chain, domain and native token must match
+the invoice and settlement hash. No omitted profile, legacy settlement object,
+cross-environment destination or synthetic USDC is accepted by V4.
+
+The registry is a list of candidates from the official issuer tables, not live
+deployment evidence. API deployment tooling must separately verify issuer
+relationships, RPC chain identity, bytecode, fees and readiness before enabling
+a route. The reviewer does not turn an unverified route into an enabled route.
+
+Getters include `get_version()`, `get_settlement_profile()`,
+`get_settlement_profile_hash()` and existing chain/token/policy/settlement
+getters. Request commitments retain all route fields and include the V2
+settlement hash. Earlier reviewer sources and existing hashes are preserved.
+
+Deterministic permission or invoice contradictions yield REJECT without an
+LLM. Missing proof yields NEEDS_EVIDENCE. Explicit instructions in agent prose,
+public evidence or decoded invoice descriptions that try to override policy,
+budget, recipients, evidence checks, expiry or validator roles yield
+NEEDS_EVIDENCE when no deterministic rejection already applies. The scan
+normalizes Unicode compatibility forms and removes format characters; decoded
+JSON descriptions are checked so Unicode escapes cannot hide the same marker.
+This is a conservative control marker check. It can require replacement of
+otherwise useful evidence containing quoted attack instructions, and does not
+prove detection of arbitrary paraphrases, encodings or languages.
+
+The semantic validator first assesses original policy and refetched evidence
+without seeing a leader proposal. Only after its criterion statuses agree does
+a separate fidelity evaluation assess the leader's reasons and citations.
+Both evaluations must pass. Every agreed result is revalidated for complete
+criterion IDs, statuses, verified citations and exact commitments before
+persistence. A small payment never skips semantic review.
+
+Run `node tools/production/verify-reviewer.mjs` from the repository root.
+The verifier pins genvm-linter0.11.0, genlayer-test0.29.2 and the existing
+SDK0.2.16 artifact digest, checks the published V4 ABI against extracted schema,
+and executes the old and new direct suites. Model/web responses are adversarial
+fixtures. These checks establish implementation behavior; fresh live GenLayer
+testnet deployment, validator consensus and two adversarial audit rounds remain
+mandatory release gates. This work is an internal review, not third-party or
+TapeCode certification.

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-26T04:29:44Z",
+  "scope": "Reviewer V4 implementation and direct SDK behavior",
+  "certification": "Internal adversarial review; not third-party or TapeCode certification",
+  "status": "LOCAL_IMPLEMENTATION_VERIFIED_LIVE_RELEASE_PENDING",
+  "artifactHashes": {
+    "contracts/genlayer/versions/purchase_reviewer_v4.py": "6079c714b50ba76daa2e5cd4a634d93d246b78782669d97be0a557c920f4bdfb",
+    "contracts/genlayer/tests/direct/test_reviewer_v4.py": "298c63083178316409e4b8976fbb3a68912311def9e0c8d01d4317522b9c8a0c",
+    "contracts/genlayer/versions/purchase_reviewer_v4.schema.json": "f666ef331c0659edf2db6ac42057276026237ad5a572025011d7cd00746d631e"
+  },
+  "toolchain": {
+    "genvmLinter": "0.11.0",
+    "genlayerTest": "0.29.2",
+    "directSdk": "v0.2.16",
+    "directSdkSha256": "4f0b358ec98ec148be9b95cdfb0f0e1a6cbe64da0194fdfac3fffc6f5d1d93e2"
+  },
+  "verification": {
+    "command": "node tools/production/verify-reviewer.mjs",
+    "totalDirectTests": 206,
+    "legacyDirectTests": 72,
+    "newDirectTests": 134,
+    "skippedTests": 0,
+    "positiveControls": "Every22 USDC source/destination candidate pair, localUSDT0, benign control terminology, independently agreeing semantic decisions",
+    "negativeControls": "Profile/asset/route drift, malformed/model-forged criterion results, independent semantic/fidelity disagreement, commitment drift, replays, changed/refetched evidence, exact permission and invoice contradictions,48 control-injection variants plus encoded invoice JSON"
+  },
+  "findings": [
+    {
+      "id": "RV4-01",
+      "status": "FIXED_AND_RETESTED",
+      "scope": "Unreleased V4 implementation",
+      "issue": "A duplicate control helper shadowed Unicode normalization during the first implementation pass.",
+      "impact": "Unicode-formatted override instructions could bypass the new supplemental deterministic check. This was not a deployed fund-loss finding.",
+      "regression": "test_control_injection_requires_clean_evidence_without_model",
+      "initialResult": "Six Unicode cases failed against the first implementation; all covered cases pass after the helper correction."
+    },
+    {
+      "id": "RV4-02",
+      "status": "FIXED_AND_RETESTED",
+      "scope": "Unreleased V4 implementation",
+      "issue": "Raw JSON-body scanning alone did not examine an invoice description after Unicode-escape decoding.",
+      "impact": "Equivalent JSON text could hide a control marker from the new supplemental check.",
+      "regression": "test_escaped_invoice_instructions_cannot_bypass_preflight",
+      "fix": "Check the decoded invoice description after strict invoice validation."
+    }
+  ],
+  "requiredLiveEvidence": [
+    "Deploy V4 to a verified GenLayer testnet deployment and pin its source/network identity.",
+    "Verify live issuer contracts, RPC identity, token/messenger relationships and fees before enabling any candidate route.",
+    "Complete two fresh live semantic/reliability audit rounds; direct model fixtures cannot establish live validator agreement.",
+    "Verify explicit owner replacement rather than claiming old funded reviewers silently inherited this source."
+  ],
+  "remainingTrust": [
+    "Semantic classification still depends on GenLayer model and validator behavior.",
+    "The instruction scan recognizes explicit control patterns; arbitrary paraphrases, encodings and languages require live adversarial evaluation.",
+    "Quoted attack instructions can require clean replacement evidence even when the surrounding product is legitimate.",
+    "GenLayer web responses lack inspectable resolved IP/final URL metadata; gateway public-network and redirect restrictions remain required.",
+    "X Layer release and CCTP delivery still rely on the documented configured attestor boundary."
+  ]
+}

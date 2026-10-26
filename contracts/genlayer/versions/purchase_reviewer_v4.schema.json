@@ -1,0 +1,116 @@
+{
+  "ctor": {
+    "params": [
+      [
+        "operator",
+        "address"
+      ],
+      [
+        "policyJson",
+        "string"
+      ],
+      [
+        "policyHash",
+        "string"
+      ],
+      [
+        "chainId",
+        "int"
+      ],
+      [
+        "token",
+        "string"
+      ],
+      [
+        "settlementJson",
+        "string"
+      ],
+      [
+        "profileJson",
+        "string"
+      ]
+    ],
+    "kwparams": {}
+  },
+  "methods": {
+    "get_chain_id": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_operator": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "address"
+    },
+    "get_policy_hash": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_settlement_hash": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_settlement_profile": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_settlement_profile_hash": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_token": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_version": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_review": {
+      "params": [
+        [
+          "requestId",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "review": {
+      "params": [
+        [
+          "requestId",
+          "string"
+        ],
+        [
+          "requestJson",
+          "string"
+        ],
+        [
+          "evidenceJson",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    }
+  }
+}
