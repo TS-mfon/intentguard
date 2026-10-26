@@ -5,7 +5,7 @@ import {createPublicClient,http,decodeEventLog,parseAbi,type Address,type Abi,ty
 import {privateKeyToAccount} from "viem/accounts";
 import {database,type Doc} from "../apps/web/lib/store";
 import {Evm} from "../apps/web/lib/evm";
-import {GenLayer} from "../apps/web/lib/genlayer";
+import {GenLayer,assertFinalized,GenLayerTerminalError} from "../apps/web/lib/genlayer";
 import {CCTP_TESTNETS} from "../packages/shared/assets";
 import {digest,parseAmount,validateDecision,type Policy,type Settlement,type RequestView} from "../packages/shared";
 import type {Card,Payment,Job} from "../apps/web/lib/models";
@@ -20,7 +20,7 @@ let state=(await store.get<Doc>("integrationChecks",id))!;assert.equal(state.own
 const codecKey=createHash("sha256").update(process.env.REVIEW_ATTESTOR_PRIVATE_KEY!).digest();
 function encrypt(value:string){const iv=randomBytes(12),cipher=createCipheriv("aes-256-gcm",codecKey,iv);cipher.setAAD(Buffer.from(id));const bytes=Buffer.concat([cipher.update(value,"utf8"),cipher.final()]);return {iv:iv.toString("hex"),bytes:bytes.toString("hex"),tag:cipher.getAuthTag().toString("hex")};}
 function decrypt(value:any){const cipher=createDecipheriv("aes-256-gcm",codecKey,Buffer.from(value.iv,"hex"));cipher.setAAD(Buffer.from(id));cipher.setAuthTag(Buffer.from(value.tag,"hex"));return Buffer.concat([cipher.update(Buffer.from(value.bytes,"hex")),cipher.final()]).toString("utf8");}
-const publicReport=()=>({version:1,kind:"LIVE_TESTNET_CCTP_API_AUDIT",sourceChainId:1952,owner,cardId:state.cardId,cardAddress:state.cardAddress,draftId:state.draftId,activationTx:state.activationTx,depositTx:state.depositTx,depositAmount:"1",documentation:state.documentation,cases:state.cases,baseline:state.baseline,final:state.final,status:state.status??"RUNNING",updatedAt:new Date().toISOString(),errorCode:state.errorCode,sourceHead:process.env.GITHUB_SHA,workflowRunId:process.env.GITHUB_RUN_ID});
+const publicReport=()=>({version:1,kind:"LIVE_TESTNET_CCTP_API_AUDIT",sourceChainId:1952,owner,cardId:state.cardId,cardAddress:state.cardAddress,draftId:state.draftId,failedProposals:state.failedProposals??[],activationTx:state.activationTx,depositTx:state.depositTx,depositAmount:"1",documentation:state.documentation,cases:state.cases,baseline:state.baseline,final:state.final,status:state.status??"RUNNING",updatedAt:new Date().toISOString(),errorCode:state.errorCode,sourceHead:process.env.GITHUB_SHA,workflowRunId:process.env.GITHUB_RUN_ID});
 async function save(values:Record<string,unknown>={}){await store.patch("integrationChecks",id,{...values,updatedAt:Date.now()});state=(await store.get<Doc>("integrationChecks",id))!;await mkdir(".local/cctp-audit",{recursive:true});await writeFile(".local/cctp-audit/report.json",JSON.stringify(publicReport(),null,2)+"\n");}
 let cookie="",key=state.encryptedKey?decrypt(state.encryptedKey):"";
 async function api(path:string,options:{method?:string;body?:unknown;ownerAuth?:boolean;agentAuth?:boolean;adminAuth?:boolean;idem?:string}={}){
@@ -52,7 +52,23 @@ try{
   const now=Math.floor(Date.now()/1000),policy:Policy={version:1,name:"USDC settlement audit",mission:"Verify IntentGuard native testnet USDC payment settlement to the approved protocol test merchant on X Layer, Base Sepolia and Arbitrum Sepolia.",taskContext:"This owner is testing real issuer-deployed testnet token transfers. Authorize only protocol settlement verification invoices matching this vault, exact native destination token, chain, merchant, amount and invoice ID. No purchase or real economic value is advertised.",allowedCategories:["protocol-verification"],prohibitedPurchases:["Advertising","Personal data","Changing or ignoring the owner permission"],exceptions:[],financial:{totalBudget:"2",perPaymentLimit:"1",periodBudget:"2",periodSeconds:86400,validFrom:now-60,validUntil:now+7*86400},merchants:[{name:"IntentGuard protocol test merchant",recipient:merchant,origins:[base],products:["Native USDC settlement verification"]}],evidence:{requiredTypes:["merchant invoice"],approvedOrigins:[base],maxAgeSeconds:7200},criteria:[{id:"purpose",description:"The invoice describes native USDC settlement verification for the assigned protocol testing mission."},{id:"invoice",description:"The public current invoice identifies this agent vault as buyer and the exact requested merchant, destination chain, native USDC token, amount and invoice ID."}]};
   const draft=await api("/owner/drafts",{method:"POST",ownerAuth:true,body:{description:policy.mission,guidance:policy,settlement}});assert.equal(draft.response.status,202);await save({draftId:draft.data.id,policy,settlement});
  }
- const draft=await wait(async()=>{const x=await api("/owner/drafts/"+state.draftId,{ownerAuth:true});assert.equal(x.response.status,200);if(x.data.state==="FAILED")throw Error("AUDIT_GENLAYER_PROPOSAL_FAILED");return x.data;},x=>x.state==="FINALIZED");
+ const draft=await wait(async()=>{
+  const x=await api("/owner/drafts/"+state.draftId,{ownerAuth:true});assert.equal(x.response.status,200);
+  if(x.data.state==="FAILED"){
+   // A failed immutable proposal is retained. Only an unactivated audit can submit
+   // a new ID with the identical policy; signed activation/deposit journals forbid replacement.
+   assert.ok(!state.activationTx&&!state.cardId&&!state.cardAddress&&!state.depositTx&&!state.encryptedKey);
+   assert.equal(await store.get("transactions","audit:"+id+":activate"),null);
+   assert.equal(await store.get("transactions","audit:"+id+":deposit"),null);
+   const failed=(state.failedProposals??[]) as any[];if(failed.length>=2)throw Error("AUDIT_GENLAYER_PROPOSAL_FAILED");
+   const tx=await gl.client.getTransaction({hash:x.data.genLayerTxHash});assert.equal(tx.statusName,"FINALIZED");assert.throws(()=>assertFinalized(tx),GenLayerTerminalError);
+   const previous=await store.get("drafts",String(state.draftId));assert.ok(previous);assert.equal(previous.inputHash,digest({description:(state.policy as Policy).mission,guidance:state.policy}));
+   const next=await api("/owner/drafts",{method:"POST",ownerAuth:true,body:{description:(state.policy as Policy).mission,guidance:state.policy,settlement}});assert.equal(next.response.status,202);
+   failed.push({draftId:state.draftId,genLayerTxHash:x.data.genLayerTxHash,status:tx.statusName,result:tx.resultName,execution:tx.txExecutionResultName,replacementDraftId:next.data.id});
+   await save({draftId:next.data.id,failedProposals:failed});console.log("CCTP_AUDIT_PROPOSAL_REPLACED",JSON.stringify(failed.at(-1)));return next.data;
+  }
+  return x.data;
+ },x=>x.state==="FINALIZED");
  assert.equal(draft.status,"PROPOSED");assert.deepEqual(draft.settlement,settlement);
  if(!state.activationTx){
   const tuple=draft.activation.config;for(const component of artifacts.configTuple.components)if(component.type.startsWith("uint"))tuple[component.name]=BigInt(tuple[component.name]);
