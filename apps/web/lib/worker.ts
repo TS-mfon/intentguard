@@ -48,7 +48,7 @@ export class Worker{
  if(table==="requests"&&(e instanceof BridgePending||e instanceof BridgeFailure||["BRIDGING","AWAITING_ATTESTATION","MINTING"].includes(String(job.status)))){
   // A finalized burn cannot be cancelled/refunded by an API status or timeout.
   const attempts=Number(job.attempts??0)+1;await this.store.complete(table,job._id,job.leaseToken!,{status:["BRIDGING","AWAITING_ATTESTATION","MINTING"].includes(String(job.status))?job.status:"BRIDGING",error:e instanceof BridgePending||e instanceof BridgeFailure?e.message:"Bridge processing is delayed. The existing source burn remains in reconciliation.",errorCode:e instanceof BridgePending||e instanceof BridgeFailure?e.code:"BRIDGE_PROCESSING_DELAYED",attempts,nextAt:Date.now()+60000,updatedAt:Date.now()});
- }else if(e instanceof GenLayerTerminalError||Date.now()-Number(job.waitStartedAt??Date.now())>30*60*1000){
+ }else if(e instanceof GenLayerTerminalError||Date.now()-Number(job.waitStartedAt??Date.now())>30*60*1000||(table==="requests"&&job.processingStartedAt!==undefined&&Date.now()-Number(job.processingStartedAt)>30*60*1000)){
   const error=table==="drafts"?"GenLayer could not finalize this proposal successfully. Review the instructions and submit a new proposal.":table==="cards"?"GenLayer reviewer initialization failed. Retry initialization in My agents.":"GenLayer review failed. No payment was authorized; its reservation is being cancelled.";
   const timedOut=!(e instanceof GenLayerTerminalError);
   const values=table==="requests"?{status:"RETRYING",cancelTarget:"CANCELLED",reviewFailure:error}:{state:"FAILED"};
@@ -75,6 +75,7 @@ export class Worker{
  const key=await this.store.get<Doc>("keys",p.keyId);const now=Math.floor(Date.now()/1000);
  if(p.cancelRequested||!key||key.revoked||(Object.hasOwn(c,"activeKeyId")&&c.activeKeyId!==p.keyId)||p.cancelTarget){await this.evm.cancel(c,p);return {status:p.cancelTarget??"CANCELLED",...(p.reviewFailure?{error:"GenLayer review failed. No payment was authorized; its reservation has been released.",errorCode:p.errorCode??"GENLAYER_REVIEW_FAILED"}:{})};}
  if(p.canonical&&p.canonical.expiresAt<=now){await this.evm.cancel(c,p);return {status:"EXPIRED"};}
+ if(chain.status===1&&Date.now()-Number(p.processingStartedAt??p.createdAt)>=30*60*1000){await this.evm.cancel(c,p);return {status:"CANCELLED",errorCode:"PROCESSING_TIMEOUT",error:"The pre-burn processing deadline elapsed. No payment was authorized; the reservation was released."};}
  if(c.state!=="READY")throw new PendingFinality("Reviewer is being initialized");
  if(!p.canonical){
  const expiry=Math.min(c.policy.financial.validUntil,now+86400);
@@ -89,7 +90,7 @@ export class Worker{
  return {canonical,snapshots,evidenceHash,requestHash:digest(canonical),guard};
  }
  // No broadcast until immutable evidence and request commitments were persisted by the prior tick.
- if(chain.status===0){const guard=await this.evm.preview(c,p.input,p.canonical.expiresAt);if(!guard.allow)return {status:"BLOCKED",guard};const txHash=await this.evm.reserve(c,p);return {status:"RESERVED",guard:{allow:true,failures:[],txHash}};}
+ if(chain.status===0){const guard=await this.evm.preview(c,p.input,p.canonical.expiresAt);if(!guard.allow)return {status:"BLOCKED",guard};const txHash=await this.evm.reserve(c,p);return {status:"RESERVED",processingStartedAt:Date.now(),guard:{allow:true,failures:[],txHash}};}
  if(chain.status!==1)throw Error("Unknown onchain state");
  if(chain.requestHash!==p.requestHash||chain.evidenceHash!==p.evidenceHash||chain.recipient.toLowerCase()!==p.canonical.recipient.toLowerCase()||chain.amount!==BigInt(p.canonical.amountAtomic))throw Error("Reservation commitment mismatch");
  if(!p.genLayerTxHash)return {status:"AWAITING_FINALITY",genLayerTxHash:await this.gl.submit(c,p)};
@@ -118,6 +119,7 @@ export class Worker{
   await this.evm.cancel(current,fresh);return {status:fresh.cancelTarget??"CANCELLED"};
  }
  if(!fresh.canonical||fresh.canonical.expiresAt<=Math.floor(Date.now()/1000)){await this.evm.cancel(current,fresh);return {status:"EXPIRED"};}
+ if(Date.now()-Number(fresh.processingStartedAt??fresh.createdAt)>=30*60*1000){await this.evm.cancel(current,fresh);return {status:"CANCELLED",errorCode:"PROCESSING_TIMEOUT",error:"The pre-burn processing deadline elapsed. No payment was authorized; the reservation was released."};}
  if(current.state!=="READY"||current.owner!==c.owner||fresh.owner!==current.owner||fresh.cardId!==current._id||current.chainId!==c.chainId||current.token!==c.token||digest(current.settlement??null)!==digest(c.settlement??null)||current.address!==c.address||current.policyHash!==c.policyHash||current.reviewerAddress!==c.reviewerAddress||digest(current.policy)!==current.policyHash||fresh.requestHash!==p.requestHash||fresh.evidenceHash!==p.evidenceHash||fresh.genLayerTxHash!==p.genLayerTxHash||digest(fresh.canonical)!==p.requestHash||digest(fresh.input)!==fresh.inputHash||fresh.inputHash!==p.inputHash||digest(fresh.snapshots)!==p.evidenceHash||!fresh.review||digest(fresh.review)!==digest(latest))throw Error("Settlement authorization changed");
  if(isBridge(c,p)){const sourceTxHash=await this.evm.settle(c,{...p,review:latest}),destination=paymentDestination(c,p.input);return {status:"BRIDGING",bridge:{protocol:"CCTP_V2",phase:"BURNED",sourceChainId:cardChain(c),destinationChainId:destination.chainId,destinationDomain:destination.domain,sourceToken:processToken(c),destinationToken:destination.token,amount:p.input.amount,sourceTxHash,updatedAt:Date.now()}};}
  return {status:"PAID",paymentTxHash:await this.evm.settle(c,{...p,review:latest})};

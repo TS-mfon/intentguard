@@ -43,4 +43,3 @@ test("changed final commitments and lost leases never reach the signer",async()=
  }
 });
 test("valid final approval continues to settle once after the new rechecks",async()=>{const t=await settlementFixture();assert.equal((await t.step()).status,"PAID");assert.equal(t.evm.settlements,1);assert.equal((await t.step()).status,"PAID");assert.equal(t.evm.settlements,1);});
-
