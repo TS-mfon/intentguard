@@ -25,6 +25,11 @@ export const docsSections=[
     "Funding and reviewer"
   ],
   [
+    "Integration",
+    "crosschain",
+    "USDC and cross-chain spending"
+  ],
+  [
     "Owner setup",
     "credentials",
     "Agent credentials"

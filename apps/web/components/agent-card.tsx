@@ -1,14 +1,14 @@
 "use client";
 import {useState} from "react";
 import {ArrowUpRight,Download,Image as ImageIcon,RefreshCw} from "lucide-react";
-import {amount,date,errorMessage,short} from "./client";
+import {amount,date,errorMessage,short,paymentSymbol} from "./client";
 import {Button,Notice,Status} from "./primitives";
 import {useResource,useRuntime} from "./runtime";
 import {AgentIdentity,BrandMark,CardChip} from "./brand";
 import {CardTilt} from "./motion";
 
 export type AgentCardData={
-  agent:{id:string;name:string;mission:string;address:string;owner:string;policyHash:string;chainId:number;token:string;status:string;createdAt:number};
+  agent:{id:string;name:string;mission:string;address:string;owner:string;policyHash:string;chainId:number;token:string;paymentSymbol?:string;settlement?:import("./client").Settlement;status:string;createdAt:number};
   usage:{requestCount:number;paidCount:number;blockedCount:number;rejectedCount:number;needsEvidenceCount:number;cancelledCount:number;activeCount:number;fundsMoved:string;token:string;chainId:number;asOf:number|string};
   shareUrl:string;
 };
@@ -16,7 +16,7 @@ export function CardDownload({id,compact=false}:{id:string;compact?:boolean}) {
   const path="/explorer/agents/"+encodeURIComponent(id)+"/card";
   const resource=useResource<AgentCardData>(path,30000),{config}=useRuntime();
   const[busy,setBusy]=useState<"svg"|"png"|null>(null),[error,setError]=useState("");
-  const data=resource.data,symbol=config?.paymentSymbol||"Token";
+  const data=resource.data,symbol=paymentSymbol(data?.agent,config);
   async function download(format:"svg"|"png"){
     setBusy(format);setError("");
     let imageUrl:string|undefined,downloadUrl:string|undefined;

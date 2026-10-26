@@ -7,7 +7,7 @@ import {StdioClientTransport} from "@modelcontextprotocol/sdk/client/stdio.js";
 import {createProtocolServer} from "../src/server.mjs";
 
 const hash="0x"+"12".repeat(32),other="0x"+"13".repeat(32),key="ig_controlled_mcp_test_credential";
-const payment={recipient:"0x"+"34".repeat(20),amount:"1.000001",purchaseDescription:"Approved protocol data",justification:"Required by the owner-approved research mission",category:"data",invoiceId:"actual-test-invoice",evidence:[{url:"https://merchant.example/invoice.json"}]};
+const payment={destinationChainId:84532,recipient:"0x"+"34".repeat(20),amount:"1.000001",purchaseDescription:"Approved protocol data",justification:"Required by the owner-approved research mission",category:"data",invoiceId:"actual-test-invoice",evidence:[{url:"https://merchant.example/invoice.json"}]};
 test("real stdio MCP handshake, self-contained resources, idempotent payment and terminal/error behavior",{timeout:60000},async()=>{
  let submitted,requestCount=0,networkCount=0,state="QUEUED",malformed=false;
  const headersSeen=[];
@@ -28,6 +28,7 @@ test("real stdio MCP handshake, self-contained resources, idempotent payment and
   if(req.url==="/api/v1/requests"&&req.method==="POST"){
    assert.equal(req.headers["content-type"],"application/json");
    assert.equal(req.headers["idempotency-key"],"stable-operation");
+   assert.equal(body.destinationChainId,84532);
    if(submitted&&JSON.stringify(body)!==JSON.stringify(submitted))return send(409,{error:{code:"IDEMPOTENCY_CONFLICT",message:"Input changed "+key,retryable:false,requestId:"conflict-id"}});
    if(!submitted){submitted=body;requestCount++;}
    return send(202,{id:hash,status:state});
@@ -53,7 +54,7 @@ test("real stdio MCP handshake, self-contained resources, idempotent payment and
   await client.callTool({name:"list_agents",arguments:{limit:3}});assert.equal(headersSeen.at(-1).headers.authorization,undefined);assert.match(headersSeen.at(-1).path,/limit=3/);
   const me=await client.callTool({name:"get_my_agent",arguments:{}});assert.equal(me.structuredContent.ok,true);assert.equal(me.structuredContent.data.serverEcho,"[REDACTED]");assert.equal(JSON.stringify(me).includes(key),false);assert.equal(headersSeen.at(-1).headers.authorization,"Bearer "+key);
   const before=networkCount;
-  for(const bad of [{...payment,amount:"0"},{...payment,amount:"1.0000001"},{...payment,amount:"not-a-number"},{...payment,cardId:other},{...payment,evidence:[payment.evidence[0],payment.evidence[0]]}]){
+  for(const bad of [{...payment,amount:"0"},{...payment,amount:"1.0000001"},{...payment,amount:"not-a-number"},{...payment,destinationChainId:0},{...payment,destinationChainId:"84532"},{...payment,cardId:other},{...payment,evidence:[payment.evidence[0],payment.evidence[0]]}]){
    const result=await client.callTool({name:"submit_payment",arguments:{payment:bad,idempotencyKey:"stable-operation"}});assert.equal(result.isError,true);
   }
   assert.equal(networkCount,before,"Invalid payment never reaches HTTP");
@@ -61,6 +62,7 @@ test("real stdio MCP handshake, self-contained resources, idempotent payment and
   const retry=await client.callTool({name:"submit_payment",arguments:{payment,idempotencyKey:"stable-operation"}});assert.equal(retry.structuredContent.data.id,hash);assert.equal(requestCount,1);
   const conflict=await client.callTool({name:"submit_payment",arguments:{payment:{...payment,amount:"2"},idempotencyKey:"stable-operation"}});assert.equal(conflict.isError,true);assert.equal(conflict.structuredContent.error.code,"IDEMPOTENCY_CONFLICT");assert.equal(conflict.structuredContent.error.status,409);assert.equal(conflict.structuredContent.error.requestId,"conflict-id");assert.equal(JSON.stringify(conflict).includes(key),false);
   const pending=await client.callTool({name:"wait_for_payment",arguments:{id:hash,maxWaitMs:0}});assert.equal(pending.structuredContent.pending,true);assert.equal(pending.structuredContent.operationId,hash);assert.equal(requestCount,1);
+  for(const bridgeState of ["BRIDGING","AWAITING_ATTESTATION","MINTING"]){state=bridgeState;const result=await client.callTool({name:"wait_for_payment",arguments:{id:hash,maxWaitMs:0}});assert.equal(result.structuredContent.pending,true);assert.equal(result.structuredContent.data.status,bridgeState);assert.equal(requestCount,1);}
   for(const terminal of ["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"]){state=terminal;const result=await client.callTool({name:"wait_for_payment",arguments:{id:hash,maxWaitMs:100}});assert.equal(result.structuredContent.data.status,terminal);assert.equal(result.structuredContent.pending,undefined);}
   const missing=await client.callTool({name:"get_payment",arguments:{id:other}});assert.equal(missing.structuredContent.error.code,"NOT_FOUND");assert.equal(missing.structuredContent.error.status,404);assert.equal(missing.structuredContent.error.retryable,false);assert.equal(missing.structuredContent.error.requestId,"missing-id");
   state="PAID";const card=await client.callTool({name:"get_agent_card",arguments:{id:hash}});assert.equal(card.structuredContent.data.usage.requestCount,1);assert.equal(card.structuredContent.data.usage.fundsMoved,"1.000001");assert.equal(headersSeen.at(-1).headers.authorization,undefined);

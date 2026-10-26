@@ -5,16 +5,67 @@
   "operator": "0xed9edd8586b20524cafa4f568413c504c9b03172",
   "protocol": "CCTP_V2",
   "sourceDomain": 37,
-  "factoryAddress": null,
-  "factoryTxHash": null,
-  "factoryPhase": "NOT_DEPLOYED",
+  "factoryAddress": "0x12f4e3c0c3cb53854bd8f60ccfea3bce96f60ba6",
+  "factoryTxHash": "0x06e14291fcb4ab3519cc35d1a6fc0a363324a476f42d62b735d8ab14585db49a",
+  "factoryPhase": "DEPLOYED",
+  "factoryArtifact": {
+    "compiler": "0.8.28+commit.7893614a",
+    "creationCodeHash": "0x893e0d05dc4425e392b07990e2bee862e4398969843e598ac7ae0c3320fbca4c",
+    "runtimeCodeHash": "0x556a67d6594c335ec8ac3e75ad014bd7b3be68bc0b85b15237a88461761daf27",
+    "runtimeBytes": 23345,
+    "sourceHashes": {
+      "src/AgentSpendingCard.sol": "0x3cfd7cc2cf4b6d769e8a43abe9e0f39069bdb6c212bdf91d6ec15bb2eec2b90f",
+      "src/CctpCardFactory.sol": "0xa5ede391e6e21ac65494aeb73aff2d04a3bd3104a10b67f831e4afc2ebeb5fec",
+      "src/CctpSpendingCard.sol": "0xa9de2912c5c416ed08394544e8de6f7d58511e2e6cdb5e2ed29dc7df81b75528",
+      "src/vendor/interfaces/ICPU.sol": "0xf73218404762ef30cf728976b5c513cfeacddebb4997c4acb5fe02d9790ab911"
+    }
+  },
   "sourceFunding": null,
-  "provisioning": {
-    "worker": ".github/workflows/cctp-operations.yml",
-    "amountAtomic": "5000000",
-    "fundingSourceChainId": 84532,
-    "fundingDestinationChainId": 1952,
-    "signing": "GITHUB_ACTIONS_ONLY",
-    "status": "PREPARED"
-  }
+  "preflight": {
+    "verifiedAt": "2026-10-26T01:29:49.831Z",
+    "factoryArtifact": {
+      "compiler": "0.8.28+commit.7893614a",
+      "creationCodeHash": "0x893e0d05dc4425e392b07990e2bee862e4398969843e598ac7ae0c3320fbca4c",
+      "runtimeCodeHash": "0x556a67d6594c335ec8ac3e75ad014bd7b3be68bc0b85b15237a88461761daf27",
+      "runtimeBytes": 23345,
+      "sourceHashes": {
+        "src/AgentSpendingCard.sol": "0x3cfd7cc2cf4b6d769e8a43abe9e0f39069bdb6c212bdf91d6ec15bb2eec2b90f",
+        "src/CctpCardFactory.sol": "0xa5ede391e6e21ac65494aeb73aff2d04a3bd3104a10b67f831e4afc2ebeb5fec",
+        "src/CctpSpendingCard.sol": "0xa9de2912c5c416ed08394544e8de6f7d58511e2e6cdb5e2ed29dc7df81b75528",
+        "src/vendor/interfaces/ICPU.sol": "0xf73218404762ef30cf728976b5c513cfeacddebb4997c4acb5fe02d9790ab911"
+      }
+    },
+    "chains": [
+      {
+        "chainId": 1952,
+        "domain": 37,
+        "blockNumber": "44519349",
+        "token": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
+        "codeHashes": {
+          "token": "0x20bd4e53c9c59b9a5e412da21ffc71466b518f06407b4db87d1489c3c1e2e933",
+          "messenger": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+          "transmitter": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+          "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
+        },
+        "operatorUsdcAtomic": "0",
+        "operatorGasWei": "175310600105935119"
+      },
+      {
+        "chainId": 84532,
+        "domain": 6,
+        "blockNumber": "50281602",
+        "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "codeHashes": {
+          "token": "0xedc5281a85c0efecd49999a1ef668390c59b88702f2d4a07029d7f5d63059d6c",
+          "messenger": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+          "transmitter": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+          "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
+        },
+        "operatorUsdcAtomic": "34515000",
+        "operatorGasWei": "18524407958489941"
+      }
+    ]
+  },
+  "updatedAt": "2026-10-26T01:30:05.393Z",
+  "githubRunId": "40254429179"
 }

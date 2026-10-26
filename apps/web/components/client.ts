@@ -1,10 +1,10 @@
 import {createPublicClient, createWalletClient, custom, defineChain, decodeEventLog, type Address, type Abi} from "viem";
-import type {CardView, DraftView, Policy, RequestView} from "@intentguard/shared";
+import type {CardView, DraftView, Policy, RequestView, Settlement} from "@intentguard/shared";
 import exportedAbis from "../../../contracts/evm/abi.json";
 
-export type {CardView, DraftView, Policy, RequestView};
-export type Config = {mode:"live"|"local"|"testnet";rpcUrl?:string;networkName?:string;paymentSymbol?:string;chainId:number;token:string;factoryAddress:string|null;explorerUrl:string;genLayerExplorerUrl:string;applicationUrl?:string;configured:boolean;activation?:Record<string,unknown>};
-export type ActivationDraft = DraftView & {activation?:{factoryAddress:string;config:Record<string,unknown>}};
+export type {CardView, DraftView, Policy, RequestView, Settlement};
+export type Config = {mode:"live"|"local"|"testnet";rpcUrl?:string;networkName?:string;paymentSymbol?:string;chainId:number;token:string;factoryAddress:string|null;explorerUrl:string;genLayerExplorerUrl:string;applicationUrl?:string;configured:boolean;activation?:Record<string,unknown>;assets?:{asset:string;symbol:string;chainId:number;decimals:number;token:string|null;available:boolean;reason:string;sources:string[]}[];spendingNetworks?:{chainId:number;name:string;domain:number;token:string;explorerUrl:string}[];cctpFactoryAddress?:string|null};
+export type ActivationDraft = DraftView & {settlement?:Settlement;activation?:{factoryAddress:string;config:Record<string,unknown>;kind?:"CCTP_V2";destinationDomains?:number[];settlement?:Settlement}};
 type Provider = {request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,handler:(...args:unknown[])=>void)=>void;removeListener?:(event:string,handler:(...args:unknown[])=>void)=>void};
 declare global {interface Window {ethereum?:Provider}}
 export class ProductApiError extends Error{
@@ -20,7 +20,7 @@ export async function api<T>(path:string, init?:RequestInit):Promise<T>{
  if(!response.ok){const error=(body as {error?:{message?:string;code?:string;requestId?:string;retryable?:boolean}}).error;const code=error?.code??"REQUEST_FAILED",requestId=error?.requestId??response.headers.get("X-Request-Id");const after=response.headers.get("Retry-After");throw new ProductApiError((error?.message||"The request could not be completed.")+" ["+code+"]"+(requestId?" Request ID: "+requestId:""),response.status,code,requestId,error?.retryable??response.status>=500,after!==null&&Number.isFinite(Number(after))?Number(after):null)}
  return body as T;
 }
-export function parseUnitsExact(v:string):bigint{if(!/^(0|[1-9]\d*)(\.\d{1,6})?$/.test(v))throw Error("Use a positive USDT amount with up to six decimal places.");const[a,b=""]=v.split(".");const n=BigInt(a)*1000000n+BigInt(b.padEnd(6,"0"));if(n>(1n<<64n)-1n)throw Error("This amount exceeds the supported limit.");return n}
+export function parseUnitsExact(v:string):bigint{if(!/^(0|[1-9]\d*)(\.\d{1,6})?$/.test(v))throw Error("Use an exact token amount with up to six decimal places.");const[a,b=""]=v.split(".");const n=BigInt(a)*1000000n+BigInt(b.padEnd(6,"0"));if(n>(1n<<64n)-1n)throw Error("This amount exceeds the supported limit.");return n}
 export function amount(v:string|undefined, decimals=2):string{if(v===undefined||v===null||!/^\d+(\.\d{1,6})?$/.test(v))return "Unavailable";const [whole,fraction=""]=v.split(".");const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,",");return grouped+(decimals?"."+fraction.padEnd(decimals,"0").slice(0,Math.max(decimals,fraction.replace(/0+$/,"").length)):"")}
 export function difference(a:string,b:string,c="0"):string{try{const v=parseUnitsExact(a)-parseUnitsExact(b)-parseUnitsExact(c);const n=v<0n?0n:v;const f=(n%1000000n).toString().padStart(6,"0").replace(/0+$/,"");return (n/1000000n).toString()+(f?"."+f:"")}catch{return "Unavailable"}}
 export const short=(v:string,size=6)=>v.length>size*2+3?v.slice(0,size)+"…"+v.slice(-4):v;
@@ -40,6 +40,11 @@ export async function contractWrite(config:Config,address:string,abi:Abi,functio
 }
 
 export const factoryAbi=exportedAbis.CardFactory as Abi;
+export const cctpFactoryAbi=exportedAbis.CctpCardFactory as Abi;
+export function paymentSymbol(record?:{paymentSymbol?:string;settlement?:Settlement;token?:string;chainId?:number}|null,config?:Config|null){if(record?.paymentSymbol)return record.paymentSymbol;if(record?.settlement)return record.settlement.asset;const issued=config?.assets?.find(a=>a.available&&a.token&&a.chainId===record?.chainId&&a.token.toLowerCase()===record?.token?.toLowerCase());return issued?.symbol||config?.paymentSymbol||"Token"}
+export function networkName(chainId:number|undefined,config?:Config|null){return config?.spendingNetworks?.find(n=>n.chainId===chainId)?.name||(chainId===1952?"X Layer Testnet":chainId===84532?"Base Sepolia":chainId===421614?"Arbitrum Sepolia":config?.networkName||"Configured network")}
+export function explorerForChain(chainId:number|undefined,config?:Config|null){return config?.spendingNetworks?.find(n=>n.chainId===chainId)?.explorerUrl||(chainId===84532?"https://sepolia.basescan.org":chainId===421614?"https://sepolia.arbiscan.io":config?.explorerUrl||"")}
+export function paymentExplorer(request:{bridge?:RequestView["bridge"];destinationChainId?:number},config?:Config|null){return explorerForChain(request.bridge?.destinationChainId??request.destinationChainId,config)}
 export const cardAbi=exportedAbis.AgentSpendingCard as Abi;
 const pendingActivations=new Map<string,{cardAddress:string;transactionHash:string}>();
 export async function activateCard(config:Config,draft:ActivationDraft,owner:string,onStatus:(s:string)=>void){
@@ -50,8 +55,10 @@ export async function activateCard(config:Config,draft:ActivationDraft,owner:str
  if(pending){onStatus("Retrying server verification of the confirmed card deployment.");await api("/owner/cards",{method:"POST",body:JSON.stringify({draftId:draft.id,cardAddress:pending.cardAddress,activationTx:pending.transactionHash})});clearRecovery();return pending.cardAddress}
  const values:Record<string,unknown>={};for(const component of exportedAbis.configTuple.components){const value=draft.activation.config[component.name];if(value===undefined)throw Error("Activation configuration is missing "+component.name);values[component.name]=/^uint/.test(component.type)?BigInt(String(value)):value}
  if(String(values.owner).toLowerCase()!==owner.toLowerCase())throw Error("The finalized configuration belongs to another owner.");
- const receipt=await contractWrite(config,draft.activation.factoryAddress,factoryAbi,"createCard",[values],owner,onStatus);
- let cardAddress:string|undefined;for(const log of receipt.logs){if(log.address.toLowerCase()!==draft.activation.factoryAddress.toLowerCase())continue;try{const event=decodeEventLog({abi:factoryAbi,data:log.data,topics:log.topics});if(event.eventName==="CardCreated"){const args=event.args as unknown as {owner:string;card:string};if(args.owner.toLowerCase()===owner.toLowerCase())cardAddress=args.card}}catch{}}
+ const bridge=draft.activation.kind==="CCTP_V2",abi=bridge?cctpFactoryAbi:factoryAbi;
+ if(bridge&&(!draft.activation.destinationDomains?.length||draft.activation.destinationDomains.some(d=>![37,6,3].includes(d))))throw Error("Activation is missing valid owner-approved destination domains.");
+ const receipt=await contractWrite(config,draft.activation.factoryAddress,abi,"createCard",bridge?[values,draft.activation.destinationDomains!]:[values],owner,onStatus);
+ let cardAddress:string|undefined;for(const log of receipt.logs){if(log.address.toLowerCase()!==draft.activation.factoryAddress.toLowerCase())continue;try{const event=decodeEventLog({abi,data:log.data,topics:log.topics});if(event.eventName==="CardCreated"){const args=event.args as unknown as {owner:string;card:string};if(args.owner.toLowerCase()===owner.toLowerCase())cardAddress=args.card}}catch{}}
  if(!cardAddress)throw Error("The wallet transaction confirmed but no CardCreated event was found. Keep the transaction hash for recovery: "+receipt.transactionHash);
  pendingActivations.set(recoveryKey,{cardAddress,transactionHash:receipt.transactionHash});try{localStorage.setItem(recoveryKey,JSON.stringify({draftId:draft.id,cardAddress,transactionHash:receipt.transactionHash}))}catch{}onStatus("Card deployed. Verifying the finalized permission with the server.");await api("/owner/cards",{method:"POST",body:JSON.stringify({draftId:draft.id,cardAddress,activationTx:receipt.transactionHash})});clearRecovery();return cardAddress;
 }
