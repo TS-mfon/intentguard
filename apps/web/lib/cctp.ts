@@ -49,7 +49,7 @@ export function verifyDestinationReceipt(receipt:TransactionReceipt,message:stri
 }
 export class Cctp{
  constructor(private evm:Evm,private store:Store,private fetcher:typeof fetch=fetch){}
- destination(id:TestnetChainId){const c=CCTP_TESTNETS[id];requireValue(c&&id!==1952,"Unsupported destination testnet.");const rpc=process.env[id===84532?"BASE_SEPOLIA_RPC_URL":"ARBITRUM_SEPOLIA_RPC_URL"]??c.rpcUrl,chain=defineChain({id,name:c.name,testnet:true,nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18},rpcUrls:{default:{http:[rpc]}}});return {c,chain,rpc,public:createPublicClient({chain,transport:http(rpc,{timeout:12000,retryCount:0}),cacheTime:0})};}
+ destination(id:TestnetChainId){const c=CCTP_TESTNETS[id];requireValue(c&&id!==1952,"Unsupported destination testnet.");const rpc=process.env[id===84532?"BASE_SEPOLIA_RPC_URL":"ARBITRUM_SEPOLIA_RPC_URL"]?.trim()||c.rpcUrl,chain=defineChain({id,name:c.name,testnet:true,nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18},rpcUrls:{default:{http:[rpc]}}});return {c,chain,rpc,public:createPublicClient({chain,transport:http(rpc,{timeout:12000,retryCount:0}),cacheTime:0})};}
  async sourceMessage(card:Card,p:Payment){
   const tx=await this.store.get<Doc&{hash:string}>("transactions",p._id+":settle"),sourceHash=p.bridge?.sourceTxHash??tx?.hash;requireValue(sourceHash&&/^0x[0-9a-fA-F]{64}$/.test(sourceHash),"Source burn transaction journal is missing; funds remain in reconciliation.");
   await this.evm.identity();const receipt=await this.evm.public.getTransactionReceipt({hash:hex(sourceHash)});requireValue(receipt.status==="success","Source burn reverted.");requireValue(await this.evm.public.getBlockNumber()>=receipt.blockNumber+1n,"Source burn is awaiting confirmation.");

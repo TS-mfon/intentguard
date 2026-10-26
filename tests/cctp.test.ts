@@ -11,6 +11,18 @@ import type {Card,Payment} from "../apps/web/lib/models";
 import {card,input,owner,invoice,FakeEvm,FakeGenLayer} from "./fixtures";
 const settlement:Settlement={asset:"USDC",destinationChainIds:[1952,84532,421614]};
 const usdc:Card={...card,chainId:1952,token:CCTP_TESTNETS[1952].token,settlement};
+test("Actions empty destination RPC variables use verified testnet defaults and preserve explicit overrides",()=>{
+ const bridge=new Cctp({} as any,new MemoryStore());
+ for(const [id,key] of [[84532,"BASE_SEPOLIA_RPC_URL"],[421614,"ARBITRUM_SEPOLIA_RPC_URL"]] as const){
+  const previous=process.env[key];
+  try{
+   delete process.env[key];assert.equal(bridge.destination(id).rpc,CCTP_TESTNETS[id].rpcUrl);
+   for(const blank of ["","  ","\t\n"]){process.env[key]=blank;assert.equal(bridge.destination(id).rpc,CCTP_TESTNETS[id].rpcUrl);assert.equal(bridge.destination(id).chain.id,id);}
+   process.env[key]="  https://testnet-rpc.example  ";assert.equal(bridge.destination(id).rpc,"https://testnet-rpc.example");
+  }finally{if(previous===undefined)delete process.env[key];else process.env[key]=previous;}
+ }
+ assert.throws(()=>bridge.destination(196 as any));assert.throws(()=>bridge.destination(8453 as any));
+});
 function canonical(destination=84532):CanonicalRequest{return {...input,...canonicalDestination(usdc,{...input,destinationChainId:destination}),cardId:usdc._id,cardAddress:usdc.address,owner,policyHash:usdc.policyHash,token:usdc.token!,chainId:1952,amountAtomic:parseAmount(input.amount).toString(),evidenceHash:"0x"+"44".repeat(32),expiresAt:4102444799}}
 function payload(attested=false,r=canonical()){
  const bytes=Buffer.alloc(376),uint=(offset:number,length:number,value:bigint)=>Buffer.from(value.toString(16).padStart(length*2,"0"),"hex").copy(bytes,offset),address=(offset:number,value:string)=>Buffer.from(padHex(value as Hex,{size:32}).slice(2),"hex").copy(bytes,offset);
