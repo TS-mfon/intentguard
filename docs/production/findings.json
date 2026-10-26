@@ -241,9 +241,16 @@
           "artifact": "tools/production/verify-workflows.mjs",
           "check": "node tools/production/verify-workflows.mjs",
           "scope": "Independent driver rerun: actionlint, immutable Actions pins,17 invalid release-input cases and4 mutation controls; deployment activation still gated."
+        },
+        {
+          "workflowRun": "https://github.com/TS-mfon/intentguard/actions/runs/40280014998",
+          "sourceCommit": "02e70e42096d3bed853d81e806452cdcaa5c5014",
+          "conclusion": "success"
         }
       ],
-      "fixCommits": [],
+      "fixCommits": [
+        "02e70e4"
+      ],
       "retestCommits": [],
       "baselineClassification": "Confirmed: mutable action tags and unpinned toolchains remain."
     },
@@ -301,6 +308,11 @@
           "artifact": "docs/production/RUNTIME-ISOLATION.md",
           "check": "node tools/production/verify-runtime.mjs",
           "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
+        },
+        {
+          "artifact": "docs/deployments/mainnet-database-preparation.json",
+          "check": "node tools/production/verify-database.mjs",
+          "scope": "Live empty mainnet database,11 application indexes, separate collection-scoped users, bidirectional auth denial, metadata/index mutation denial, exact encrypted BSON fixture restore and successful rerun. Release identity and funded-state recovery pending."
         }
       ],
       "fixCommits": [

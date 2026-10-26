@@ -1,0 +1,13 @@
+# Mainnet database preparation
+
+Created `intentguard_mainnet` on the existing Atlas `intentguard` free M0 cluster. Testnet stays in `intentguard`; records were not copied. The incremental Atlas cluster charge is zero. Ten empty application collections and11 application indexes were verified live.
+
+Runtime users are separate: `intentguard_mainnet_api` can write owner/API collections, while `intentguard_mainnet_worker` can write queue and transaction journals. Both can read the immutable environment metadata and required indexes; both are denied metadata writes and index creation. The API user cannot write signed transaction journals. Mainnet credentials cannot read testnet data, and the existing testnet credential cannot read mainnet data. The database bootstrap principal is limited to this database and expires automatically; its expiry is checked before reuse.
+
+The quote is read-only by default: `node --import tsx scripts/production-database.ts quote`. Provisioning requires the exact quote digest. The script rejects changed role/index definitions, a paid or paused cluster, expired bootstrap authority and nonempty financial data. Quote, credential and encrypted backup files are private under the ignored `.local/mainnet-database/` directory. The public report contains no URI, password, encryption key or signed transaction.
+
+Two complete live runs verified encrypted BSON restoration, including a Decimal128 amount, an integer above JavaScript's exact numeric range, timestamp and binary bytes. Retrying the completed setup preserved the same restored-byte digest and left no probe records. Eight negative/control tests cover permissions, cluster/cost constraints, backup tampering, changed quotes, bootstrap expiry, authorization-vs-transport errors and interrupted-probe cleanup.
+
+The GitHub `mainnet` environment accepts deployments only from `main`, stores separate API/worker database credentials, and leaves worker and scheduled mainnet execution disabled. It contains no bootstrap credential. The runtime identity will be bound only after the actual release origin and operator/attestor addresses are verified. Funded-state recovery remains a release gate; the current restore evidence is a synthetic fixture in an empty database.
+
+Connection clients reuse small pools and bound selection, connection, operation and queue times. Setup uses IPv4 because this workstation has no working IPv6 route to Atlas. Before increasing production concurrency, measure checked-out connections, wait timeouts, connection creation rates and database operation latency; each warm API instance has its own pool and monitoring connections.

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-26T06:33:32.278Z",
+  "quoteSha256": "a7dbc89207d802e1f6793c5023f2a5c60ee16b9e9379c3b7486544a141cf0f24",
+  "projectId": "6add0e4935a25d87d121f2ff",
+  "cluster": "intentguard",
+  "database": "intentguard_mainnet",
+  "incrementalRecurringCostUsd": 0,
+  "runtimePrincipals": [
+    "intentguard_mainnet_api",
+    "intentguard_mainnet_worker"
+  ],
+  "runtimeMetadataWriteDenied": true,
+  "runtimeIndexMutationDenied": true,
+  "testnetToMainnetDenied": true,
+  "mainnetToTestnetDenied": true,
+  "collections": [
+    "metadata",
+    "cards",
+    "drafts",
+    "requests",
+    "keys",
+    "challenges",
+    "rate",
+    "locks",
+    "demoInvoices",
+    "transactions"
+  ],
+  "indexCount": 11,
+  "financialRecords": 0,
+  "backup": {
+    "algorithm": "AES-256-GCM",
+    "bsonSha256": "41df353cf3857f8c5440780927d55d30f57cd24b3fb809a62dc0fa7b17ee5d4c",
+    "restoredExactly": true,
+    "scope": "synthetic fixture; funded-state backup remains a release gate"
+  },
+  "bootstrapExpires": "2026-10-27T05:53:00.360Z",
+  "identityBound": false,
+  "spendingEnabled": false,
+  "provisioningScope": "empty database and runtime privilege acceptance; no release identity or funded-state certification",
+  "successfulRunTimes": [
+    "2026-10-26T06:30:40.388Z",
+    "2026-10-26T06:33:32.278Z"
+  ],
+  "github": {
+    "environment": "mainnet",
+    "allowedBranch": "main",
+    "dedicatedDatabaseSecrets": [
+      "MAINNET_MONGODB_URI",
+      "MAINNET_API_MONGODB_URI"
+    ],
+    "workerEnabled": false,
+    "scheduleEnabled": false
+  },
+  "implementationEvidence": {
+    "script": "scripts/production-database.ts",
+    "scriptSha256": "e739c37792d343cc8025eed62fbc8af9f35550d13caed2bc3ee9c6e782da3744",
+    "tests": "scripts/production-database.test.ts",
+    "check": "node tools/production/verify-database.mjs",
+    "testsPassed": 8
+  }
+}
