@@ -6,8 +6,18 @@ import type {LookupAddress} from "node:dns";
 import https from "node:https";
 import {contentDigest,type Snapshot,type PaymentInput} from "../../../packages/shared";
 export function publicIp(ip:string):boolean{
- if(isIP(ip)===4){const[a,b]=ip.split(".").map(Number);return !(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&(b===168||b===0))||(a===100&&b>=64&&b<=127)||(a===198&&(b===18||b===19||b===51))||(a===203&&b===0&&ip.split(".")[2]==="113"))}
- if(isIP(ip)===6){const p=ip.toLowerCase();const prefix=parseInt(p.split(":")[0],16);return prefix>=0x2000&&prefix<0x4000&&!p.startsWith("2001:db8:")&&!p.startsWith("2001:0:")&&!p.startsWith("2002:")&&!p.startsWith("::")&&!p.startsWith("fc")&&!p.startsWith("fd")&&!p.startsWith("fe8")&&!p.startsWith("fe9")&&!p.startsWith("fea")&&!p.startsWith("feb")&&!p.startsWith("ff")}
+ if(isIP(ip)===4){const[a,b,c]=ip.split(".").map(Number);return !(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&(b===168||(b===0&&(c===0||c===2))||(b===88&&c===99)))||(a===100&&b>=64&&b<=127)||(a===198&&(b===18||b===19||(b===51&&c===100)))||(a===203&&b===0&&c===113))}
+ if(isIP(ip)===6){
+  // Compare parsed network bits, never a textual spelling of a prefix.
+  // IPv4 embeddings and zone IDs are excluded from evidence transport.
+  if(ip.includes(".")||ip.includes("%"))return false;
+  const halves=ip.toLowerCase().split("::"),left=halves[0]?halves[0].split(":").map(v=>parseInt(v,16)):[],right=halves[1]?halves[1].split(":").map(v=>parseInt(v,16)):[];
+  const words=halves.length===2?[...left,...Array(8-left.length-right.length).fill(0),...right]:left;
+  if(words.length!==8)return false;
+  const [a,b]=words;
+  // Global unicast only, excluding special-purpose, transition and documentation ranges.
+  return a>=0x2000&&a<0x4000&&!(a===0x2001&&(b<0x0200||b===0x0db8))&&a!==0x2002&&!(a===0x3fff&&b<0x1000);
+ }
  return false;
 }
 // Node's dual-stack connector requests an address array; keep both lookup modes
