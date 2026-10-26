@@ -194,7 +194,7 @@
       "acceptance": "Exact locked toolchain installs in a clean environment; web target serves HTTP; worker target processes its queue.",
       "ownerLeaf": "1.2",
       "observingGate": "leaf-1.2:R06",
-      "status": "OPEN",
+      "status": "VERIFIED",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -205,7 +205,14 @@
           "line": 73
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "tools/production/verify-packaging.mjs",
+          "check": "node tools/production/verify-packaging.mjs",
+          "scope": "Independent driver rerun: locked worker/web images, non-root users, real cross-container HTTP and durable retry/lease release.",
+          "verifiedAt": "2026-10-26T06:18:00.000Z"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Confirmed: Docker builds web and starts worker; clean-machine packaging remains unverified."
@@ -258,7 +265,9 @@
           "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
         }
       ],
-      "fixCommits": [],
+      "fixCommits": [
+        "9d9eeb6"
+      ],
       "retestCommits": [],
       "baselineClassification": "Confirmed: default live configuration combines mainnet asset with Studio review; worker explicitly permits testnet only."
     },
@@ -287,7 +296,9 @@
           "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
         }
       ],
-      "fixCommits": [],
+      "fixCommits": [
+        "9d9eeb6"
+      ],
       "retestCommits": [],
       "baselineClassification": "New requirement: mainnet database does not exist in tracked evidence; runtime currently defaults to a shared database name."
     },
@@ -367,7 +378,8 @@
         }
       ],
       "fixCommits": [
-        "f928a27"
+        "f928a27",
+        "9d9eeb6"
       ],
       "retestCommits": [],
       "baselineClassification": "Partial: receipt-normalization and prohibited-purpose rejection proved; new reviewer network/asset profile and broad injection reliability outstanding."
@@ -377,8 +389,8 @@
       "priority": "P0",
       "title": "Provide explicit replacement for legacy reviewers.",
       "acceptance": "Owner creates a replacement card, verifies policy/reviewer, rotates credentials, and withdraws/redeposits available funds; pending reservations and old history remain intact.",
-      "ownerLeaf": "2.2",
-      "observingGate": "leaf-2.2:R12",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R12",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -404,8 +416,8 @@
       "priority": "P0",
       "title": "Run fresh adversarial semantic and reliability audits.",
       "acceptance": "Two independent runs with fresh evidence, expected finalized outcomes, public receipts, and declared latency/failure thresholds.",
-      "ownerLeaf": "2.2",
-      "observingGate": "leaf-2.2:R13",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R13",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -435,8 +447,8 @@
       "priority": "P0",
       "title": "Eliminate unexplained stuck execution states.",
       "acceptance": "Durable wake, retry, lease recovery, cancellation, and progress reporting pass crash/outage tests; terminal states stop showing pending review.",
-      "ownerLeaf": "2.2",
-      "observingGate": "leaf-2.2:R14",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R14",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -462,8 +474,8 @@
       "priority": "P0",
       "title": "Complete CCTP receipt proof and reconciliation.",
       "acceptance": "Source burn, raw message, Iris response, destination mint, amount/recipient/domain checks, balance evidence, nonce consumption, and signed acknowledgement.",
-      "ownerLeaf": "2.2",
-      "observingGate": "leaf-2.2:R15",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R15",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -489,8 +501,8 @@
       "priority": "P0",
       "title": "Test and document attestor compromise and operational controls.",
       "acceptance": "Forged/mismatched acknowledgements fail worker verification; signature replay fails; rotation and emergency pause are exercised; remaining trust is explicit.",
-      "ownerLeaf": "2.2",
-      "observingGate": "leaf-2.2:R16",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R16",
       "status": "OPEN",
       "sourceReferences": [
         {
@@ -516,8 +528,8 @@
       "priority": "P0",
       "title": "Perform the adversarial security audit, repair defects, and retest.",
       "acceptance": "Reproductions, regression tests, fix commits, deployed verification, and a final scoped report with no unresolved confirmed security defects.",
-      "ownerLeaf": "2.2",
-      "observingGate": "leaf-2.2:R17",
+      "ownerLeaf": "4.1",
+      "observingGate": "leaf-4.1:R17",
       "status": "OPEN",
       "sourceReferences": [
         {
