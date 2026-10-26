@@ -1,0 +1,238 @@
+{
+  "verifiedAt": "2026-10-26T03:08:34.246Z",
+  "mode": "INDEPENDENT_LIVE_RECEIPT_AND_CONTRACT_STATE_CHECK",
+  "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+  "cardAddress": "0xb914c71a5667e816f248f6aab41546200f2d43b1",
+  "depositTx": "0xcdfb4b20bf59809c7fa42150a302d2a0c07cda862a187beb573ce8c3b91373b4",
+  "depositAmountAtomic": "1000000",
+  "tapeout": {
+    "processor": "0xA34d101011D4DBe18375FF2E7591b646E22c2Ff3",
+    "circuitId": "1",
+    "expectedNetlistHash": "0x280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761",
+    "processorCodeHash": "0xcd89b5e5782212d087bca3c26fcee13f804816c33106ea2de202498ef16f423e",
+    "preview": {
+      "allowedAmountAtomic": "100000",
+      "allowed": true,
+      "blockedAmountAtomic": "1000001",
+      "blocked": true,
+      "failureBitmap": 3
+    }
+  },
+  "merchant": "0xe72e260811c6fbc27d1c350d92abaac89bbf803d",
+  "amountPerPaymentAtomic": "100000",
+  "cases": [
+    {
+      "name": "xlayer",
+      "requestId": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+      "status": "PAID",
+      "onchainStatus": 2,
+      "sourceChainId": 1952,
+      "destinationChainId": 1952,
+      "amount": "0.1",
+      "genLayerTxHash": "0x93b7a9f3123d8d4a80a12166b7bd76a929647b0ab17e0e9471fb9e8dc2385458",
+      "consensus": "MAJORITY_AGREE",
+      "decision": {
+        "decision": "APPROVE",
+        "requestHash": "0xa4ed1395f0ef40e039945e48f44af98fcdb5ed211921baebae031300c8e0915e",
+        "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+        "evidenceHash": "0xacc96372a190c10522c3f24d13094f75377b4b577204af2e6dab59fa1eac1b13",
+        "criteria": [
+          {
+            "id": "purpose",
+            "status": "PASS",
+            "reason": "The verified merchant invoice describes \"Native USDC settlement verification on X Layer Testnet,\" which substantively matches the requested product \"Native USDC settlement verification,\" the allowed category \"protocol-verification,\" and the mission/task context of verifying native testnet USDC payment settlement for the approved protocol test merchant.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+            ]
+          },
+          {
+            "id": "invoice",
+            "status": "PASS",
+            "reason": "The verified current invoice identifies the buyer as vault address 0xb914c71a5667e816f248f6aab41546200f2d43b1 and matches the exact requested merchant recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d, destination chain 1952, native USDC token 0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3, amount 0.1, and invoice ID 8d101ea5297be43c8fbff28f65adcf87. The evidence origin is approved and the invoice is current based on issuedAt/expiresAt and fetchedAt timestamps.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+            ]
+          }
+        ],
+        "reason": "APPROVE"
+      },
+      "paymentTxHash": "0x1eddd97f31e87079057d0bd470a6aa1def42505e70228ab0e9797a98bb5949ef",
+      "verified": true
+    },
+    {
+      "name": "base",
+      "requestId": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+      "status": "PAID",
+      "onchainStatus": 2,
+      "sourceChainId": 1952,
+      "destinationChainId": 84532,
+      "amount": "0.1",
+      "genLayerTxHash": "0xea266f5ddd4719f892c3ef03cf518cb7051cfc908b8f83d34bea568ad4d892f4",
+      "consensus": "MAJORITY_AGREE",
+      "decision": {
+        "decision": "APPROVE",
+        "requestHash": "0x3a4aabb5fdfce137d013c7fa41cb3b371bd2f62acfd95ab82ebb86f1dcedf161",
+        "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+        "evidenceHash": "0x36dfe3a095485e3960fc7464f473e5c6e5f8247b6b01a45c63f37287b0e5d4d5",
+        "criteria": [
+          {
+            "id": "purpose",
+            "status": "PASS",
+            "reason": "The verified merchant invoice describes \"Native USDC settlement verification on Base Sepolia,\" which matches the requested product \"Native USDC settlement verification,\" the allowed category \"protocol-verification,\" and the mission/task context to verify native testnet USDC payment settlement on approved test chains. The request justification is consistent with this, and there is no contradiction with prohibited purchases.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+            ]
+          },
+          {
+            "id": "invoice",
+            "status": "PASS",
+            "reason": "The verified current invoice from the approved merchant origin identifies the buyer as vault 0xb914c71a5667e816f248f6aab41546200f2d43b1 and specifies the requested merchant recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d, destination chain 84532 (Base Sepolia), native USDC token 0x036cbd53842c5426634e7929541ec2318f3dcf7e, amount 0.1, and invoice ID bb23854ac32ed1e2a530cfe4edc5ea1b. These match the request and the owner policy merchant configuration.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+            ]
+          }
+        ],
+        "reason": "APPROVE: All owner policy criteria pass with verified public merchant invoice evidence from an approved origin. The purchase matches the allowed category, approved merchant/product, exact recipient, destination chain, native USDC token, amount, buyer vault, and invoice ID, with no prohibited purpose detected."
+      },
+      "sourceTxHash": "0xd4a90e427691bd61c30c65e7f2ebc9aa5ca5a6ecc88f8097d89318a775762a09",
+      "sourceBurnVerified": true,
+      "sourceBurnTimestamp": "2026-10-26T02:24:35.000Z",
+      "circleStatus": "complete",
+      "destinationTxHash": "0xad5b416d9b82f208114e5ae5ea0a702f6add1f031d9b5183debf32aa343c94ea",
+      "confirmationTxHash": "0x9077076442e89e597c2ead69a3d1cb62e6d5e3c90a7d978482b3bf8c35ed3ae9",
+      "nonce": "0x7c9ee619eecc2be4c456c96459e06afd623d91a0982eb2afeb92253acb62f894",
+      "verified": true
+    },
+    {
+      "name": "arbitrum",
+      "requestId": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+      "status": "PAID",
+      "onchainStatus": 2,
+      "sourceChainId": 1952,
+      "destinationChainId": 421614,
+      "amount": "0.1",
+      "genLayerTxHash": "0xb78b21462d6ce4932112b1e1a6021b23c278e1f62b85713bde76ddd74656074f",
+      "consensus": "MAJORITY_AGREE",
+      "decision": {
+        "decision": "APPROVE",
+        "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+        "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+        "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+        "criteria": [
+          {
+            "id": "purpose",
+            "status": "PASS",
+            "reason": "The invoice description explicitly states 'Native USDC settlement verification on Arbitrum Sepolia', which matches the requested product 'Native USDC settlement verification' from the approved merchant and the owner policy's mission to verify native testnet USDC payment settlement on Arbitrum Sepolia. The category is protocol-verification, which is the only allowed category.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+            ]
+          },
+          {
+            "id": "invoice",
+            "status": "PASS",
+            "reason": "The independently fetched invoice identifies the buyer as 0xb914c71a5667e816f248f6aab41546200f2d43b1, matching the cardAddress/agent vault. The recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d matches the approved merchant 'IntentGuard protocol test merchant'. The token 0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d matches the destinationToken in the request. The chainId 421614 matches the destinationChainId (Arbitrum Sepolia). The amount 0.1 matches the requested amount. The invoiceId f05f62cf0c049bc161214ac0e6783379 matches the requested invoice ID. All fields align between the request and the fetched invoice from the approved origin.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+            ]
+          }
+        ],
+        "reason": "The purchase is approved. Both policy criteria are satisfied: (1) the invoice describes native USDC settlement verification on Arbitrum Sepolia, matching the assigned protocol testing mission, and (2) the independently fetched invoice from the approved origin confirms the buyer (agent vault), exact merchant recipient, destination chain (Arbitrum Sepolia, chainId 421614), native USDC token, amount (0.1), and invoice ID all match the request. The amount of 0.1 is within the per-payment limit of 1, the evidence is from an approved origin, and no prohibited purchases are involved."
+      },
+      "sourceTxHash": "0x4424112408b270826b32f73262df046c405d9b3e5b980d382e378ff5de529878",
+      "sourceBurnVerified": true,
+      "sourceBurnTimestamp": "2026-10-26T02:39:45.000Z",
+      "circleStatus": "complete",
+      "destinationTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+      "confirmationTxHash": "0x31a8583a7a7ec6126a608d3c54dffbc09ea7a94bd6b764259a6ea6e04327fba9",
+      "nonce": "0x289cf99bd6e5cd82d6b362e0db6fae4f02bfc43cc6b2f9746fcbac24958b3ee3",
+      "verified": true
+    },
+    {
+      "name": "mainnet",
+      "httpCode": 422,
+      "errorCode": "DESTINATION_NOT_ALLOWED",
+      "verified": true
+    },
+    {
+      "name": "limit",
+      "requestId": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+      "status": "BLOCKED",
+      "onchainStatus": 0,
+      "sourceChainId": 1952,
+      "destinationChainId": 84532,
+      "amount": "1.000001",
+      "reviewSkipped": true,
+      "errorCode": null,
+      "verified": true
+    },
+    {
+      "name": "prohibited",
+      "requestId": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+      "status": "REJECTED",
+      "onchainStatus": 3,
+      "sourceChainId": 1952,
+      "destinationChainId": 1952,
+      "amount": "0.1",
+      "genLayerTxHash": "0xe79272bc9b467dda74e7e44988647572a70439c153b6ac3237ff6fe0464b5e39",
+      "consensus": "MAJORITY_AGREE",
+      "decision": {
+        "decision": "REJECT",
+        "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+        "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+        "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+        "criteria": [
+          {
+            "id": "purpose",
+            "status": "FAIL",
+            "reason": "The justification and purchaseDescription explicitly state 'Personal data for advertising', which is a prohibited purpose. The policy requires native USDC settlement verification for protocol testing, whereas the invoice description also explicitly mentions 'Personal data for advertising'.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+            ]
+          },
+          {
+            "id": "invoice",
+            "status": "PASS",
+            "reason": "The fetched invoice matches the agent vault (0xb914c71a5667e816f248f6aab41546200f2d43b1), merchant recipient, chain ID, token, amount, and invoice ID specified in the request.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+            ]
+          }
+        ],
+        "reason": "REJECT: The purchase violates the 'prohibitedPurchases' policy which forbids 'Advertising' and 'Personal data'. Both the untrusted justification and the verified invoice description confirm the intent is to purchase prohibited services."
+      },
+      "verified": true
+    },
+    {
+      "name": "evidence",
+      "requestId": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+      "status": "NEEDS_EVIDENCE",
+      "onchainStatus": 0,
+      "sourceChainId": 1952,
+      "destinationChainId": 84532,
+      "amount": "0.1",
+      "reviewSkipped": true,
+      "errorCode": "INVOICE_BUYER_MISMATCH",
+      "verified": true
+    },
+    {
+      "name": "idempotent",
+      "requestId": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+      "verified": true
+    }
+  ],
+  "ledgerAtomic": [
+    "700000",
+    "300000",
+    "0",
+    "700000",
+    "300000",
+    "0"
+  ],
+  "merchantBalancesAtomic": {
+    "1952": "100000",
+    "84532": "100000",
+    "421614": "100000"
+  },
+  "pendingCases": [],
+  "allPassed": true
+}

@@ -1,0 +1,64 @@
+{
+  "verifiedAt": "2026-10-26T02:19:46.070Z",
+  "requestId": "0x438a1bce8f7102f0c249c70fe541db916f9d4482e8295b52e470ed0ec7b3eb45",
+  "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+  "cardAddress": "0xb914c71a5667e816f248f6aab41546200f2d43b1",
+  "reviewerAddress": "0x3f0dcd79d55b29a5F1ca510827C043a04199f418",
+  "genLayerTxHash": "0xf85bae9860da6830d792665a9464db876290a47dbf001b5877fe6d82693122d0",
+  "transaction": {
+    "status": "FINALIZED",
+    "consensus": "MAJORITY_AGREE",
+    "execution": "FINISHED_WITH_RETURN"
+  },
+  "storedApiStatus": "CANCELLED",
+  "onchainReservationStatus": 3,
+  "ledger": {
+    "funded": "1",
+    "spent": "0",
+    "reserved": "0",
+    "available": "1",
+    "periodSpent": "0",
+    "periodReserved": "0"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "requestHash": "0xf040e7e21d11dfdecb9f857b5406933dcfa64e9aaf9c513037c690e4cfac7212",
+    "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+    "evidenceHash": "0xcfa6d0b120aba6756bd6599b1a65722f351cf9823be81e81ac246fca59375beb",
+    "criteria": [
+      {
+        "id": "purpose",
+        "status": "PASS",
+        "reason": "The invoice description explicitly specifies 'Native USDC settlement verification on X Layer Testnet', which aligns with the approved protocol testing mission and the merchant's product list.",
+        "sources": [
+          "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+        ]
+      },
+      {
+        "id": "invoice",
+        "status": "PASS",
+        "reason": "The verified invoice matches all required fields: buyer (0xb914c71a5667e816f248f6aab41546200f2d43b1), merchant recipient (0xe72e260811c6fbc27d1c350d92abaac89bbf803d), destination chain (1952), token (0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3), amount (0.1), and invoice ID (7ace341bca0d11b233951be8f6810436).",
+        "sources": [
+          "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+        ]
+      }
+    ],
+    "reason": "The purchase is fully compliant with the owner policy. The evidence provided is from an approved origin and confirms that the invoice details exactly match the requested purchase and the protocol verification mission."
+  },
+  "decisionHash": "0xdbd8614560e91940dada772af09497080752862f31199930585ae54e221accd7",
+  "receipts": [
+    {
+      "mode": "leader",
+      "vote": null,
+      "execution": "SUCCESS",
+      "resultStatus": "return"
+    },
+    {
+      "mode": "validator",
+      "vote": "idle",
+      "execution": "ERROR",
+      "resultStatus": "contract_error"
+    }
+  ],
+  "finding": "Trailing idle validator was incorrectly treated as the leader VM result. Actual finalized approval remains in the contract; cancellation was safe and cannot be reversed."
+}

@@ -533,6 +533,8 @@ Verification scope:
 | Browser | Responsive UI, real-data states, downloads, docs navigation and reduced motion |
 | Hosted independent checks | Actual Vercel/API/chain records and GitHub worker behavior |
 
+The [native-USDC live audit](docs/AUDIT-CCTP-FINDINGS.md) passed all eight planned scenarios, including exact X Layer, Base Sepolia and Arbitrum Sepolia deliveries, numeric and semantic denials, evidence preflight and idempotency. [Independent receipts and accounting](docs/audits/cctp-independent.json) prove 0.3 USDC delivered and zero reservations; [masked raw API logs](docs/audits/cctp-live-results.json) preserve the complete requests and responses. The original legacy 12-request audit remains 10/12; this result does not certify USDT0, arbitrary routes or mainnet.
+
 Fixtures exist only in tests, never as user activity. Passing local tests does not prove a live semantic outcome or guarantee external network availability. Published audit and deployment artifacts distinguish these evidence levels.
 
 ## Repository map

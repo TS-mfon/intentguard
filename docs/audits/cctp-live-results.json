@@ -1,0 +1,2089 @@
+{
+  "version": 1,
+  "kind": "LIVE_TESTNET_CCTP_API_AUDIT",
+  "sourceChainId": 1952,
+  "owner": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+  "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+  "cardAddress": "0xB914C71A5667E816f248F6aaB41546200f2d43B1",
+  "draftId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+  "failedProposals": [
+    {
+      "draftId": "0x100e333dffc10044628a2fb871fae08331892348391fb29b4519c48486223d3b",
+      "genLayerTxHash": "0xe4dfed6e1d1a38536af177f8619473f6cefd621ce8feaf47302071eb07c4b55b",
+      "status": "FINALIZED",
+      "result": "MAJORITY_DISAGREE",
+      "execution": "FINISHED_WITH_ERROR",
+      "replacementDraftId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1"
+    }
+  ],
+  "activationTx": "0xcc501497b04e7166cbd723ccf0f80d5a7a9f50fde5695643e7c20543b95ccdd5",
+  "depositTx": "0xcdfb4b20bf59809c7fa42150a302d2a0c07cda862a187beb573ce8c3b91373b4",
+  "depositAmount": "1",
+  "documentation": {
+    "url": "https://intentguard-tapeout.vercel.app/docs/crosschain",
+    "status": 200,
+    "sha256": "716656f0e27f3a58517d4258bc2e9a23460f654017e24f0cae580b8de17c2eee",
+    "readAt": "2026-10-26T01:40:19.964Z",
+    "completeness": 5,
+    "notes": "Native token addresses, owner destination permissions, exact invoice chain/token, idempotency, async statuses and trust limits documented."
+  },
+  "cases": [
+    {
+      "name": "xlayer",
+      "expected": "PAID",
+      "failedAttempts": [
+        {
+          "name": "xlayer",
+          "expected": "PAID",
+          "idem": "cctp-live-audit-v1-xlayer",
+          "payload": {
+            "destinationChainId": 1952,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "7ace341bca0d11b233951be8f6810436",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+              }
+            ]
+          },
+          "admission": {
+            "request": {
+              "method": "POST",
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+              "headers": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": "[REDACTED]",
+                "Idempotency-Key": "cctp-live-audit-v1-xlayer"
+              },
+              "body": {
+                "destinationChainId": 1952,
+                "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+                "amount": "0.1",
+                "purchaseDescription": "Native USDC settlement verification",
+                "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+                "category": "protocol-verification",
+                "invoiceId": "7ace341bca0d11b233951be8f6810436",
+                "evidence": [
+                  {
+                    "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+                  }
+                ]
+              }
+            },
+            "response": {
+              "status": 202,
+              "headers": {
+                "cache-control": "no-store",
+                "content-type": "application/json",
+                "date": "Mon, 26 Oct 2026 01:58:10 GMT",
+                "ratelimit-limit": "60",
+                "ratelimit-policy": "60;w=60",
+                "ratelimit-remaining": "59",
+                "ratelimit-reset": "50",
+                "server": "Vercel",
+                "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+                "transfer-encoding": "chunked",
+                "x-content-type-options": "nosniff",
+                "x-matched-path": "/api/[...path]",
+                "x-request-id": "4b70989a-d4b0-4618-bcd7-951b3ec87cc9",
+                "x-vercel-cache": "MISS",
+                "x-vercel-id": "sfo1::iad1::69qvq-1792979890106-d80ab85a158a"
+              },
+              "body": {
+                "id": "0x438a1bce8f7102f0c249c70fe541db916f9d4482e8295b52e470ed0ec7b3eb45",
+                "status": "QUEUED"
+              }
+            }
+          },
+          "requestId": "0x438a1bce8f7102f0c249c70fe541db916f9d4482e8295b52e470ed0ec7b3eb45",
+          "terminalLog": {
+            "request": {
+              "method": "GET",
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0x438a1bce8f7102f0c249c70fe541db916f9d4482e8295b52e470ed0ec7b3eb45",
+              "headers": {
+                "Accept": "application/json",
+                "Authorization": "[REDACTED]"
+              },
+              "body": null
+            },
+            "response": {
+              "status": 200,
+              "headers": {
+                "cache-control": "no-store",
+                "content-encoding": "br",
+                "content-type": "application/json",
+                "date": "Mon, 26 Oct 2026 02:00:24 GMT",
+                "ratelimit-limit": "60",
+                "ratelimit-policy": "60;w=60",
+                "ratelimit-remaining": "55",
+                "ratelimit-reset": "36",
+                "server": "Vercel",
+                "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+                "transfer-encoding": "chunked",
+                "x-content-type-options": "nosniff",
+                "x-matched-path": "/api/[...path]",
+                "x-request-id": "ef34a771-c7dc-477f-b87a-363fdeaa0c4f",
+                "x-vercel-cache": "BYPASS",
+                "x-vercel-id": "sfo1::iad1::m5cgb-1792980024229-804c28ebd765"
+              },
+              "body": {
+                "id": "0x438a1bce8f7102f0c249c70fe541db916f9d4482e8295b52e470ed0ec7b3eb45",
+                "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+                "cardName": "USDC settlement audit",
+                "status": "CANCELLED",
+                "request": {
+                  "destinationChainId": 1952,
+                  "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+                  "amount": "0.1",
+                  "purchaseDescription": "Native USDC settlement verification",
+                  "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+                  "category": "protocol-verification",
+                  "invoiceId": "7ace341bca0d11b233951be8f6810436",
+                  "evidence": [
+                    {
+                      "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+                    }
+                  ]
+                },
+                "requestHash": "0xf040e7e21d11dfdecb9f857b5406933dcfa64e9aaf9c513037c690e4cfac7212",
+                "evidenceHash": "0xcfa6d0b120aba6756bd6599b1a65722f351cf9823be81e81ac246fca59375beb",
+                "guard": {
+                  "allow": true,
+                  "failures": [],
+                  "txHash": "0xb3944d5760bb86e3d3174181f3e96d2ebe77976a3b9ba5a090132c165ec7f1b0"
+                },
+                "reviewStage": {
+                  "status": "FAILED",
+                  "reason": "GenLayer could not finalize a successful review. No approval was issued."
+                },
+                "errorCode": "GENLAYER_REVIEW_FAILED",
+                "genLayerTxHash": "0xf85bae9860da6830d792665a9464db876290a47dbf001b5877fe6d82693122d0",
+                "paymentSymbol": "USDC",
+                "error": "GenLayer review failed. No payment was authorized; its reservation has been released.",
+                "createdAt": 1792979890626,
+                "updatedAt": 1792980019352
+              }
+            }
+          },
+          "result": {
+            "id": "0x438a1bce8f7102f0c249c70fe541db916f9d4482e8295b52e470ed0ec7b3eb45",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "CANCELLED",
+            "request": {
+              "destinationChainId": 1952,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "7ace341bca0d11b233951be8f6810436",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+                }
+              ]
+            },
+            "requestHash": "0xf040e7e21d11dfdecb9f857b5406933dcfa64e9aaf9c513037c690e4cfac7212",
+            "evidenceHash": "0xcfa6d0b120aba6756bd6599b1a65722f351cf9823be81e81ac246fca59375beb",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0xb3944d5760bb86e3d3174181f3e96d2ebe77976a3b9ba5a090132c165ec7f1b0"
+            },
+            "reviewStage": {
+              "status": "FAILED",
+              "reason": "GenLayer could not finalize a successful review. No approval was issued."
+            },
+            "errorCode": "GENLAYER_REVIEW_FAILED",
+            "genLayerTxHash": "0xf85bae9860da6830d792665a9464db876290a47dbf001b5877fe6d82693122d0",
+            "paymentSymbol": "USDC",
+            "error": "GenLayer review failed. No payment was authorized; its reservation has been released.",
+            "createdAt": 1792979890626,
+            "updatedAt": 1792980019352
+          },
+          "verifiedFinalizedDecision": {
+            "decision": "APPROVE",
+            "requestHash": "0xf040e7e21d11dfdecb9f857b5406933dcfa64e9aaf9c513037c690e4cfac7212",
+            "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+            "evidenceHash": "0xcfa6d0b120aba6756bd6599b1a65722f351cf9823be81e81ac246fca59375beb",
+            "criteria": [
+              {
+                "id": "purpose",
+                "status": "PASS",
+                "reason": "The invoice description explicitly specifies 'Native USDC settlement verification on X Layer Testnet', which aligns with the approved protocol testing mission and the merchant's product list.",
+                "sources": [
+                  "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+                ]
+              },
+              {
+                "id": "invoice",
+                "status": "PASS",
+                "reason": "The verified invoice matches all required fields: buyer (0xb914c71a5667e816f248f6aab41546200f2d43b1), merchant recipient (0xe72e260811c6fbc27d1c350d92abaac89bbf803d), destination chain (1952), token (0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3), amount (0.1), and invoice ID (7ace341bca0d11b233951be8f6810436).",
+                "sources": [
+                  "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/7ace341bca0d11b233951be8f6810436"
+                ]
+              }
+            ],
+            "reason": "The purchase is fully compliant with the owner policy. The evidence provided is from an approved origin and confirms that the invoice details exactly match the requested purchase and the protocol verification mission."
+          },
+          "recoveryReason": "Final leader succeeded; the previous worker incorrectly classified a trailing idle validator as VM failure."
+        }
+      ],
+      "idem": "cctp-live-audit-v1-xlayer-retry1",
+      "payload": {
+        "destinationChainId": 1952,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "0.1",
+        "purchaseDescription": "Native USDC settlement verification",
+        "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+        "category": "protocol-verification",
+        "invoiceId": "8d101ea5297be43c8fbff28f65adcf87",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-xlayer-retry1"
+          },
+          "body": {
+            "destinationChainId": 1952,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "8d101ea5297be43c8fbff28f65adcf87",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:21:13 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "59",
+            "ratelimit-reset": "47",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "f43e1f31-92ec-46b2-99be-39dda81edfe6",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::7kcj5-1792981273098-e4e1c5622bfc"
+          },
+          "body": {
+            "id": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+            "status": "QUEUED"
+          }
+        }
+      },
+      "requestId": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+      "terminalLog": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:22:57 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "48",
+            "ratelimit-reset": "3",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "4f64e8e8-d5c4-4bc0-a93e-1352b28f6911",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "cle1::iad1::tkvq4-1792981377616-68e567c71aa3"
+          },
+          "body": {
+            "id": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "PAID",
+            "request": {
+              "destinationChainId": 1952,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "8d101ea5297be43c8fbff28f65adcf87",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+                }
+              ]
+            },
+            "requestHash": "0xa4ed1395f0ef40e039945e48f44af98fcdb5ed211921baebae031300c8e0915e",
+            "evidenceHash": "0xacc96372a190c10522c3f24d13094f75377b4b577204af2e6dab59fa1eac1b13",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0xa4f5b6435caae223643d806a98962210df00eae2a725c3118da9f9f6cabb6ae8"
+            },
+            "review": {
+              "decision": "APPROVE",
+              "requestHash": "0xa4ed1395f0ef40e039945e48f44af98fcdb5ed211921baebae031300c8e0915e",
+              "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+              "evidenceHash": "0xacc96372a190c10522c3f24d13094f75377b4b577204af2e6dab59fa1eac1b13",
+              "criteria": [
+                {
+                  "id": "purpose",
+                  "status": "PASS",
+                  "reason": "The verified merchant invoice describes \"Native USDC settlement verification on X Layer Testnet,\" which substantively matches the requested product \"Native USDC settlement verification,\" the allowed category \"protocol-verification,\" and the mission/task context of verifying native testnet USDC payment settlement for the approved protocol test merchant.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+                  ]
+                },
+                {
+                  "id": "invoice",
+                  "status": "PASS",
+                  "reason": "The verified current invoice identifies the buyer as vault address 0xb914c71a5667e816f248f6aab41546200f2d43b1 and matches the exact requested merchant recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d, destination chain 1952, native USDC token 0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3, amount 0.1, and invoice ID 8d101ea5297be43c8fbff28f65adcf87. The evidence origin is approved and the invoice is current based on issuedAt/expiresAt and fetchedAt timestamps.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+                  ]
+                }
+              ],
+              "reason": "APPROVE"
+            },
+            "reviewStage": {
+              "status": "COMPLETE",
+              "reason": "The finalized GenLayer decision is recorded."
+            },
+            "errorCode": null,
+            "genLayerTxHash": "0x93b7a9f3123d8d4a80a12166b7bd76a929647b0ab17e0e9471fb9e8dc2385458",
+            "paymentTxHash": "0x1eddd97f31e87079057d0bd470a6aa1def42505e70228ab0e9797a98bb5949ef",
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792981273742,
+            "updatedAt": 1792981374906
+          }
+        }
+      },
+      "result": {
+        "id": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+        "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+        "cardName": "USDC settlement audit",
+        "status": "PAID",
+        "request": {
+          "destinationChainId": 1952,
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "amount": "0.1",
+          "purchaseDescription": "Native USDC settlement verification",
+          "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+          "category": "protocol-verification",
+          "invoiceId": "8d101ea5297be43c8fbff28f65adcf87",
+          "evidence": [
+            {
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+            }
+          ]
+        },
+        "requestHash": "0xa4ed1395f0ef40e039945e48f44af98fcdb5ed211921baebae031300c8e0915e",
+        "evidenceHash": "0xacc96372a190c10522c3f24d13094f75377b4b577204af2e6dab59fa1eac1b13",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0xa4f5b6435caae223643d806a98962210df00eae2a725c3118da9f9f6cabb6ae8"
+        },
+        "review": {
+          "decision": "APPROVE",
+          "requestHash": "0xa4ed1395f0ef40e039945e48f44af98fcdb5ed211921baebae031300c8e0915e",
+          "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+          "evidenceHash": "0xacc96372a190c10522c3f24d13094f75377b4b577204af2e6dab59fa1eac1b13",
+          "criteria": [
+            {
+              "id": "purpose",
+              "status": "PASS",
+              "reason": "The verified merchant invoice describes \"Native USDC settlement verification on X Layer Testnet,\" which substantively matches the requested product \"Native USDC settlement verification,\" the allowed category \"protocol-verification,\" and the mission/task context of verifying native testnet USDC payment settlement for the approved protocol test merchant.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+              ]
+            },
+            {
+              "id": "invoice",
+              "status": "PASS",
+              "reason": "The verified current invoice identifies the buyer as vault address 0xb914c71a5667e816f248f6aab41546200f2d43b1 and matches the exact requested merchant recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d, destination chain 1952, native USDC token 0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3, amount 0.1, and invoice ID 8d101ea5297be43c8fbff28f65adcf87. The evidence origin is approved and the invoice is current based on issuedAt/expiresAt and fetchedAt timestamps.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+              ]
+            }
+          ],
+          "reason": "APPROVE"
+        },
+        "reviewStage": {
+          "status": "COMPLETE",
+          "reason": "The finalized GenLayer decision is recorded."
+        },
+        "errorCode": null,
+        "genLayerTxHash": "0x93b7a9f3123d8d4a80a12166b7bd76a929647b0ab17e0e9471fb9e8dc2385458",
+        "paymentTxHash": "0x1eddd97f31e87079057d0bd470a6aa1def42505e70228ab0e9797a98bb5949ef",
+        "paymentSymbol": "USDC",
+        "error": null,
+        "createdAt": 1792981273742,
+        "updatedAt": 1792981374906
+      },
+      "receiptVerified": true
+    },
+    {
+      "name": "base",
+      "expected": "PAID",
+      "failedAttempts": [],
+      "idem": "cctp-live-audit-v1-base",
+      "payload": {
+        "destinationChainId": 84532,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "0.1",
+        "purchaseDescription": "Native USDC settlement verification",
+        "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+        "category": "protocol-verification",
+        "invoiceId": "bb23854ac32ed1e2a530cfe4edc5ea1b",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-base"
+          },
+          "body": {
+            "destinationChainId": 84532,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "bb23854ac32ed1e2a530cfe4edc5ea1b",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:23:03 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "59",
+            "ratelimit-reset": "58",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "e76a9f22-dfee-4827-9711-123ddf81e566",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::fgv65-1792981382528-9e2b1166e46f"
+          },
+          "body": {
+            "id": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+            "status": "QUEUED"
+          }
+        }
+      },
+      "requestId": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+      "terminalLog": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:43:21 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "55",
+            "ratelimit-reset": "39",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "768e2a2c-c8bb-40d2-90a4-12ef7aab6552",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "cle1::iad1::vtf2x-1792982601113-60cd177de0e8"
+          },
+          "body": {
+            "id": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "PAID",
+            "request": {
+              "destinationChainId": 84532,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "bb23854ac32ed1e2a530cfe4edc5ea1b",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+                }
+              ]
+            },
+            "requestHash": "0x3a4aabb5fdfce137d013c7fa41cb3b371bd2f62acfd95ab82ebb86f1dcedf161",
+            "evidenceHash": "0x36dfe3a095485e3960fc7464f473e5c6e5f8247b6b01a45c63f37287b0e5d4d5",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0x355c41a6d70be580931c1a9ba84a88bfa7f39b914b112340b57f83bb667dc127"
+            },
+            "review": {
+              "decision": "APPROVE",
+              "requestHash": "0x3a4aabb5fdfce137d013c7fa41cb3b371bd2f62acfd95ab82ebb86f1dcedf161",
+              "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+              "evidenceHash": "0x36dfe3a095485e3960fc7464f473e5c6e5f8247b6b01a45c63f37287b0e5d4d5",
+              "criteria": [
+                {
+                  "id": "purpose",
+                  "status": "PASS",
+                  "reason": "The verified merchant invoice describes \"Native USDC settlement verification on Base Sepolia,\" which matches the requested product \"Native USDC settlement verification,\" the allowed category \"protocol-verification,\" and the mission/task context to verify native testnet USDC payment settlement on approved test chains. The request justification is consistent with this, and there is no contradiction with prohibited purchases.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+                  ]
+                },
+                {
+                  "id": "invoice",
+                  "status": "PASS",
+                  "reason": "The verified current invoice from the approved merchant origin identifies the buyer as vault 0xb914c71a5667e816f248f6aab41546200f2d43b1 and specifies the requested merchant recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d, destination chain 84532 (Base Sepolia), native USDC token 0x036cbd53842c5426634e7929541ec2318f3dcf7e, amount 0.1, and invoice ID bb23854ac32ed1e2a530cfe4edc5ea1b. These match the request and the owner policy merchant configuration.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+                  ]
+                }
+              ],
+              "reason": "APPROVE: All owner policy criteria pass with verified public merchant invoice evidence from an approved origin. The purchase matches the allowed category, approved merchant/product, exact recipient, destination chain, native USDC token, amount, buyer vault, and invoice ID, with no prohibited purpose detected."
+            },
+            "reviewStage": {
+              "status": "COMPLETE",
+              "reason": "The finalized GenLayer decision is recorded."
+            },
+            "errorCode": null,
+            "genLayerTxHash": "0xea266f5ddd4719f892c3ef03cf518cb7051cfc908b8f83d34bea568ad4d892f4",
+            "paymentTxHash": "0xad5b416d9b82f208114e5ae5ea0a702f6add1f031d9b5183debf32aa343c94ea",
+            "bridge": {
+              "protocol": "CCTP_V2",
+              "phase": "CONFIRMED",
+              "sourceChainId": 1952,
+              "destinationChainId": 84532,
+              "destinationDomain": 6,
+              "sourceToken": "0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3",
+              "destinationToken": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+              "amount": "0.1",
+              "sourceTxHash": "0xd4a90e427691bd61c30c65e7f2ebc9aa5ca5a6ecc88f8097d89318a775762a09",
+              "updatedAt": 1792982599162,
+              "messageHash": "0xe953010054feca65591d0133465f7f9be54f70eabc36b721833cf7ed7438f35a",
+              "nonce": "0x7c9ee619eecc2be4c456c96459e06afd623d91a0982eb2afeb92253acb62f894",
+              "destinationTxHash": "0xad5b416d9b82f208114e5ae5ea0a702f6add1f031d9b5183debf32aa343c94ea",
+              "confirmationTxHash": "0x9077076442e89e597c2ead69a3d1cb62e6d5e3c90a7d978482b3bf8c35ed3ae9"
+            },
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792981383260,
+            "updatedAt": 1792982599162
+          }
+        }
+      },
+      "result": {
+        "id": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+        "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+        "cardName": "USDC settlement audit",
+        "status": "PAID",
+        "request": {
+          "destinationChainId": 84532,
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "amount": "0.1",
+          "purchaseDescription": "Native USDC settlement verification",
+          "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+          "category": "protocol-verification",
+          "invoiceId": "bb23854ac32ed1e2a530cfe4edc5ea1b",
+          "evidence": [
+            {
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+            }
+          ]
+        },
+        "requestHash": "0x3a4aabb5fdfce137d013c7fa41cb3b371bd2f62acfd95ab82ebb86f1dcedf161",
+        "evidenceHash": "0x36dfe3a095485e3960fc7464f473e5c6e5f8247b6b01a45c63f37287b0e5d4d5",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0x355c41a6d70be580931c1a9ba84a88bfa7f39b914b112340b57f83bb667dc127"
+        },
+        "review": {
+          "decision": "APPROVE",
+          "requestHash": "0x3a4aabb5fdfce137d013c7fa41cb3b371bd2f62acfd95ab82ebb86f1dcedf161",
+          "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+          "evidenceHash": "0x36dfe3a095485e3960fc7464f473e5c6e5f8247b6b01a45c63f37287b0e5d4d5",
+          "criteria": [
+            {
+              "id": "purpose",
+              "status": "PASS",
+              "reason": "The verified merchant invoice describes \"Native USDC settlement verification on Base Sepolia,\" which matches the requested product \"Native USDC settlement verification,\" the allowed category \"protocol-verification,\" and the mission/task context to verify native testnet USDC payment settlement on approved test chains. The request justification is consistent with this, and there is no contradiction with prohibited purchases.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+              ]
+            },
+            {
+              "id": "invoice",
+              "status": "PASS",
+              "reason": "The verified current invoice from the approved merchant origin identifies the buyer as vault 0xb914c71a5667e816f248f6aab41546200f2d43b1 and specifies the requested merchant recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d, destination chain 84532 (Base Sepolia), native USDC token 0x036cbd53842c5426634e7929541ec2318f3dcf7e, amount 0.1, and invoice ID bb23854ac32ed1e2a530cfe4edc5ea1b. These match the request and the owner policy merchant configuration.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bb23854ac32ed1e2a530cfe4edc5ea1b"
+              ]
+            }
+          ],
+          "reason": "APPROVE: All owner policy criteria pass with verified public merchant invoice evidence from an approved origin. The purchase matches the allowed category, approved merchant/product, exact recipient, destination chain, native USDC token, amount, buyer vault, and invoice ID, with no prohibited purpose detected."
+        },
+        "reviewStage": {
+          "status": "COMPLETE",
+          "reason": "The finalized GenLayer decision is recorded."
+        },
+        "errorCode": null,
+        "genLayerTxHash": "0xea266f5ddd4719f892c3ef03cf518cb7051cfc908b8f83d34bea568ad4d892f4",
+        "paymentTxHash": "0xad5b416d9b82f208114e5ae5ea0a702f6add1f031d9b5183debf32aa343c94ea",
+        "bridge": {
+          "protocol": "CCTP_V2",
+          "phase": "CONFIRMED",
+          "sourceChainId": 1952,
+          "destinationChainId": 84532,
+          "destinationDomain": 6,
+          "sourceToken": "0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3",
+          "destinationToken": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "amount": "0.1",
+          "sourceTxHash": "0xd4a90e427691bd61c30c65e7f2ebc9aa5ca5a6ecc88f8097d89318a775762a09",
+          "updatedAt": 1792982599162,
+          "messageHash": "0xe953010054feca65591d0133465f7f9be54f70eabc36b721833cf7ed7438f35a",
+          "nonce": "0x7c9ee619eecc2be4c456c96459e06afd623d91a0982eb2afeb92253acb62f894",
+          "destinationTxHash": "0xad5b416d9b82f208114e5ae5ea0a702f6add1f031d9b5183debf32aa343c94ea",
+          "confirmationTxHash": "0x9077076442e89e597c2ead69a3d1cb62e6d5e3c90a7d978482b3bf8c35ed3ae9"
+        },
+        "paymentSymbol": "USDC",
+        "error": null,
+        "createdAt": 1792981383260,
+        "updatedAt": 1792982599162
+      },
+      "receiptVerified": true
+    },
+    {
+      "name": "arbitrum",
+      "expected": "PAID",
+      "failedAttempts": [],
+      "idem": "cctp-live-audit-v1-arbitrum",
+      "payload": {
+        "destinationChainId": 421614,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "0.1",
+        "purchaseDescription": "Native USDC settlement verification",
+        "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+        "category": "protocol-verification",
+        "invoiceId": "f05f62cf0c049bc161214ac0e6783379",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-arbitrum"
+          },
+          "body": {
+            "destinationChainId": 421614,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "f05f62cf0c049bc161214ac0e6783379",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:37:35 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "59",
+            "ratelimit-reset": "25",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "1d990cb0-0358-493d-ba26-3814967caa03",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::w7d4k-1792982255151-86275150c55f"
+          },
+          "body": {
+            "id": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+            "status": "QUEUED"
+          }
+        }
+      },
+      "requestId": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+      "pollErrorCode": null,
+      "lastObservation": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 03:02:54 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "50",
+            "ratelimit-reset": "6",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "120479b2-a078-4d23-8d1a-8c864829ce1b",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::dtrhp-1792983774609-ba55cb734009"
+          },
+          "body": {
+            "id": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "PAID",
+            "request": {
+              "destinationChainId": 421614,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "f05f62cf0c049bc161214ac0e6783379",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+                }
+              ]
+            },
+            "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+            "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0x4cc40c6b0d1db97d154ceef720be3b3a56b286e88f191824960b7e23d34e7529"
+            },
+            "review": {
+              "decision": "APPROVE",
+              "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+              "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+              "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+              "criteria": [
+                {
+                  "id": "purpose",
+                  "status": "PASS",
+                  "reason": "The invoice description explicitly states 'Native USDC settlement verification on Arbitrum Sepolia', which matches the requested product 'Native USDC settlement verification' from the approved merchant and the owner policy's mission to verify native testnet USDC payment settlement on Arbitrum Sepolia. The category is protocol-verification, which is the only allowed category.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+                  ]
+                },
+                {
+                  "id": "invoice",
+                  "status": "PASS",
+                  "reason": "The independently fetched invoice identifies the buyer as 0xb914c71a5667e816f248f6aab41546200f2d43b1, matching the cardAddress/agent vault. The recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d matches the approved merchant 'IntentGuard protocol test merchant'. The token 0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d matches the destinationToken in the request. The chainId 421614 matches the destinationChainId (Arbitrum Sepolia). The amount 0.1 matches the requested amount. The invoiceId f05f62cf0c049bc161214ac0e6783379 matches the requested invoice ID. All fields align between the request and the fetched invoice from the approved origin.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+                  ]
+                }
+              ],
+              "reason": "The purchase is approved. Both policy criteria are satisfied: (1) the invoice describes native USDC settlement verification on Arbitrum Sepolia, matching the assigned protocol testing mission, and (2) the independently fetched invoice from the approved origin confirms the buyer (agent vault), exact merchant recipient, destination chain (Arbitrum Sepolia, chainId 421614), native USDC token, amount (0.1), and invoice ID all match the request. The amount of 0.1 is within the per-payment limit of 1, the evidence is from an approved origin, and no prohibited purchases are involved."
+            },
+            "reviewStage": {
+              "status": "COMPLETE",
+              "reason": "The finalized GenLayer decision is recorded."
+            },
+            "errorCode": null,
+            "genLayerTxHash": "0xb78b21462d6ce4932112b1e1a6021b23c278e1f62b85713bde76ddd74656074f",
+            "paymentTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+            "bridge": {
+              "protocol": "CCTP_V2",
+              "phase": "CONFIRMED",
+              "sourceChainId": 1952,
+              "destinationChainId": 421614,
+              "destinationDomain": 3,
+              "sourceToken": "0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3",
+              "destinationToken": "0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d",
+              "amount": "0.1",
+              "sourceTxHash": "0x4424112408b270826b32f73262df046c405d9b3e5b980d382e378ff5de529878",
+              "updatedAt": 1792983770233,
+              "messageHash": "0x60eb3acb0c3ac952dbc338c6ae878d794bc7eb5f49ecd95ff0c4c23e93c7be43",
+              "nonce": "0x289cf99bd6e5cd82d6b362e0db6fae4f02bfc43cc6b2f9746fcbac24958b3ee3",
+              "destinationTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+              "confirmationTxHash": "0x31a8583a7a7ec6126a608d3c54dffbc09ea7a94bd6b764259a6ea6e04327fba9"
+            },
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792982255655,
+            "updatedAt": 1792983770233
+          }
+        }
+      },
+      "result": {
+        "id": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+        "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+        "cardName": "USDC settlement audit",
+        "status": "PAID",
+        "request": {
+          "destinationChainId": 421614,
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "amount": "0.1",
+          "purchaseDescription": "Native USDC settlement verification",
+          "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+          "category": "protocol-verification",
+          "invoiceId": "f05f62cf0c049bc161214ac0e6783379",
+          "evidence": [
+            {
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+            }
+          ]
+        },
+        "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+        "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0x4cc40c6b0d1db97d154ceef720be3b3a56b286e88f191824960b7e23d34e7529"
+        },
+        "review": {
+          "decision": "APPROVE",
+          "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+          "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+          "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+          "criteria": [
+            {
+              "id": "purpose",
+              "status": "PASS",
+              "reason": "The invoice description explicitly states 'Native USDC settlement verification on Arbitrum Sepolia', which matches the requested product 'Native USDC settlement verification' from the approved merchant and the owner policy's mission to verify native testnet USDC payment settlement on Arbitrum Sepolia. The category is protocol-verification, which is the only allowed category.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+              ]
+            },
+            {
+              "id": "invoice",
+              "status": "PASS",
+              "reason": "The independently fetched invoice identifies the buyer as 0xb914c71a5667e816f248f6aab41546200f2d43b1, matching the cardAddress/agent vault. The recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d matches the approved merchant 'IntentGuard protocol test merchant'. The token 0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d matches the destinationToken in the request. The chainId 421614 matches the destinationChainId (Arbitrum Sepolia). The amount 0.1 matches the requested amount. The invoiceId f05f62cf0c049bc161214ac0e6783379 matches the requested invoice ID. All fields align between the request and the fetched invoice from the approved origin.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+              ]
+            }
+          ],
+          "reason": "The purchase is approved. Both policy criteria are satisfied: (1) the invoice describes native USDC settlement verification on Arbitrum Sepolia, matching the assigned protocol testing mission, and (2) the independently fetched invoice from the approved origin confirms the buyer (agent vault), exact merchant recipient, destination chain (Arbitrum Sepolia, chainId 421614), native USDC token, amount (0.1), and invoice ID all match the request. The amount of 0.1 is within the per-payment limit of 1, the evidence is from an approved origin, and no prohibited purchases are involved."
+        },
+        "reviewStage": {
+          "status": "COMPLETE",
+          "reason": "The finalized GenLayer decision is recorded."
+        },
+        "errorCode": null,
+        "genLayerTxHash": "0xb78b21462d6ce4932112b1e1a6021b23c278e1f62b85713bde76ddd74656074f",
+        "paymentTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+        "bridge": {
+          "protocol": "CCTP_V2",
+          "phase": "CONFIRMED",
+          "sourceChainId": 1952,
+          "destinationChainId": 421614,
+          "destinationDomain": 3,
+          "sourceToken": "0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3",
+          "destinationToken": "0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d",
+          "amount": "0.1",
+          "sourceTxHash": "0x4424112408b270826b32f73262df046c405d9b3e5b980d382e378ff5de529878",
+          "updatedAt": 1792983770233,
+          "messageHash": "0x60eb3acb0c3ac952dbc338c6ae878d794bc7eb5f49ecd95ff0c4c23e93c7be43",
+          "nonce": "0x289cf99bd6e5cd82d6b362e0db6fae4f02bfc43cc6b2f9746fcbac24958b3ee3",
+          "destinationTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+          "confirmationTxHash": "0x31a8583a7a7ec6126a608d3c54dffbc09ea7a94bd6b764259a6ea6e04327fba9"
+        },
+        "paymentSymbol": "USDC",
+        "error": null,
+        "createdAt": 1792982255655,
+        "updatedAt": 1792983770233
+      },
+      "terminalLog": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 03:02:54 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "50",
+            "ratelimit-reset": "6",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "120479b2-a078-4d23-8d1a-8c864829ce1b",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::dtrhp-1792983774609-ba55cb734009"
+          },
+          "body": {
+            "id": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "PAID",
+            "request": {
+              "destinationChainId": 421614,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "f05f62cf0c049bc161214ac0e6783379",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+                }
+              ]
+            },
+            "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+            "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0x4cc40c6b0d1db97d154ceef720be3b3a56b286e88f191824960b7e23d34e7529"
+            },
+            "review": {
+              "decision": "APPROVE",
+              "requestHash": "0x8d76f9ce45b55e6f2fb2fed28556c1ab8bc4f9341f82281d2ee6181206766a1a",
+              "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+              "evidenceHash": "0x65a26713fb07fafbf7ab8cf3a2c0f7e75b6a0395a6e58c5ae25212f0088c5026",
+              "criteria": [
+                {
+                  "id": "purpose",
+                  "status": "PASS",
+                  "reason": "The invoice description explicitly states 'Native USDC settlement verification on Arbitrum Sepolia', which matches the requested product 'Native USDC settlement verification' from the approved merchant and the owner policy's mission to verify native testnet USDC payment settlement on Arbitrum Sepolia. The category is protocol-verification, which is the only allowed category.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+                  ]
+                },
+                {
+                  "id": "invoice",
+                  "status": "PASS",
+                  "reason": "The independently fetched invoice identifies the buyer as 0xb914c71a5667e816f248f6aab41546200f2d43b1, matching the cardAddress/agent vault. The recipient 0xe72e260811c6fbc27d1c350d92abaac89bbf803d matches the approved merchant 'IntentGuard protocol test merchant'. The token 0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d matches the destinationToken in the request. The chainId 421614 matches the destinationChainId (Arbitrum Sepolia). The amount 0.1 matches the requested amount. The invoiceId f05f62cf0c049bc161214ac0e6783379 matches the requested invoice ID. All fields align between the request and the fetched invoice from the approved origin.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f05f62cf0c049bc161214ac0e6783379"
+                  ]
+                }
+              ],
+              "reason": "The purchase is approved. Both policy criteria are satisfied: (1) the invoice describes native USDC settlement verification on Arbitrum Sepolia, matching the assigned protocol testing mission, and (2) the independently fetched invoice from the approved origin confirms the buyer (agent vault), exact merchant recipient, destination chain (Arbitrum Sepolia, chainId 421614), native USDC token, amount (0.1), and invoice ID all match the request. The amount of 0.1 is within the per-payment limit of 1, the evidence is from an approved origin, and no prohibited purchases are involved."
+            },
+            "reviewStage": {
+              "status": "COMPLETE",
+              "reason": "The finalized GenLayer decision is recorded."
+            },
+            "errorCode": null,
+            "genLayerTxHash": "0xb78b21462d6ce4932112b1e1a6021b23c278e1f62b85713bde76ddd74656074f",
+            "paymentTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+            "bridge": {
+              "protocol": "CCTP_V2",
+              "phase": "CONFIRMED",
+              "sourceChainId": 1952,
+              "destinationChainId": 421614,
+              "destinationDomain": 3,
+              "sourceToken": "0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3",
+              "destinationToken": "0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d",
+              "amount": "0.1",
+              "sourceTxHash": "0x4424112408b270826b32f73262df046c405d9b3e5b980d382e378ff5de529878",
+              "updatedAt": 1792983770233,
+              "messageHash": "0x60eb3acb0c3ac952dbc338c6ae878d794bc7eb5f49ecd95ff0c4c23e93c7be43",
+              "nonce": "0x289cf99bd6e5cd82d6b362e0db6fae4f02bfc43cc6b2f9746fcbac24958b3ee3",
+              "destinationTxHash": "0x188c42857338ca551531bf8d451921f170032598231a9003b62291d02238e12d",
+              "confirmationTxHash": "0x31a8583a7a7ec6126a608d3c54dffbc09ea7a94bd6b764259a6ea6e04327fba9"
+            },
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792982255655,
+            "updatedAt": 1792983770233
+          }
+        }
+      },
+      "receiptVerified": true,
+      "verifiedAt": "2026-10-26T03:02:58.725Z"
+    },
+    {
+      "name": "mainnet",
+      "expected": "DESTINATION_NOT_ALLOWED",
+      "failedAttempts": [],
+      "idem": "cctp-live-audit-v1-mainnet",
+      "payload": {
+        "destinationChainId": 8453,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "0.1",
+        "purchaseDescription": "Native USDC settlement verification",
+        "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+        "category": "protocol-verification",
+        "invoiceId": "f2151d3e9ead6269a7cdc106db8f1a95",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f2151d3e9ead6269a7cdc106db8f1a95"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-mainnet"
+          },
+          "body": {
+            "destinationChainId": 8453,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "f2151d3e9ead6269a7cdc106db8f1a95",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/f2151d3e9ead6269a7cdc106db8f1a95"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 422,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:37:35 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "58",
+            "ratelimit-reset": "25",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "88c1b0c9-58f0-4d80-881c-6367abb00fb2",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::rvnb6-1792982255871-f977c2a9f2f5"
+          },
+          "body": {
+            "error": {
+              "code": "DESTINATION_NOT_ALLOWED",
+              "message": "The owner did not approve this destination testnet.",
+              "retryable": false,
+              "requestId": "88c1b0c9-58f0-4d80-881c-6367abb00fb2"
+            }
+          }
+        }
+      },
+      "requestId": null,
+      "receiptVerified": true,
+      "verifiedAt": "2026-10-26T02:54:07.406Z"
+    },
+    {
+      "name": "limit",
+      "expected": "BLOCKED",
+      "failedAttempts": [],
+      "idem": "cctp-live-audit-v1-limit",
+      "payload": {
+        "destinationChainId": 84532,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "1.000001",
+        "purchaseDescription": "Native USDC settlement verification",
+        "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+        "category": "protocol-verification",
+        "invoiceId": "19b67e91c7605568ddf7c0ba1c13ddb4",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/19b67e91c7605568ddf7c0ba1c13ddb4"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-limit"
+          },
+          "body": {
+            "destinationChainId": 84532,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "1.000001",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "19b67e91c7605568ddf7c0ba1c13ddb4",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/19b67e91c7605568ddf7c0ba1c13ddb4"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:37:36 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "57",
+            "ratelimit-reset": "24",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "8e691f52-1d5e-4043-ad73-a60a237549d9",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::lzps5-1792982256070-22f11705a943"
+          },
+          "body": {
+            "id": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+            "status": "QUEUED"
+          }
+        }
+      },
+      "requestId": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+      "pollErrorCode": null,
+      "lastObservation": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:06 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "55",
+            "ratelimit-reset": "54",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "dfe9554f-c396-44b1-bbeb-d2fc29234370",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::wz87c-1792983245700-89e643e863c2"
+          },
+          "body": {
+            "id": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "BLOCKED",
+            "request": {
+              "destinationChainId": 84532,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "1.000001",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "19b67e91c7605568ddf7c0ba1c13ddb4",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/19b67e91c7605568ddf7c0ba1c13ddb4"
+                }
+              ]
+            },
+            "requestHash": "",
+            "evidenceHash": "",
+            "guard": {
+              "allow": false,
+              "failures": [
+                "Payment limit",
+                "Total budget"
+              ]
+            },
+            "reviewStage": {
+              "status": "SKIPPED",
+              "reason": "The financial gate blocked this request. Evidence review was not run."
+            },
+            "errorCode": null,
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792982256936,
+            "updatedAt": 1792982294950
+          }
+        }
+      },
+      "result": {
+        "id": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+        "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+        "cardName": "USDC settlement audit",
+        "status": "BLOCKED",
+        "request": {
+          "destinationChainId": 84532,
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "amount": "1.000001",
+          "purchaseDescription": "Native USDC settlement verification",
+          "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+          "category": "protocol-verification",
+          "invoiceId": "19b67e91c7605568ddf7c0ba1c13ddb4",
+          "evidence": [
+            {
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/19b67e91c7605568ddf7c0ba1c13ddb4"
+            }
+          ]
+        },
+        "requestHash": "",
+        "evidenceHash": "",
+        "guard": {
+          "allow": false,
+          "failures": [
+            "Payment limit",
+            "Total budget"
+          ]
+        },
+        "reviewStage": {
+          "status": "SKIPPED",
+          "reason": "The financial gate blocked this request. Evidence review was not run."
+        },
+        "errorCode": null,
+        "paymentSymbol": "USDC",
+        "error": null,
+        "createdAt": 1792982256936,
+        "updatedAt": 1792982294950
+      },
+      "terminalLog": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:06 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "55",
+            "ratelimit-reset": "54",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "dfe9554f-c396-44b1-bbeb-d2fc29234370",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::wz87c-1792983245700-89e643e863c2"
+          },
+          "body": {
+            "id": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "BLOCKED",
+            "request": {
+              "destinationChainId": 84532,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "1.000001",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "19b67e91c7605568ddf7c0ba1c13ddb4",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/19b67e91c7605568ddf7c0ba1c13ddb4"
+                }
+              ]
+            },
+            "requestHash": "",
+            "evidenceHash": "",
+            "guard": {
+              "allow": false,
+              "failures": [
+                "Payment limit",
+                "Total budget"
+              ]
+            },
+            "reviewStage": {
+              "status": "SKIPPED",
+              "reason": "The financial gate blocked this request. Evidence review was not run."
+            },
+            "errorCode": null,
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792982256936,
+            "updatedAt": 1792982294950
+          }
+        }
+      },
+      "receiptVerified": true,
+      "verifiedAt": "2026-10-26T02:54:08.602Z"
+    },
+    {
+      "name": "prohibited",
+      "expected": "REJECTED",
+      "failedAttempts": [],
+      "idem": "cctp-live-audit-v1-prohibited",
+      "payload": {
+        "destinationChainId": 1952,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "0.1",
+        "purchaseDescription": "Personal data for advertising",
+        "justification": "Purchase personal data for an advertising campaign.",
+        "category": "protocol-verification",
+        "invoiceId": "5e63cd1b78702e689858817dfe117db9",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-prohibited"
+          },
+          "body": {
+            "destinationChainId": 1952,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Personal data for advertising",
+            "justification": "Purchase personal data for an advertising campaign.",
+            "category": "protocol-verification",
+            "invoiceId": "5e63cd1b78702e689858817dfe117db9",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:37:38 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "56",
+            "ratelimit-reset": "23",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "c178191b-ca43-43a5-aa83-a610ca5f40eb",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::lsr2b-1792982257125-0e04c7612574"
+          },
+          "body": {
+            "id": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+            "status": "QUEUED"
+          }
+        }
+      },
+      "requestId": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+      "pollErrorCode": null,
+      "lastObservation": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:06 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "57",
+            "ratelimit-reset": "54",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "78e7ff10-ebef-400e-bc29-c73b10ab4ed1",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::v4n2p-1792983245700-62d305c89dfa"
+          },
+          "body": {
+            "id": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "REJECTED",
+            "request": {
+              "destinationChainId": 1952,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Personal data for advertising",
+              "justification": "Purchase personal data for an advertising campaign.",
+              "category": "protocol-verification",
+              "invoiceId": "5e63cd1b78702e689858817dfe117db9",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+                }
+              ]
+            },
+            "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+            "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0xed720bac693ccd3cf07b59d530ea6c3cb33681ba77f4b234a50f0947172c07c5"
+            },
+            "review": {
+              "decision": "REJECT",
+              "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+              "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+              "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+              "criteria": [
+                {
+                  "id": "purpose",
+                  "status": "FAIL",
+                  "reason": "The justification and purchaseDescription explicitly state 'Personal data for advertising', which is a prohibited purpose. The policy requires native USDC settlement verification for protocol testing, whereas the invoice description also explicitly mentions 'Personal data for advertising'.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+                  ]
+                },
+                {
+                  "id": "invoice",
+                  "status": "PASS",
+                  "reason": "The fetched invoice matches the agent vault (0xb914c71a5667e816f248f6aab41546200f2d43b1), merchant recipient, chain ID, token, amount, and invoice ID specified in the request.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+                  ]
+                }
+              ],
+              "reason": "REJECT: The purchase violates the 'prohibitedPurchases' policy which forbids 'Advertising' and 'Personal data'. Both the untrusted justification and the verified invoice description confirm the intent is to purchase prohibited services."
+            },
+            "reviewStage": {
+              "status": "COMPLETE",
+              "reason": "The finalized GenLayer decision is recorded."
+            },
+            "errorCode": null,
+            "genLayerTxHash": "0xe79272bc9b467dda74e7e44988647572a70439c153b6ac3237ff6fe0464b5e39",
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792982258061,
+            "updatedAt": 1792982494081
+          }
+        }
+      },
+      "result": {
+        "id": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+        "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+        "cardName": "USDC settlement audit",
+        "status": "REJECTED",
+        "request": {
+          "destinationChainId": 1952,
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "amount": "0.1",
+          "purchaseDescription": "Personal data for advertising",
+          "justification": "Purchase personal data for an advertising campaign.",
+          "category": "protocol-verification",
+          "invoiceId": "5e63cd1b78702e689858817dfe117db9",
+          "evidence": [
+            {
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+            }
+          ]
+        },
+        "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+        "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0xed720bac693ccd3cf07b59d530ea6c3cb33681ba77f4b234a50f0947172c07c5"
+        },
+        "review": {
+          "decision": "REJECT",
+          "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+          "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+          "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+          "criteria": [
+            {
+              "id": "purpose",
+              "status": "FAIL",
+              "reason": "The justification and purchaseDescription explicitly state 'Personal data for advertising', which is a prohibited purpose. The policy requires native USDC settlement verification for protocol testing, whereas the invoice description also explicitly mentions 'Personal data for advertising'.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+              ]
+            },
+            {
+              "id": "invoice",
+              "status": "PASS",
+              "reason": "The fetched invoice matches the agent vault (0xb914c71a5667e816f248f6aab41546200f2d43b1), merchant recipient, chain ID, token, amount, and invoice ID specified in the request.",
+              "sources": [
+                "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+              ]
+            }
+          ],
+          "reason": "REJECT: The purchase violates the 'prohibitedPurchases' policy which forbids 'Advertising' and 'Personal data'. Both the untrusted justification and the verified invoice description confirm the intent is to purchase prohibited services."
+        },
+        "reviewStage": {
+          "status": "COMPLETE",
+          "reason": "The finalized GenLayer decision is recorded."
+        },
+        "errorCode": null,
+        "genLayerTxHash": "0xe79272bc9b467dda74e7e44988647572a70439c153b6ac3237ff6fe0464b5e39",
+        "paymentSymbol": "USDC",
+        "error": null,
+        "createdAt": 1792982258061,
+        "updatedAt": 1792982494081
+      },
+      "terminalLog": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:06 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "57",
+            "ratelimit-reset": "54",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "78e7ff10-ebef-400e-bc29-c73b10ab4ed1",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::v4n2p-1792983245700-62d305c89dfa"
+          },
+          "body": {
+            "id": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "REJECTED",
+            "request": {
+              "destinationChainId": 1952,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Personal data for advertising",
+              "justification": "Purchase personal data for an advertising campaign.",
+              "category": "protocol-verification",
+              "invoiceId": "5e63cd1b78702e689858817dfe117db9",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+                }
+              ]
+            },
+            "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+            "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+            "guard": {
+              "allow": true,
+              "failures": [],
+              "txHash": "0xed720bac693ccd3cf07b59d530ea6c3cb33681ba77f4b234a50f0947172c07c5"
+            },
+            "review": {
+              "decision": "REJECT",
+              "requestHash": "0xa4ae1b9f572c45cbaea03b51af79ab861e9ff06b82220e91ab551a379a98ec9b",
+              "policyHash": "0x8f7acf3e2084f5717a445ef2a0d7de0387cc62d5e508da1da63c0d256cd86427",
+              "evidenceHash": "0xdec7b4c6e87c5ed511e00ec2c4ce5bffd9d1f31f9fe505f3149061ff185295f4",
+              "criteria": [
+                {
+                  "id": "purpose",
+                  "status": "FAIL",
+                  "reason": "The justification and purchaseDescription explicitly state 'Personal data for advertising', which is a prohibited purpose. The policy requires native USDC settlement verification for protocol testing, whereas the invoice description also explicitly mentions 'Personal data for advertising'.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+                  ]
+                },
+                {
+                  "id": "invoice",
+                  "status": "PASS",
+                  "reason": "The fetched invoice matches the agent vault (0xb914c71a5667e816f248f6aab41546200f2d43b1), merchant recipient, chain ID, token, amount, and invoice ID specified in the request.",
+                  "sources": [
+                    "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/5e63cd1b78702e689858817dfe117db9"
+                  ]
+                }
+              ],
+              "reason": "REJECT: The purchase violates the 'prohibitedPurchases' policy which forbids 'Advertising' and 'Personal data'. Both the untrusted justification and the verified invoice description confirm the intent is to purchase prohibited services."
+            },
+            "reviewStage": {
+              "status": "COMPLETE",
+              "reason": "The finalized GenLayer decision is recorded."
+            },
+            "errorCode": null,
+            "genLayerTxHash": "0xe79272bc9b467dda74e7e44988647572a70439c153b6ac3237ff6fe0464b5e39",
+            "paymentSymbol": "USDC",
+            "error": null,
+            "createdAt": 1792982258061,
+            "updatedAt": 1792982494081
+          }
+        }
+      },
+      "receiptVerified": true,
+      "verifiedAt": "2026-10-26T02:54:10.683Z"
+    },
+    {
+      "name": "evidence",
+      "expected": "NEEDS_EVIDENCE",
+      "failedAttempts": [],
+      "idem": "cctp-live-audit-v1-evidence",
+      "payload": {
+        "destinationChainId": 84532,
+        "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+        "amount": "0.1",
+        "purchaseDescription": "Native USDC settlement verification",
+        "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+        "category": "protocol-verification",
+        "invoiceId": "bba18223db75d2ee4ca7ff41c97d0aba",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bba18223db75d2ee4ca7ff41c97d0aba"
+          }
+        ]
+      },
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-evidence"
+          },
+          "body": {
+            "destinationChainId": 84532,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "bba18223db75d2ee4ca7ff41c97d0aba",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bba18223db75d2ee4ca7ff41c97d0aba"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:37:39 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "55",
+            "ratelimit-reset": "22",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "cceeeec9-ef86-4c7f-ace6-3f448d000533",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "cle1::iad1::f9cfv-1792982258266-2dd506c16807"
+          },
+          "body": {
+            "id": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+            "status": "QUEUED"
+          }
+        }
+      },
+      "requestId": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+      "pollErrorCode": null,
+      "lastObservation": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:06 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "56",
+            "ratelimit-reset": "54",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "881e7644-14d0-431f-b33f-759d57edc441",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::5hk2d-1792983245703-6f5e88b5c1ac"
+          },
+          "body": {
+            "id": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "NEEDS_EVIDENCE",
+            "request": {
+              "destinationChainId": 84532,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "bba18223db75d2ee4ca7ff41c97d0aba",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bba18223db75d2ee4ca7ff41c97d0aba"
+                }
+              ]
+            },
+            "requestHash": "",
+            "evidenceHash": "",
+            "guard": {
+              "allow": true,
+              "failures": []
+            },
+            "reviewStage": {
+              "status": "SKIPPED",
+              "reason": "The request ended before evidence review. No model decision was required."
+            },
+            "errorCode": "INVOICE_BUYER_MISMATCH",
+            "paymentSymbol": "USDC",
+            "error": "Invoice buyer must be this agent's vault address.",
+            "createdAt": 1792982259560,
+            "updatedAt": 1792982346677
+          }
+        }
+      },
+      "result": {
+        "id": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+        "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+        "cardName": "USDC settlement audit",
+        "status": "NEEDS_EVIDENCE",
+        "request": {
+          "destinationChainId": 84532,
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "amount": "0.1",
+          "purchaseDescription": "Native USDC settlement verification",
+          "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+          "category": "protocol-verification",
+          "invoiceId": "bba18223db75d2ee4ca7ff41c97d0aba",
+          "evidence": [
+            {
+              "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bba18223db75d2ee4ca7ff41c97d0aba"
+            }
+          ]
+        },
+        "requestHash": "",
+        "evidenceHash": "",
+        "guard": {
+          "allow": true,
+          "failures": []
+        },
+        "reviewStage": {
+          "status": "SKIPPED",
+          "reason": "The request ended before evidence review. No model decision was required."
+        },
+        "errorCode": "INVOICE_BUYER_MISMATCH",
+        "paymentSymbol": "USDC",
+        "error": "Invoice buyer must be this agent's vault address.",
+        "createdAt": 1792982259560,
+        "updatedAt": 1792982346677
+      },
+      "terminalLog": {
+        "request": {
+          "method": "GET",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests/0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "[REDACTED]"
+          },
+          "body": null
+        },
+        "response": {
+          "status": 200,
+          "headers": {
+            "cache-control": "no-store",
+            "content-encoding": "br",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:06 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "56",
+            "ratelimit-reset": "54",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "881e7644-14d0-431f-b33f-759d57edc441",
+            "x-vercel-cache": "BYPASS",
+            "x-vercel-id": "sfo1::iad1::5hk2d-1792983245703-6f5e88b5c1ac"
+          },
+          "body": {
+            "id": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+            "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+            "cardName": "USDC settlement audit",
+            "status": "NEEDS_EVIDENCE",
+            "request": {
+              "destinationChainId": 84532,
+              "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+              "amount": "0.1",
+              "purchaseDescription": "Native USDC settlement verification",
+              "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+              "category": "protocol-verification",
+              "invoiceId": "bba18223db75d2ee4ca7ff41c97d0aba",
+              "evidence": [
+                {
+                  "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/bba18223db75d2ee4ca7ff41c97d0aba"
+                }
+              ]
+            },
+            "requestHash": "",
+            "evidenceHash": "",
+            "guard": {
+              "allow": true,
+              "failures": []
+            },
+            "reviewStage": {
+              "status": "SKIPPED",
+              "reason": "The request ended before evidence review. No model decision was required."
+            },
+            "errorCode": "INVOICE_BUYER_MISMATCH",
+            "paymentSymbol": "USDC",
+            "error": "Invoice buyer must be this agent's vault address.",
+            "createdAt": 1792982259560,
+            "updatedAt": 1792982346677
+          }
+        }
+      },
+      "receiptVerified": true,
+      "verifiedAt": "2026-10-26T02:54:12.311Z"
+    },
+    {
+      "name": "idempotent",
+      "expected": "SAME_REQUEST",
+      "requestId": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+      "admission": {
+        "request": {
+          "method": "POST",
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/requests",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "[REDACTED]",
+            "Idempotency-Key": "cctp-live-audit-v1-xlayer-retry1"
+          },
+          "body": {
+            "destinationChainId": 1952,
+            "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+            "amount": "0.1",
+            "purchaseDescription": "Native USDC settlement verification",
+            "justification": "Verify the approved protocol testnet payment route and its exact receipt.",
+            "category": "protocol-verification",
+            "invoiceId": "8d101ea5297be43c8fbff28f65adcf87",
+            "evidence": [
+              {
+                "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/8d101ea5297be43c8fbff28f65adcf87"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 202,
+          "headers": {
+            "cache-control": "no-store",
+            "content-type": "application/json",
+            "date": "Mon, 26 Oct 2026 02:54:05 GMT",
+            "ratelimit-limit": "60",
+            "ratelimit-policy": "60;w=60",
+            "ratelimit-remaining": "59",
+            "ratelimit-reset": "55",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "transfer-encoding": "chunked",
+            "x-content-type-options": "nosniff",
+            "x-matched-path": "/api/[...path]",
+            "x-request-id": "2050eaab-3c15-4eb9-8536-ac87d12486ce",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "sfo1::iad1::76jd2-1792983245297-65ff32ff641f"
+          },
+          "body": {
+            "id": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+            "status": "PAID"
+          }
+        }
+      },
+      "receiptVerified": true
+    }
+  ],
+  "baseline": {
+    "ledger": {
+      "funded": "1",
+      "spent": "0",
+      "reserved": "0",
+      "available": "1",
+      "periodSpent": "0",
+      "periodReserved": "0"
+    },
+    "merchantBalances": {
+      "1952": "0",
+      "84532": "0",
+      "421614": "0"
+    }
+  },
+  "final": {
+    "ledger": {
+      "funded": "0.7",
+      "spent": "0.3",
+      "reserved": "0",
+      "available": "0.7",
+      "periodSpent": "0.3",
+      "periodReserved": "0"
+    },
+    "merchantBalances": {
+      "1952": "100000",
+      "84532": "100000",
+      "421614": "100000"
+    }
+  },
+  "status": "PASSED",
+  "updatedAt": "2026-10-26T03:03:00.902Z",
+  "errorCode": null,
+  "sourceHead": "e4d9b596d4a8c4b6ffe9e6afa5f91c6d699ca21c",
+  "workflowRunId": "40260466255"
+}

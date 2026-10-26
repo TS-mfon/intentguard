@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "status": "NATIVE_USDC_TESTNET_VERIFIED_USDT0_HANDOFF",
+  "verifiedAt": "2026-10-26T03:08:34.246Z",
+  "codeCommit": "e4d9b596d4a8c4b6ffe9e6afa5f91c6d699ca21c",
+  "repository": "https://github.com/TS-mfon/intentguard",
+  "deployment": {
+    "id": "dpl_8p8trZ7Au3NxstvjtN8hsmYhmRYj",
+    "url": "https://intentguard-nymtx6jhp-gen-daves-projects.vercel.app"
+  },
+  "aliases": [
+    "https://intentguard-tapeout.vercel.app",
+    "https://intentguard-gen-daves-projects.vercel.app"
+  ],
+  "validationRun": 40260449690,
+  "liveAuditRun": 40260466255,
+  "liveAudit": {
+    "matched": 8,
+    "planned": 8,
+    "cardId": "0xd264106a7ffdf1febde69228b8bb326a64fd85defec60411317a999400c389d1",
+    "cardAddress": "0xB914C71A5667E816f248F6aaB41546200f2d43B1",
+    "depositTx": "0xcdfb4b20bf59809c7fa42150a302d2a0c07cda862a187beb573ce8c3b91373b4",
+    "deposited": "1",
+    "delivered": "0.3",
+    "available": "0.7",
+    "reserved": "0"
+  },
+  "automatedTests": {
+    "apiCore": 98,
+    "evm": 68,
+    "genlayer": 72,
+    "circuit": 6,
+    "total": 244
+  },
+  "hostedIdentity": {
+    "verifiedAt": "2026-10-26T03:08:11.940Z",
+    "origins": 2,
+    "loginSignaturesPerOrigin": 1,
+    "docsSections": 22,
+    "pageErrors": 0
+  },
+  "hostedUsdc": {
+    "verifiedAt": "2026-10-26T03:06:49.767Z",
+    "actualRequestCount": 7,
+    "paidCount": 3,
+    "fundsMoved": "0.3",
+    "pageErrors": 0
+  },
+  "acceptance": {
+    "ledger": "root",
+    "met": 6,
+    "unmet": 0,
+    "abandoned": 1,
+    "handoff": "G7 official issuer USDT0 testnet deployment/funding/peers unavailable"
+  },
+  "proofs": [
+    "docs/audits/cctp-live-results.json",
+    "docs/audits/cctp-independent.json",
+    "docs/audits/cctp-hosted.json",
+    "docs/deployments/cctp-funding-independent.json",
+    "docs/deployments/genlayer-receipt-normalization.json"
+  ],
+  "limits": [
+    "USDT0 remains disabled; supplied mainnet address has no code on1952.",
+    "Original immutable-v1 audit remains10/12; general prompt-injection/model-output reliability not certified.",
+    "Foreign-chain receipt attestor remains trusted.",
+    "Testnets1952/84532/421614 only; no mainnet or XLayer DeWEB deployment."
+  ]
+}

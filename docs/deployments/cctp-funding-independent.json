@@ -1,0 +1,24 @@
+{
+  "verifiedAt": "2026-10-26T01:58:20.520Z",
+  "mode": "INDEPENDENT_PUBLIC_RPC_RECEIPT_CHECK",
+  "sourceChainId": 84532,
+  "destinationChainId": 1952,
+  "sourceTxHash": "0x29186b5899e6b7bf466ea5704866179e7107829e589d313e377d0637eff1c443",
+  "destinationTxHash": "0x9b6a307a47d693b644e5fffd645cb1d345d610dd8be63d2445dbe3e5974f2a8e",
+  "amountAtomic": "5000000",
+  "sourceBlock": "50282728",
+  "destinationBlock": "44520797",
+  "nonce": "0xf0f4aa0e1070d8534a6e4ee1e9385a837df7a912efeaffd4cdcf704b9e495cef",
+  "factoryAddress": "0x12f4e3c0c3cb53854bd8f60ccfea3bce96f60ba6",
+  "runtimeCodeHash": "0x556a67d6594c335ec8ac3e75ad014bd7b3be68bc0b85b15237a88461761daf27",
+  "checks": [
+    "exact native USDC burn",
+    "exact native USDC mint",
+    "successful receipt on both chains",
+    "correct issuer contract emitters",
+    "matching CCTP nonce/source domain/finality",
+    "destination nonce consumed once",
+    "compiled factory runtime hash",
+    "destination receipt confirmations"
+  ]
+}

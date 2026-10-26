@@ -20,9 +20,36 @@
       "src/vendor/interfaces/ICPU.sol": "0xf73218404762ef30cf728976b5c513cfeacddebb4997c4acb5fe02d9790ab911"
     }
   },
-  "sourceFunding": null,
+  "sourceFunding": {
+    "amountAtomic": "5000000",
+    "sourceChainId": 84532,
+    "destinationChainId": 1952,
+    "sourceDomain": 6,
+    "destinationDomain": 37,
+    "sourceToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "destinationToken": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
+    "recipient": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+    "phase": "VERIFIED",
+    "sourceTxHash": "0x29186b5899e6b7bf466ea5704866179e7107829e589d313e377d0637eff1c443",
+    "destinationTxHash": "0x9b6a307a47d693b644e5fffd645cb1d345d610dd8be63d2445dbe3e5974f2a8e",
+    "messageHash": "0xb38d263d93cf052cf31b14388587a6eae995e5097ec56b3791f59b95cb0fbaee",
+    "nonce": "0xf0f4aa0e1070d8534a6e4ee1e9385a837df7a912efeaffd4cdcf704b9e495cef",
+    "sourceBlockNumber": "50282728",
+    "destinationBlockNumber": "44520797",
+    "receiptProof": {
+      "transactionHash": "0x9b6a307a47d693b644e5fffd645cb1d345d610dd8be63d2445dbe3e5974f2a8e",
+      "blockNumber": "44520797",
+      "sourceDomain": 6,
+      "destinationDomain": 37,
+      "nonce": "0xf0f4aa0e1070d8534a6e4ee1e9385a837df7a912efeaffd4cdcf704b9e495cef",
+      "messageHash": "0xb38d263d93cf052cf31b14388587a6eae995e5097ec56b3791f59b95cb0fbaee",
+      "mintRecipient": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+      "amountAtomic": "5000000"
+    },
+    "verifiedAt": "2026-10-26T01:53:58.037Z"
+  },
   "preflight": {
-    "verifiedAt": "2026-10-26T01:29:49.831Z",
+    "verifiedAt": "2026-10-26T01:53:24.932Z",
     "factoryArtifact": {
       "compiler": "0.8.28+commit.7893614a",
       "creationCodeHash": "0x893e0d05dc4425e392b07990e2bee862e4398969843e598ac7ae0c3320fbca4c",
@@ -39,7 +66,7 @@
       {
         "chainId": 1952,
         "domain": 37,
-        "blockNumber": "44519349",
+        "blockNumber": "44520763",
         "token": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
         "codeHashes": {
           "token": "0x20bd4e53c9c59b9a5e412da21ffc71466b518f06407b4db87d1489c3c1e2e933",
@@ -48,12 +75,12 @@
           "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
         },
         "operatorUsdcAtomic": "0",
-        "operatorGasWei": "175310600105935119"
+        "operatorGasWei": "175209275900868909"
       },
       {
         "chainId": 84532,
         "domain": 6,
-        "blockNumber": "50281602",
+        "blockNumber": "50288678",
         "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         "codeHashes": {
           "token": "0xedc5281a85c0efecd49999a1ef668390c59b88702f2d4a07029d7f5d63059d6c",
@@ -61,11 +88,11 @@
           "transmitter": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
           "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
         },
-        "operatorUsdcAtomic": "34515000",
-        "operatorGasWei": "18524407958489941"
+        "operatorUsdcAtomic": "29515000",
+        "operatorGasWei": "18522994778489560"
       }
     ]
   },
-  "updatedAt": "2026-10-26T01:30:05.393Z",
-  "githubRunId": "40254429179"
+  "updatedAt": "2026-10-26T01:53:58.435Z",
+  "githubRunId": "40256261814"
 }
