@@ -14,6 +14,7 @@ export class FakeEvm implements EvmPort{
  async reserve(_c:Card,p:Payment){this.reserves++;this.requests.set(p._id,{status:1,requestHash:p.requestHash!,evidenceHash:p.evidenceHash!,invoiceKey:digest(p.input.recipient+"|"+p.input.invoiceId),recipient:p.input.recipient,amount:BigInt(p.canonical!.amountAtomic),expiresAt:BigInt(p.canonical!.expiresAt)});return "0x"+"55".repeat(32)}
  async cancel(_c:Card,p:Payment){const r=this.requests.get(p._id);if(r&&r.status===1){r.status=3;this.cancellations++}}
  async settle(_c:Card,p:Payment){const r=this.requests.get(p._id);if(!r||r.status!==1)throw Error("Replay");r.status=2;this.settlements++;return "0x"+"66".repeat(32)}
+ async paidHash(c:Card,p:Payment){if((await this.request(c,p._id)).status!==2)throw Error("No confirmed payment");return "0x"+"66".repeat(32)}
  async view(c:Card):Promise<CardView>{return {id:c._id,name:c.policy.name,mission:c.policy.mission,address:c.address,policyHash:c.policyHash,policy:c.policy,status:"ACTIVE",balances:{funded:"100",spent:"0",reserved:"0",available:"100",periodSpent:"0",periodReserved:"0"},keyStatus:c.keyStatus,chainId:196,token:String(c.token),reviewerAddress:c.reviewerAddress??""}}
  async verifyActivation(){return "1"}
 }

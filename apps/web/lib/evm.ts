@@ -7,6 +7,7 @@ import {settlementFactory,destinationDomains,cardSymbol,isBridge,settlementToken
 import {Cctp,bridgeRouteHash} from "./cctp";
 import {configuration} from "./config";
 import {runtimeManifest} from "./deployment-profile";
+import {verifyPaymentReceipt} from "./payment-proof";
 import {transactionBinding,validateTransactionJournal} from "./transaction-profile";
 import type {Card,Payment,ChainRequest} from "./models";
 import type {Store,Doc} from "./store";
@@ -29,7 +30,7 @@ export interface EvmPort{
  view(card:Card):Promise<CardView>;
  verifyActivation(owner:string,policy:Policy,address:string,tx:string,settlement?:Settlement):Promise<string>;
  reconcileBridge?(card:Card,p:Payment):Promise<Record<string,unknown>>;
- paidHash?(card:Card,p:Payment):Promise<string>;
+ paidHash(card:Card,p:Payment):Promise<string>;
 }
 export class Evm implements EvmPort{
  readonly cfg=configuration();
@@ -68,23 +69,30 @@ export class Evm implements EvmPort{
  }
  async reserve(card:Card,p:Payment){assertCardEnvironment(card);if(!p.canonical||!p.requestHash||!p.evidenceHash)throw Error("Missing commitments");
  const r=p.canonical;const cross=isBridge(card,p);return this.execute(p._id+":reserve",card.address,cross?"reserveBridge":"reserve",[asHex(p._id),asHex(p.requestHash),asHex(p.evidenceHash),asHex(digest(r.recipient.toLowerCase()+"|"+r.invoiceId)),asAddress(r.recipient),BigInt(r.amountAtomic),BigInt(r.expiresAt),...(cross?[r.destinationDomain!]:[])],cardAbiFor(card));}
- async cancel(card:Card,p:Payment){const r=await this.request(card,p._id);if(r.status!==1)return;await this.execute(p._id+":cancel",card.address,Number(r.expiresAt)<=Math.floor(Date.now()/1000)?"expire":"cancel",[asHex(p._id)]);}
+ async cancel(card:Card,p:Payment){const r=await this.request(card,p._id);if(r.status!==1)return;await this.execute(p._id+":cancel",card.address,Number(r.expiresAt)<=Math.floor(Date.now()/1000)?"expire":"cancel",[asHex(p._id)],cardAbi);}
  async settle(card:Card,p:Payment){assertCardEnvironment(card);if(!p.canonical||!p.review||!p.genLayerTxHash||!p.requestHash||p.review.decision!=="APPROVE")throw Error("No finalized approval");
  const key=process.env.REVIEW_ATTESTOR_PRIVATE_KEY;if(!key)throw Error("Review attestor key is required");const account=privateKeyToAccount(asHex(key));if(account.address.toLowerCase()!==this.cfg.attestor?.toLowerCase())throw Error("Attestor key mismatch");
  const validUntil=BigInt(p.canonical.expiresAt),decisionHash=asHex(digest(p.review)),cross=isBridge(card,p);
  const routeHash=cross?bridgeRouteHash(p.canonical.destinationDomain!,p.canonical.recipient,BigInt(p.canonical.amountAtomic)):undefined;
  if(cross){const route=await this.public.readContract({address:asAddress(card.address),abi:cardAbiFor(card),functionName:"getBridgeRequest",args:[asHex(p._id)]}) as {routeHash:string;destinationDomain:number};if(route.routeHash.toLowerCase()!==routeHash||Number(route.destinationDomain)!==p.canonical.destinationDomain)throw Error("Bridge route commitment mismatch");}
  const signature=await account.signTypedData({domain:{name:"IntentGuard",version:String(cardContractVersion(card)),chainId:this.cfg.chainId,verifyingContract:asAddress(card.address)},primaryType:cross?"BridgeRelease":"Release",types:{[cross?"BridgeRelease":"Release"]:(cross?artifacts.bridgeRelease:artifacts.release).fields.map(([name,type])=>({name,type}))},message:{requestId:asHex(p._id),requestHash:asHex(p.requestHash),policyHash:asHex(card.policyHash),evidenceHash:asHex(p.canonical.evidenceHash),decisionHash,genLayerTxHash:asHex(p.genLayerTxHash),validUntil,...(routeHash?{routeHash}:{})}});
- return this.execute(p._id+":settle",card.address,"settle",[asHex(p._id),validUntil,decisionHash,asHex(p.genLayerTxHash),signature],cardAbiFor(card));
+ const hash=await this.execute(p._id+":settle",card.address,"settle",[asHex(p._id),validUntil,decisionHash,asHex(p.genLayerTxHash),signature],cardAbiFor(card));
+ if(!cross)await this.confirmPayment(card,p,hash);return hash;
+ }
+ async confirmPayment(card:Card,p:Payment,hash:string){
+  const receipt=await this.public.waitForTransactionReceipt({hash:asHex(hash),confirmations:2,timeout:25000});
+  if(receipt.transactionHash.toLowerCase()!==hash.toLowerCase()||await this.public.getBlockNumber()<receipt.blockNumber+1n)throw Error("Payment awaits confirmation");
+  return verifyPaymentReceipt(receipt,card,p,String(card.token??this.cfg.token));
  }
  async paidHash(card:Card,p:Payment){
+ await this.identity();
  const tx=await this.store.get<Doc&{hash:Hex;blockStart?:string}>("transactions",p._id+":settle");
- if(tx){const receipt=await this.public.getTransactionReceipt({hash:tx.hash}).catch(()=>null);if(receipt?.status==="success"){await this.public.waitForTransactionReceipt({hash:tx.hash,confirmations:2,timeout:25000});return tx.hash}}
+ if(tx){const receipt=await this.public.getTransactionReceipt({hash:tx.hash}).catch(()=>null);if(receipt?.status==="success")return this.confirmPayment(card,p,tx.hash)}
  const end=await this.public.getBlockNumber(),start=BigInt(tx?.blockStart??card.activationBlock);
  const event=cardAbi.find(v=>v.type==="event"&&v.name==="Paid");if(!event||event.type!=="event")throw Error("Paid event ABI missing");
  for(let to=end;to>=start;){const from=to>start+99n?to-99n:start;
  const logs=await this.public.getLogs({address:asAddress(card.address),event,args:{requestId:asHex(p._id)},fromBlock:from,toBlock:to});
- if(logs.length){const found=logs[logs.length-1];if(end<found.blockNumber+1n)throw Error("Payment awaits confirmation");await this.store.patch("requests",p._id,{paymentTxHash:found.transactionHash});return found.transactionHash;}if(from===start)break;to=from-1n;}
+ if(logs.length){const found=logs[logs.length-1];if(end<found.blockNumber+1n)throw Error("Payment awaits confirmation");const verified=await this.confirmPayment(card,p,found.transactionHash);await this.store.patch("requests",p._id,{paymentTxHash:verified});return verified;}if(from===start)break;to=from-1n;}
  throw Error("Paid state has no confirmed matching event");
  }
  async reconcileBridge(card:Card,p:Payment){return new Cctp(this,this.store).reconcile(card,p)}
