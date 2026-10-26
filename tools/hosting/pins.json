@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "chainId": 196,
+  "currency": "OKB",
+  "area": 2,
+  "tapeKit": {
+    "repository": "https://github.com/TapeOutProtocol/TapeKit",
+    "commit": "37c617e7e332787c8a32a81e4d7d05a28a06c156",
+    "files": {
+      "README.md": "18ce1e62c6c3d5185b3d48497e1cd2fb9e52dc35d1de7cbfc8b5b5660eb30263",
+      "SPEC.md": "a3f03c377551601b11e769d8273b26902a2b38367071ea7a6c1edf3a486f8778",
+      "kernel/src/config.js": "b1ce5fe81f51f4f99e3ed95ec0e55e6f45dbc1f369b8996cc64bc7f15bd70849",
+      "kernel/src/selectors.js": "0b798418fb9eb29aad0d0be7caa01bca0439bc61fa833ac9c1f4c41155527ede",
+      "kernel/src/path.js": "f1445206eec87ca27b4a3f47d6c308a19426e4afdb8d99af8345a3ece7d4ce02",
+      "send/module/src/chain.js": "f354f6d780a2c5bf926d0bb44eadf1f0fcb63350b7082600b2537cd28359dcb2"
+    }
+  },
+  "artifacts": {
+    "circuits/artifacts/policy.netlist.bin": "280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761",
+    "circuits/artifacts/policy.metadata.json": "5ced0e185592f70ec55e7c3ac5dd753eb3fcd08281829482b866e7979673527e",
+    "contracts/evm/src/vendor/interfaces/ICPU.sol": "78b8e64ea809893a75c26f0b2827ef164f8c039541a4c342d853862856cd9bc5",
+    "contracts/evm/src/vendor/lib/NetlistVM.sol": "06e287920dbd21e876bb0cf509c22247941cd24cd07ff7286b5b8380bc17c0ff"
+  },
+  "contracts": {
+    "factory": "0x1f09daefa827f02cbb40967cc91b259763760761",
+    "factoryImplementation": "0xb41c1e7602eb5734be2430b72178ccb814a5293d",
+    "beacon": "0xf70d1ed4f62cf3780157b0b421b7e2f45bd0991c",
+    "circuitImplementation": "0x977f217887e085d298cb3819cdad5a0ee35f29b2",
+    "opener": "0x536add8f30f03b69f6fbf29d425a816a0dc50106",
+    "registry": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6",
+    "registryImplementation": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f",
+    "binding": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9",
+    "bindingImplementation": "0x5ebf29b80789e548907c707530c3c7607c4347df"
+  },
+  "codeSha256": {
+    "0x1f09daefa827f02cbb40967cc91b259763760761": "d5e534164f234bee90da236f5e4fd09d4333dfbecd0591d4f93af1ee1713dd31",
+    "0xb41c1e7602eb5734be2430b72178ccb814a5293d": "23cf919fc23a6524e45382fcdf0b334e7e8102f85d684683064834147cbbd8fe",
+    "0xf70d1ed4f62cf3780157b0b421b7e2f45bd0991c": "ecfed7a79dc46024e78f76be3f995c9fcecc2d8e730829b7cf03aef47be9e1a2",
+    "0x977f217887e085d298cb3819cdad5a0ee35f29b2": "0a5259a8b5a69197cde6dce70a4446fe807b622277bdae9e79919d5d8e9828a5",
+    "0x536add8f30f03b69f6fbf29d425a816a0dc50106": "9eaf91857f20892a847a4adaede6c7d7c8ec76c10d79392ee2e8df6cb2bc60e6",
+    "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6": "abf5cf38090dfee533685e0f6f69e82905c63b3ddc28fd1cfcbb4e2c0c738b99",
+    "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f": "4864e668d7aa1b45fae0af993d6d696faa1db15e29f51219d7b4a6704f15bf39",
+    "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9": "abf5cf38090dfee533685e0f6f69e82905c63b3ddc28fd1cfcbb4e2c0c738b99",
+    "0x5ebf29b80789e548907c707530c3c7607c4347df": "823f8764ec99d57ce4c7beb6a17c28b3031391f150c690691c52c6a9f126ad92"
+  },
+  "codeEvidence": {
+    "observedAt": "2026-10-26",
+    "source": "X Layer RPC bytecode SHA256 at official TapeKit addresses; address provenance is official, runtime observations are not a third-party audit"
+  },
+  "limits": {
+    "chunkBytes": 24000,
+    "maxChunks": 350,
+    "maxPaths": 5000,
+    "maxReadBytes": 98304
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "chainId": 196,
+  "observedAt": "2026-10-26",
+  "scope": "public-readonly-code-at-official-pinned-addresses",
+  "codeFiles": {
+    "0x1f09daefa827f02cbb40967cc91b259763760761": "0x1f09daefa827f02cbb40967cc91b259763760761.hex",
+    "0xb41c1e7602eb5734be2430b72178ccb814a5293d": "0xb41c1e7602eb5734be2430b72178ccb814a5293d.hex",
+    "0xf70d1ed4f62cf3780157b0b421b7e2f45bd0991c": "0xf70d1ed4f62cf3780157b0b421b7e2f45bd0991c.hex",
+    "0x977f217887e085d298cb3819cdad5a0ee35f29b2": "0x977f217887e085d298cb3819cdad5a0ee35f29b2.hex",
+    "0x536add8f30f03b69f6fbf29d425a816a0dc50106": "0x536add8f30f03b69f6fbf29d425a816a0dc50106.hex",
+    "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6": "0xd6efb7adcc9c83dc4924ad56f6a8e4e969b9adb6.hex",
+    "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f": "0xa85c4143d1d4a77f54b8e4ecc9e6d1418afea45f.hex",
+    "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9": "0x68809fd2fb343aa57d0aeb7f33defe477c9666f9.hex",
+    "0x5ebf29b80789e548907c707530c3c7607c4347df": "0x5ebf29b80789e548907c707530c3c7607c4347df.hex"
+  }
+}
