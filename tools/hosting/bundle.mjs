@@ -18,7 +18,13 @@ export function checkContent(bytes,path){
  const ext=extname(path).toLowerCase();
  if([".html",".js",".mjs",".css",".json",".svg",".txt",".xml"].includes(ext)){
   const text=bytes.toString("utf8");
-  assert.ok(!/(?:sourceMappingURL\s*=|data:application\/json[^\s]*;base64,)/i.test(text),"Source maps are forbidden");
+  assert.ok(!/sourceMappingURL\s*=/i.test(text),"Source maps are forbidden");
+  // Bare NFT metadata decoder prefixes are public API literals.
+  // Reject actual source-map payloads while allowing ordinary NFT JSON.
+  for(const match of text.matchAll(/data:application\/json[^,\s"']*;base64,([A-Za-z0-9+/]+={0,2})/gi)){
+   let value;try{value=JSON.parse(Buffer.from(match[1],"base64").toString("utf8"));}catch{continue;}
+   assert.ok(!(value&&value.version===3&&(Array.isArray(value.sources)||Array.isArray(value.sections)||typeof value.mappings==="string")),"Source maps are forbidden");
+  }
   assert.ok(!/-----BEGIN (?:[A-Z ]*PRIVATE KEY|OPENSSH PRIVATE KEY)-----|mongodb(?:\+srv)?:\/\/[^\s"']+:[^\s"']+@|\b(?:ghp_|github_pat_|sk-proj-)[a-zA-Z0-9_\-]{20,}/.test(text),"Credential detected in static content");
   assert.ok(!/(?:private[_-]?key|session[_-]?secret|api[_-]?secret|operator[_-]?key|password)\s*["']?\s*[:=]\s*["'][^"']{16,}["']/i.test(text),"Secret literal detected in static content");
  }

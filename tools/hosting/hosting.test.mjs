@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {decodeFunctionData} from "viem";
 import {PINS,ZERO,ABI,BEACON_SLOT,hash,gitCommit,verifySources,ReadOnlyRpc,observeProtocol} from "./protocol.mjs";
-import {scanBundle,validatePath,gatewayResolve} from "./bundle.mjs";
+import {scanBundle,validatePath,gatewayResolve,checkContent} from "./bundle.mjs";
 import {makeQuote,validateQuote,publicationPlan,provisioningPlan,inspectFile,resumePublication} from "./planner.mjs";
 
 const OWNER="0x"+"12".repeat(20),PROCESSOR="0x"+"34".repeat(20),CONTAINER="0x"+"56".repeat(20);
@@ -168,3 +168,14 @@ test("the actual per-file 350 chunk byte limit accepts its boundary and refuses 
  await writeFile(join(directory,"large.bin"),Buffer.concat([large,Buffer.from([1])]));
  await assert.rejects(scanBundle(directory),/350 chunks/);
 }));
+
+test("metadata decoder literals remain public while encoded source-map payloads are rejected",()=>{
+ checkContent(Buffer.from('const prefix="data:application/json;base64,";'),"app.js");
+ const metadata=Buffer.from(JSON.stringify({name:"Public circuit",description:"Published NFT metadata"})).toString("base64");
+ checkContent(Buffer.from('const metadata="data:application/json;base64,'+metadata+'";'),"app.js");
+ for(const value of [{version:3,sources:["secret.ts"],sourcesContent:["private source"],names:[],mappings:"AAAA"},{version:3,sections:[]}]){
+  const encoded=Buffer.from(JSON.stringify(value)).toString("base64");
+  assert.throws(()=>checkContent(Buffer.from('const map="data:application/json;base64,'+encoded+'";'),"app.js"),/Source maps/);
+ }
+ assert.throws(()=>checkContent(Buffer.from('//# sourceMappingURL=app.js.map'),"app.js"),/Source maps/);
+});
