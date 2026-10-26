@@ -1,3 +1,4 @@
+import {parseStrictJson} from "../../../packages/shared/strict-json";
 import {z} from "zod";
 import {randomBytes,randomUUID,timingSafeEqual} from "node:crypto";
 import {address,hash,parseAmount,paymentSchema,digest,canonical,isSettlementV2,type RequestView,type DraftView} from "../../../packages/shared";
@@ -19,7 +20,7 @@ import {normalizeSettlement,settlementFactory,destinationDomains,cardSymbol,paym
 import {replacementDetails,createReplacementDraft,replacementWarnings} from "./replacement";
 import {wakeWorker} from "./worker-wake";
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Control":"no-store"}});
-async function body(req:Request){if(!/^application\/json(?:\s*;|$)/i.test(req.headers.get("content-type")??""))throw new ApiError(415,"UNSUPPORTED_MEDIA_TYPE","Use Content-Type: application/json for JSON request bodies");const length=Number(req.headers.get("content-length")??0);if(length>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");const reader=req.body?.getReader();if(!reader)throw new ApiError(400,"INVALID_JSON","Supply a JSON request body");const chunks:Uint8Array[]=[];let size=0;while(true){const result=await reader.read();if(result.done)break;size+=result.value.byteLength;if(size>32768){await reader.cancel();throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB")}chunks.push(result.value)}const raw=new TextDecoder().decode(Buffer.concat(chunks));if(Buffer.byteLength(raw)>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");try{return JSON.parse(raw)}catch{throw new ApiError(400,"INVALID_JSON","Supply a JSON request body")}}
+async function body(req:Request){if(!/^application\/json(?:\s*;|$)/i.test(req.headers.get("content-type")??""))throw new ApiError(415,"UNSUPPORTED_MEDIA_TYPE","Use Content-Type: application/json for JSON request bodies");const length=Number(req.headers.get("content-length")??0);if(length>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");const reader=req.body?.getReader();if(!reader)throw new ApiError(400,"INVALID_JSON","Supply a JSON request body");const chunks:Uint8Array[]=[];let size=0;while(true){const result=await reader.read();if(result.done)break;size+=result.value.byteLength;if(size>32768){await reader.cancel();throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB")}chunks.push(result.value)}const raw=new TextDecoder().decode(Buffer.concat(chunks));if(Buffer.byteLength(raw)>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");try{return parseStrictJson(raw)}catch{throw new ApiError(400,"INVALID_JSON","Supply a JSON request body")}}
 function parse<T>(schema:z.ZodType<T>,value:unknown):T{const r=schema.safeParse(value);if(!r.success)throw new ApiError(422,"INVALID_INPUT",r.error.issues[0]?.message??"Invalid input",r.error.issues.map(i=>({field:i.path.join("."),code:i.code,message:i.message})));return r.data}
 function origin(req:Request){return assertApplicationOrigin(req,configuration().origin)}
 export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=()=>wakeWorker(store)}:{requireConfigured?:boolean;wake?:()=>unknown|Promise<unknown>}={}){
@@ -141,7 +142,7 @@ async function routeInternal(req:Request,scheduleWake?:(task:()=>Promise<unknown
 
 function quotaHeaders(quota:{limit:number;remaining:number;reset:number}){return {"RateLimit-Limit":String(quota.limit),"RateLimit-Remaining":String(quota.remaining),"RateLimit-Reset":String(quota.reset),"RateLimit-Policy":quota.limit+";w=60"}}
 function endpointMethods(path:string):string[]|null{
- if(["/config","/health","/auth/session","/explorer/agents","/explorer/transactions","/me","/owner/requests"].includes(path)||/^\/explorer\/transactions\/0x[\da-fA-F]{64}$/.test(path)||/^\/explorer\/agents\/0x[\da-fA-F]{64}\/card(?:\.svg)?$/.test(path)||/^\/owner\/(drafts|requests)\/[^/]+$/.test(path)||/^\/requests\/[^/]+$/.test(path))return ["GET"];
+ if(["/config","/health","/auth/session","/explorer/agents","/explorer/transactions","/me","/owner/requests"].includes(path)||/^\/explorer\/transactions\/0x[\da-fA-F]{64}(?:\/proof)?$/.test(path)||/^\/explorer\/agents\/0x[\da-fA-F]{64}\/card(?:\.svg)?$/.test(path)||/^\/owner\/(drafts|requests)\/[^/]+$/.test(path)||/^\/requests\/[^/]+$/.test(path))return ["GET"];
  if(["/auth/challenge","/auth/login","/auth/logout","/demo/invoices"].includes(path)||/^\/owner\/cards\/[^/]+\/reviewer$/.test(path))return ["POST"];
  if(path==="/owner/drafts"||path==="/requests")return ["POST"];
  if(path==="/owner/cards")return ["GET","POST"];

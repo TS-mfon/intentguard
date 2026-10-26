@@ -1,10 +1,10 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {encodeEventTopics,encodeAbiParameters,parseAbi,padHex,type Hex,type TransactionReceipt} from "viem";
+import {encodeEventTopics,encodeAbiParameters,parseAbi,padHex,hashTypedData,type Hex,type TransactionReceipt} from "viem";
 import {digest,parseAmount,settlementSchema,type CanonicalRequest,type Settlement} from "../packages/shared";
 import {CCTP_TESTNETS} from "../packages/shared/assets";
 import {normalizeSettlement,paymentDestination,canonicalDestination} from "../apps/web/lib/settlement";
-import {parseCctpMessage,verifyCctpMessage,verifyDestinationReceipt,BridgePending,BridgeFailure,Cctp} from "../apps/web/lib/cctp";
+import {parseCctpMessage,verifyCctpMessage,verifyDestinationReceipt,BridgePending,BridgeFailure,Cctp,publicReceipt,bridgeReceiptData} from "../apps/web/lib/cctp";
 import {Worker,requestId} from "../apps/web/lib/worker";
 import {MemoryStore} from "../apps/web/lib/store";
 import type {Card,Payment} from "../apps/web/lib/models";
@@ -98,4 +98,21 @@ test("bridge outages past review timeout retain irreversible work and never crea
 });
 test("source-chain invoice cannot authorize payment of a destination-chain invoice",async()=>{
  const t=await setup(),worker=new Worker(t.s,t.evm,t.gl,async()=>JSON.stringify({...JSON.parse(invoice()),chainId:1952,token:usdc.token}));const result=await worker.payment(t.p);assert.equal(result.status,"NEEDS_EVIDENCE");assert.equal(result.errorCode,"INVOICE_ASSET_MISMATCH");assert.equal(t.evm.reserves,0);
+});
+
+test("complete bridge proof persists source, raw Iris, destination mint and acknowledgement digest through recovery",async()=>{
+ const store=new MemoryStore(),r=canonical(),sourceHash=("0x"+"ab".repeat(32)) as Hex,destination=receipt(),message=payload(true),item={cctpVersion:2,status:"complete",message,attestation:"0x"+"11".repeat(65)},iris={sourceTxHash:sourceHash,messages:[item]};
+ const p:Payment={_id:requestId(),owner,cardId:usdc._id,keyId:"key",input:{...input,destinationChainId:84532},inputHash:digest(input),canonical:r,requestHash:digest(r),evidenceHash:r.evidenceHash,status:"BRIDGING",review:{decision:"APPROVE",requestHash:digest(r),policyHash:usdc.policyHash,evidenceHash:r.evidenceHash,criteria:[],reason:"fixture"},genLayerTxHash:"0x"+"99".repeat(32),createdAt:1,updatedAt:1};
+ const route=bridgeReceiptData(usdc,p,sourceHash,destination.transactionHash,("0x"+"00".repeat(32)) as Hex).message.routeHash;
+ let paid=false;const evm={cfg:{gateway:owner,attestor:input.recipient,sourceCommit:"a".repeat(40),releaseId:"fixture"},request:async()=>({status:paid?2:5}),public:{readContract:async()=>({routeHash:route,sourceTxHash:sourceHash,destinationTxHash:paid?destination.transactionHash:padHex("0x0",{size:32}),messageHash:paid?("0x" as Hex):padHex("0x0",{size:32})})}} as any;
+ const bridge=new Cctp(evm,store,(async()=>Response.json(iris)) as typeof fetch);
+ bridge.sourceMessage=async()=>({sourceHash,message:payload(),receipt:publicReceipt({...destination,transactionHash:sourceHash as Hex})});
+ const d={c:CCTP_TESTNETS[84532],public:{getChainId:async()=>84532,getBlockNumber:async()=>11n,getTransactionReceipt:async()=>destination,readContract:async(args:any)=>args.functionName==="localDomain"?6:args.functionName==="balanceOf"?(args.blockNumber===9n?100n:5000101n):1n}} as any;bridge.destination=()=>d;
+ let result=await bridge.reconcile(usdc,p);assert.equal(result.status,"MINTING");assert.deepEqual((result.bridgeProof as any).irisResponse,iris);
+ Object.assign(p,result,{bridge:{...(result.bridge as any),destinationTxHash:destination.transactionHash}});
+ // Stop before acknowledgement signing; verify the same public receipt and digest that recovery will use.
+ p.bridge!.destinationTxHash=undefined;await store.create("transactions",{_id:"cctp:84532:"+p._id+":receive",hash:destination.transactionHash});
+ result=await bridge.reconcile(usdc,p);assert.equal(result.status,"MINTING");const proof=result.bridgeProof as any;
+ assert.equal(proof.sourceReceipt.transactionHash,sourceHash);assert.equal(proof.destinationReceipt.transactionHash,destination.transactionHash);assert.equal(proof.checks.exactMintTransfer,true);assert.equal(proof.balanceEvidence.delta,"5000001");assert.equal(proof.acknowledgement.digest,hashTypedData(bridgeReceiptData(usdc,p,sourceHash,destination.transactionHash,proof.messageHash)));
+ assert.ok(!JSON.stringify(proof).includes('"raw"'));assert.equal(proof.reviewEnvironment,"testnet");
 });

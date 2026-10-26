@@ -1,10 +1,11 @@
 import {assertSigningLease} from "./signing-lease";
-import {transactionBinding,validateTransactionJournal} from "./transaction-profile";
-import {createPublicClient,createWalletClient,defineChain,http,parseAbi,encodeFunctionData,encodeAbiParameters,keccak256,padHex,decodeEventLog,parseTransaction,type Hex,type Address,type Abi,type TransactionReceipt} from "viem";
+import {parseStrictJson} from "../../../packages/shared/strict-json";
+import {createPublicClient,createWalletClient,defineChain,http,parseAbi,encodeFunctionData,encodeAbiParameters,keccak256,hashTypedData,padHex,decodeEventLog,parseTransaction,type Hex,type Address,type Abi,type TransactionReceipt} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import artifacts from "../../../contracts/evm/abi.json";
 import {CCTP_TESTNETS,CCTP_IRIS_TESTNET,type TestnetChainId} from "../../../packages/shared/assets";
 import {digest,isSettlementV2,type BridgeView,type CanonicalRequest} from "../../../packages/shared";
+import {transactionBinding,validateTransactionJournal} from "./transaction-profile";
 import {isBridge,cardContractVersion,assertCardEnvironment} from "./settlement";
 import {paymentRoute,CCTP_IRIS} from "../../../packages/shared/payment-profiles";
 import type {Evm} from "./evm";
@@ -12,7 +13,7 @@ import type {Store,Doc} from "./store";
 import type {Card,Payment} from "./models";
 const zero=padHex("0x0",{size:32}),addr=(s:string)=>s as Address,hex=(s:string)=>s as Hex;
 const transmitterAbi=parseAbi(["function localDomain() view returns (uint32)","function usedNonces(bytes32) view returns (uint256)","function receiveMessage(bytes,bytes) returns (bool)","event MessageSent(bytes message)","event MessageReceived(address indexed caller,uint32 sourceDomain,bytes32 indexed nonce,bytes32 sender,uint32 indexed finalityThresholdExecuted,bytes messageBody)"]);
-const tokenAbi=parseAbi(["event Transfer(address indexed from,address indexed to,uint256 value)"]);
+const tokenAbi=parseAbi(["event Transfer(address indexed from,address indexed to,uint256 value)","function balanceOf(address) view returns (uint256)"]);
 const bridgeAbi=artifacts.CctpSpendingCard as Abi;
 function bridgeAbiFor(card:Card){return cardContractVersion(card)===4?artifacts.CctpSpendingCardV4 as Abi:bridgeAbi;}
 function routeForCard(card:Card|undefined,id:number){
@@ -73,7 +74,7 @@ export class Cctp{
    if(log.address.toLowerCase()===routeForCard(card,sourceChain(card)).transmitter.toLowerCase()){try{const e=decodeEventLog({abi:transmitterAbi,data:log.data,topics:log.topics});if(e.eventName==="MessageSent")messages.push((e.args as {message:string}).message)}catch{}}
    if(log.address.toLowerCase()===card.address.toLowerCase()){try{const e=decodeEventLog({abi:bridgeAbiFor(card),data:log.data,topics:log.topics});if(e.eventName==="BridgeStarted"){const x=e.args as unknown as {requestId:string;destinationDomain:number;routeHash:string;recipient:string;amount:bigint;decisionHash:string;genLayerTxHash:string};if(x.requestId.toLowerCase()===p._id.toLowerCase()&&x.destinationDomain===p.canonical!.destinationDomain&&x.routeHash.toLowerCase()===bridgeRouteHash(x.destinationDomain,p.canonical!.recipient,BigInt(p.canonical!.amountAtomic))&&x.recipient.toLowerCase()===p.canonical!.recipient.toLowerCase()&&x.amount===BigInt(p.canonical!.amountAtomic)&&p.review&&x.decisionHash.toLowerCase()===digest(p.review)&&x.genLayerTxHash.toLowerCase()===p.genLayerTxHash?.toLowerCase())started++;}}catch{}}
   }
-  requireValue(started===1&&messages.length===1,"Source receipt does not prove a unique authorized CCTP burn.");verifyCctpMessage(messages[0],card,p.canonical!,false);return {sourceHash,message:messages[0]};
+  requireValue(started===1&&messages.length===1,"Source receipt does not prove a unique authorized CCTP burn.");verifyCctpMessage(messages[0],card,p.canonical!,false);return {sourceHash,message:messages[0],receipt:publicReceipt(receipt)};
  }
  async attestation(sourceHash:string,card?:Card){
  const iris=card?.settlement&&isSettlementV2(card.settlement)?CCTP_IRIS[card.settlement.paymentEnvironment]:CCTP_IRIS_TESTNET;
@@ -82,10 +83,10 @@ export class Cctp{
   if(!response.ok)throw new BridgePending(response.status===429?"CCTP_RATE_LIMIT":"CCTP_ATTESTATION_UNAVAILABLE","Circle attestation service is temporarily unavailable; the existing burn will be retried.");
   const reader=response.body?.getReader();requireValue(reader,"Circle returned no attestation body.");let size=0;const parts:Uint8Array[]=[];
   while(true){const x=await reader.read();if(x.done)break;size+=x.value.byteLength;if(size>131072){await reader.cancel();throw new BridgeFailure("CCTP_INVALID_RESPONSE","Circle attestation response exceeded128KiB.");}parts.push(x.value);}
-  let result;try{result=JSON.parse(Buffer.concat(parts).toString())}catch{throw new BridgeFailure("CCTP_INVALID_RESPONSE","Circle attestation returned invalid JSON.");}
+  let result;try{result=parseStrictJson(new TextDecoder("utf-8",{fatal:true}).decode(Buffer.concat(parts))) as Record<string,any>}catch{throw new BridgeFailure("CCTP_INVALID_RESPONSE","Circle attestation returned invalid JSON.");}
   requireValue(typeof result.sourceTxHash==="string"&&result.sourceTxHash.toLowerCase()===sourceHash.toLowerCase()&&Array.isArray(result.messages),"Circle attestation response is not bound to the source burn.");
   const available=result.messages.filter((x:any)=>x.cctpVersion===2&&x.status==="complete"&&typeof x.message==="string"&&/^0x[0-9a-fA-F]+$/.test(x.message)&&typeof x.attestation==="string"&&/^0x(?:[0-9a-fA-F]{130})+$/.test(x.attestation));
-  if(!available.length)return null;requireValue(available.length===1,"Ambiguous CCTP burn attestations.");return available[0] as {message:string;attestation:string};
+  if(!available.length)return null;requireValue(available.length===1,"Ambiguous CCTP burn attestations.");return {...available[0],irisResponse:result,irisOrigin:iris} as {message:string;attestation:string;irisResponse:unknown;irisOrigin:string};
  }
  async sendMint(card:Card,p:Payment,id:number,message:string,attestation:string){
   if(process.env.GITHUB_ACTIONS!=="true")throw new BridgeFailure("ACTIONS_WORKER_REQUIRED","CCTP signing is restricted to the GitHub Actions worker.");
@@ -112,8 +113,10 @@ export class Cctp{
   requireValue(p.canonical&&p.review&&p.requestHash&&isBridge(card,p),"Bridge reconciliation requires a committed reviewed request.");
   const r=p.canonical,d=this.destination(r.destinationChainId!,card);requireValue(await d.public.getChainId()===r.destinationChainId,"Destination RPC chain mismatch.");requireValue(await d.public.readContract({address:d.c.transmitter,abi:transmitterAbi,functionName:"localDomain"})===r.destinationDomain,"Destination transmitter domain mismatch.");
   const source=await this.sourceMessage(card,p),base:BridgeView={protocol:"CCTP_V2",phase:"BURNED",sourceChainId:sourceChain(card),destinationChainId:r.destinationChainId!,destinationDomain:r.destinationDomain!,sourceToken:routeForCard(card,sourceChain(card)).token,destinationToken:d.c.token,amount:p.input.amount,sourceTxHash:source.sourceHash,updatedAt:Date.now(),...p.bridge};
+  let bridgeProof:Record<string,any>={...((p.bridgeProof as Record<string,unknown>)??{}),version:1,sourceCommit:this.evm.cfg.sourceCommit,releaseId:this.evm.cfg.releaseId,requestId:p._id,requestHash:p.requestHash,policyHash:card.policyHash,evidenceHash:p.evidenceHash,genLayerTxHash:p.genLayerTxHash,decisionHash:digest(p.review),paymentEnvironment:card.paymentEnvironment??(sourceChain(card)===1952?"testnet":"mainnet"),reviewEnvironment:"testnet",reviewNetwork:"studionet",sourceChainId:sourceChain(card),destinationChainId:r.destinationChainId,destinationDomain:r.destinationDomain,recipient:r.recipient,amountAtomic:r.amountAtomic,sourceToken:routeForCard(card,sourceChain(card)).token,destinationToken:d.c.token,sourceReceipt:source.receipt,originalMessage:source.message,trustBoundary:"Destination authenticity is verified by the worker and acknowledged by the immutable configured attestor; X Layer does not execute a foreign-chain light client."};
   let message=p.cctpMessage,attestation=p.cctpAttestation;
-  if(!message||!attestation){const proof=await this.attestation(source.sourceHash,card);if(!proof)return {status:"AWAITING_ATTESTATION",bridge:{...base,phase:"ATTESTATION_PENDING",updatedAt:Date.now()}};const parsed=verifyCctpMessage(proof.message,card,r,true,source.message);return {status:"MINTING",cctpMessage:proof.message,cctpAttestation:proof.attestation,bridge:{...base,phase:"ATTESTED",messageHash:keccak256(hex(proof.message)),nonce:parsed.nonce,updatedAt:Date.now()}};}
+  if(!message||!attestation){const proof=await this.attestation(source.sourceHash,card);if(!proof)return {status:"AWAITING_ATTESTATION",bridgeProof,bridge:{...base,phase:"ATTESTATION_PENDING",updatedAt:Date.now()}};const parsed=verifyCctpMessage(proof.message,card,r,true,source.message);return {status:"MINTING",bridgeProof:{...bridgeProof,irisResponse:proof.irisResponse,irisOrigin:proof.irisOrigin,attestedMessage:proof.message,attestation:proof.attestation},cctpMessage:proof.message,cctpAttestation:proof.attestation,bridge:{...base,phase:"ATTESTED",messageHash:keccak256(hex(proof.message)),nonce:parsed.nonce,updatedAt:Date.now()}};}
+  if(!bridgeProof.irisResponse){const iris=await this.attestation(source.sourceHash,card);if(!iris)return {status:"AWAITING_ATTESTATION",bridgeProof,bridge:base};requireValue(iris.message.toLowerCase()===message.toLowerCase()&&iris.attestation.toLowerCase()===attestation.toLowerCase(),"Stored CCTP attestation differs from Circle proof.");bridgeProof={...bridgeProof,irisResponse:iris.irisResponse,irisOrigin:iris.irisOrigin,attestedMessage:message,attestation};}
   const parsed=verifyCctpMessage(message,card,r,true,source.message),messageHash=keccak256(hex(message));requireValue(!base.messageHash||base.messageHash===messageHash,"Stored attestation hash changed.");
   const receiptInfo=await this.evm.public.readContract({address:addr(card.address),abi:bridgeAbiFor(card),functionName:"getBridgeRequest",args:[hex(p._id)]}) as {destinationTxHash:Hex;sourceTxHash:Hex;messageHash:Hex;routeHash:Hex};
   requireValue(receiptInfo.routeHash===bridgeRouteHash(r.destinationDomain!,r.recipient,BigInt(r.amountAtomic)),"Source route commitment changed.");
@@ -131,18 +134,29 @@ export class Cctp{
     // Any relayer may submit this exact Circle-signed message. Discover its nonce event incrementally.
     const latest=await d.public.getBlockNumber(),to=BigInt(String(p.destinationScanTo??latest)),from=to>4999n?to-4999n:0n,event=transmitterAbi.find(e=>e.type==="event"&&e.name==="MessageReceived")!;
     const logs=await d.public.getLogs({address:d.c.transmitter,event:event as any,args:{nonce:parsed.nonce},fromBlock:from,toBlock:to});
-    if(!logs.length){if(from===0n)throw new BridgeFailure("BRIDGE_RECEIPT_UNAVAILABLE","Circle nonce is used but no matching mint receipt was found. Operator reconciliation is required; this burn must not be repeated.");return {status:"MINTING",destinationScanTo:(from-1n).toString(),bridge:{...base,phase:"MINT_SUBMITTED",nonce:parsed.nonce,messageHash,updatedAt:Date.now()},errorCode:"BRIDGE_RECEIPT_DISCOVERY",error:"Destination message was received. The worker is locating its exact receipt."};}
+    if(!logs.length){if(from===0n)throw new BridgeFailure("BRIDGE_RECEIPT_UNAVAILABLE","Circle nonce is used but no matching mint receipt was found. Operator reconciliation is required; this burn must not be repeated.");return {status:"MINTING",bridgeProof,destinationScanTo:(from-1n).toString(),bridge:{...base,phase:"MINT_SUBMITTED",nonce:parsed.nonce,messageHash,updatedAt:Date.now()},errorCode:"BRIDGE_RECEIPT_DISCOVERY",error:"Destination message was received. The worker is locating its exact receipt."};}
     requireValue(logs.length===1,"Multiple destination events for the CCTP nonce.");destinationHash=logs[0].transactionHash!;
    }
   }
   const receipt=await d.public.getTransactionReceipt({hash:destinationHash});verifyDestinationReceipt(receipt,message,card,r);requireValue(await d.public.getBlockNumber()>=receipt.blockNumber+1n,"Destination mint awaits confirmation.");
+  const typed=bridgeReceiptData(card,p,source.sourceHash,destinationHash,messageHash);
+  bridgeProof={...bridgeProof,destinationReceipt:publicReceipt(receipt),messageHash,nonce:parsed.nonce,checks:{sourceDomain:parsed.sourceDomain,destinationDomain:parsed.destinationDomain,merchant:parsed.mintRecipient,amountAtomic:parsed.amount.toString(),maxFee:parsed.maxFee.toString(),feeExecuted:parsed.feeExecuted.toString(),finalityExecuted:parsed.finalityExecuted,exactMessageReceived:true,exactMintTransfer:true,sourceConfirmed:true,destinationConfirmed:true},acknowledgement:{domain:typed.domain,primaryType:typed.primaryType,types:typed.types,message:{...typed.message,amount:typed.message.amount.toString()},digest:hashTypedData(typed),attestor:this.evm.cfg.attestor}};
+  if(!bridgeProof.balanceEvidence){try{const [before,after]=await Promise.all([receipt.blockNumber-1n,receipt.blockNumber].map(blockNumber=>d.public.readContract({address:d.c.token,abi:tokenAbi,functionName:"balanceOf",args:[addr(r.recipient)],blockNumber}))) as bigint[];bridgeProof.balanceEvidence={before:before.toString(),after:after.toString(),delta:(after-before).toString(),beforeBlock:(receipt.blockNumber-1n).toString(),afterBlock:receipt.blockNumber.toString(),scope:"Block-level balance delta may include other transfers; the exact mint event is the transaction-level proof."};}catch{bridgeProof.balanceEvidence={available:false,reason:"Historical balance reads unavailable; exact mint Transfer event verified."};}}
   const chain=await this.evm.request(card,p._id);
-  if(chain.status===2){requireValue(receiptInfo.sourceTxHash.toLowerCase()===source.sourceHash.toLowerCase()&&receiptInfo.destinationTxHash===destinationHash&&receiptInfo.messageHash===messageHash,"Vault confirmation differs from verified bridge receipts.");return {status:"PAID",paymentTxHash:destinationHash,bridge:{...base,phase:"CONFIRMED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,confirmationTxHash:(await this.store.get<Doc&{hash:Hex}>("transactions",p._id+":bridge-confirm"))?.hash,updatedAt:Date.now()}};}
+  if(chain.status===2){requireValue(receiptInfo.sourceTxHash.toLowerCase()===source.sourceHash.toLowerCase()&&receiptInfo.destinationTxHash===destinationHash&&receiptInfo.messageHash===messageHash,"Vault confirmation differs from verified bridge receipts.");return {status:"PAID",bridgeProof,paymentTxHash:destinationHash,bridge:{...base,phase:"CONFIRMED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,confirmationTxHash:(await this.store.get<Doc&{hash:Hex}>("transactions",p._id+":bridge-confirm"))?.hash,updatedAt:Date.now()}};}
   // Persist observed destination receipt before issuing an acknowledgement.
-  if(!p.bridge?.destinationTxHash)return {status:"MINTING",bridge:{...base,phase:"MINT_SUBMITTED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,updatedAt:Date.now()}};
+  if(!p.bridge?.destinationTxHash)return {status:"MINTING",bridgeProof,bridge:{...base,phase:"MINT_SUBMITTED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,updatedAt:Date.now()}};
   const privateKey=process.env.REVIEW_ATTESTOR_PRIVATE_KEY;requireValue(privateKey,"Bridge receipt attestor key is unavailable.");requireValue(process.env.GITHUB_ACTIONS==="true","Bridge acknowledgement must originate from the Actions worker.");const signer=privateKeyToAccount(hex(privateKey));requireValue(signer.address.toLowerCase()===this.evm.cfg.attestor?.toLowerCase(),"Bridge receipt attestor mismatch.");
-  const signature=await signer.signTypedData({domain:{name:"IntentGuard",version:String(cardContractVersion(card)),chainId:sourceChain(card),verifyingContract:addr(card.address)},primaryType:"BridgeReceipt",types:{BridgeReceipt:artifacts.bridgeReceipt.fields.map(([name,type])=>({name,type}))},message:{requestId:hex(p._id),requestHash:hex(p.requestHash),routeHash:bridgeRouteHash(r.destinationDomain!,r.recipient,BigInt(r.amountAtomic)),sourceTxHash:hex(source.sourceHash),destinationTxHash:destinationHash,messageHash,amount:BigInt(r.amountAtomic)}});
-  const confirmationTxHash=await this.evm.execute(p._id+":bridge-confirm",card.address,"confirmBridge",[hex(p._id),hex(source.sourceHash),destinationHash,messageHash,signature],bridgeAbiFor(card));
-  return {status:"PAID",paymentTxHash:destinationHash,bridge:{...base,phase:"CONFIRMED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,confirmationTxHash,updatedAt:Date.now()}};
+  await assertSigningLease(this.store,"requests",p._id,p.leaseToken);
+  const signature=await signer.signTypedData(typed);
+  const confirmationTxHash=await this.evm.execute(p._id+":bridge-confirm",card.address,"confirmBridge",[hex(p._id),hex(source.sourceHash),destinationHash,messageHash,signature],bridgeAbiFor(card),{id:p._id,token:p.leaseToken});
+  return {status:"PAID",bridgeProof,paymentTxHash:destinationHash,bridge:{...base,phase:"CONFIRMED",messageHash,nonce:parsed.nonce,destinationTxHash:destinationHash,confirmationTxHash,updatedAt:Date.now()}};
  }
+}
+
+export function publicReceipt(receipt:TransactionReceipt){
+ return {transactionHash:receipt.transactionHash,blockHash:receipt.blockHash,blockNumber:receipt.blockNumber.toString(),status:receipt.status,logs:receipt.logs.map(log=>({address:log.address,topics:log.topics,data:log.data,logIndex:log.logIndex}))};
+}
+export function bridgeReceiptData(card:Card,p:Payment,sourceHash:string,destinationHash:Hex,messageHash:Hex){
+ const r=p.canonical!;return {domain:{name:"IntentGuard",version:String(cardContractVersion(card)),chainId:sourceChain(card),verifyingContract:addr(card.address)},primaryType:"BridgeReceipt" as const,types:{BridgeReceipt:artifacts.bridgeReceipt.fields.map(([name,type])=>({name,type}))},message:{requestId:hex(p._id),requestHash:hex(p.requestHash!),routeHash:bridgeRouteHash(r.destinationDomain!,r.recipient,BigInt(r.amountAtomic)),sourceTxHash:hex(sourceHash),destinationTxHash:destinationHash,messageHash,amount:BigInt(r.amountAtomic)}};
 }

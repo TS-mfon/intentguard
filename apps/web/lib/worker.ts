@@ -1,3 +1,4 @@
+import {parseStrictJson} from "../../../packages/shared/strict-json";
 import {randomBytes} from "node:crypto";
 import {isSettlementV2,digest,parseAmount,validateDecision,type RequestStatus,type PaymentInput} from "../../../packages/shared";
 import type {Store,Doc} from "./store";
@@ -16,7 +17,7 @@ export function evidenceAllowed(card:Card,input:PaymentInput){
 export function invoiceExpiry(card:Card,p:Payment,snapshots:Awaited<ReturnType<typeof capture>>,now:number){
  const merchant=card.policy.merchants.find(m=>m.recipient.toLowerCase()===p.input.recipient.toLowerCase());if(!merchant)throw Error("Merchant is not authorized");
  const origins=new Set(merchant.origins.map(o=>new URL(o).origin));
- for(const s of snapshots){if(!origins.has(new URL(s.url).origin))continue;let i;try{i=JSON.parse(s.content) as Record<string,any>}catch{continue}
+ for(const s of snapshots){if(!origins.has(new URL(s.url).origin))continue;let i;try{i=parseStrictJson(s.content) as Record<string,any>}catch{continue}
  if(i.invoiceId!==p.input.invoiceId)continue;
  if(String(i.buyer).toLowerCase()!==card.address.toLowerCase())throw new EvidenceFailure("INVOICE_BUYER_MISMATCH","Invoice buyer must be this agent's vault address.");
  const destination=paymentDestination(card,p.input);

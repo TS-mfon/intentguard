@@ -1,4 +1,4 @@
-import {canonical,validateDecision,hash,type ReviewDecision} from "../../../packages/shared";
+import {canonical,digest,validateDecision,hash,type ReviewDecision} from "../../../packages/shared";
 import {ApiError} from "./errors";
 import {reviewStage} from "./review-stage";
 import {agentUsage,cardSvg} from "./agent-card";
@@ -60,6 +60,8 @@ export function createExplorer(store:Store,evm:EvmPort,readReview:PublicReviewRe
  if(cardMatch[2])return new Response(cardSvg(agent,usage,cardSymbol(card)),{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":'attachment; filename="intentguard-'+card._id.slice(2,14)+'.svg"',"Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'"}});
  return {agent,usage,shareUrl};
  }
+ const proofMatch=path.match(/^\/explorer\/transactions\/(0x[0-9a-fA-F]{64})\/proof$/);
+ if(proofMatch){const p=await store.get<Payment>("requests",proofMatch[1]);if(!p||!p.bridgeProof)throw new ApiError(404,"PROOF_UNAVAILABLE","A captured CCTP proof is not available for this request.");return {id:p._id,proof:p.bridgeProof,proofHash:digest(p.bridgeProof),verification:"Worker-captured proof; independently verify source and destination receipts and the acknowledgement digest."};}
  const match=path.match(/^\/explorer\/transactions\/(0x[0-9a-fA-F]{64})$/);
  if(match){
  const p=await store.get<Payment>("requests",match[1]);if(!p)throw new ApiError(404,"NOT_FOUND","Transaction not found");
