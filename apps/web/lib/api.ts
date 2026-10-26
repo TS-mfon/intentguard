@@ -16,6 +16,7 @@ import {Evm,activationConfig,type EvmPort} from "./evm";
 import {evidenceAllowed,requestId} from "./worker";
 import {CCTP_TESTNETS} from "../../../packages/shared/assets";
 import {normalizeSettlement,settlementFactory,destinationDomains,cardSymbol,paymentDestination,settlementToken,assertSettlementReady,assertCardEnvironment} from "./settlement";
+import {replacementDetails,createReplacementDraft,replacementWarnings} from "./replacement";
 import {wakeWorker} from "./worker-wake";
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Control":"no-store"}});
 async function body(req:Request){if(!/^application\/json(?:\s*;|$)/i.test(req.headers.get("content-type")??""))throw new ApiError(415,"UNSUPPORTED_MEDIA_TYPE","Use Content-Type: application/json for JSON request bodies");const length=Number(req.headers.get("content-length")??0);if(length>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");const reader=req.body?.getReader();if(!reader)throw new ApiError(400,"INVALID_JSON","Supply a JSON request body");const chunks:Uint8Array[]=[];let size=0;while(true){const result=await reader.read();if(result.done)break;size+=result.value.byteLength;if(size>32768){await reader.cancel();throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB")}chunks.push(result.value)}const raw=new TextDecoder().decode(Buffer.concat(chunks));if(Buffer.byteLength(raw)>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");try{return JSON.parse(raw)}catch{throw new ApiError(400,"INVALID_JSON","Supply a JSON request body")}}
@@ -77,9 +78,19 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  if(!draft||draft.owner!==owner)throw new ApiError(404,"NOT_FOUND","Draft not found");
  if(draft.state!=="FINALIZED"||draft.result?.status!=="PROPOSED"||!draft.result.policy)throw new ApiError(409,"POLICY_NOT_FINAL","Wait for a finalized policy proposal");
  let block;try{block=await evm.verifyActivation(owner,draft.result.policy,input.cardAddress,input.activationTx,draft.settlement)}catch{throw new ApiError(422,"ACTIVATION_INVALID","Activation must match this owner, policy and configured factory")}
- const now=Date.now();const card:Card={_id:input.draftId,owner,draftId:input.draftId,address:input.cardAddress.toLowerCase(),activationTx:input.activationTx,activationBlock:block,policy:draft.result.policy,policyHash:digest(draft.result.policy),state:"SETTING_UP",keyStatus:"NONE",createdAt:now,updatedAt:now,chainId:c.chainId,token:settlementToken(draft.settlement),...(draft.settlement?{settlement:draft.settlement,...(isSettlementV2(draft.settlement)?{reviewerVersion:4,paymentEnvironment:c.paymentEnvironment as "mainnet"|"testnet",reviewNetwork:"studionet",reviewGenesis:c.genLayerGenesis,reviewConsensus:c.genLayerConsensus}:{})}: {})};
+ const now=Date.now();const card:Card={_id:input.draftId,owner,draftId:input.draftId,...(draft.replacesCardId?{replacesCardId:draft.replacesCardId}:{}),address:input.cardAddress.toLowerCase(),activationTx:input.activationTx,activationBlock:block,policy:draft.result.policy,policyHash:digest(draft.result.policy),state:"SETTING_UP",keyStatus:"NONE",createdAt:now,updatedAt:now,chainId:c.chainId,token:settlementToken(draft.settlement),...(draft.settlement?{settlement:draft.settlement,...(isSettlementV2(draft.settlement)?{reviewerVersion:4,paymentEnvironment:c.paymentEnvironment as "mainnet"|"testnet",reviewNetwork:"studionet",reviewGenesis:c.genLayerGenesis,reviewConsensus:c.genLayerConsensus}:{})}: {})};
  if(!await store.create("cards",card)){const existing=await owned(card._id);if(existing.address!==card.address)throw new ApiError(409,"DRAFT_ALREADY_ACTIVATED","This draft already has a spending card");if(existing.state==="SETTING_UP")await notifyWorker();return json({card:await evm.view(existing)});}
  await notifyWorker();return json({card:await evm.view(card)},201);
+ }
+ match=path.match(/^\/owner\/cards\/([^/]+)\/replacement$/);
+ if(match){
+  const card=await owned(match[1]);
+  if(method==="GET")return json(await replacementDetails(store,evm,card));
+  const value=parse(z.object({settlement:z.unknown(),acknowledgeAccountingReset:z.literal(true)}).strict(),await body(req)),settlement=normalizeSettlement(value.settlement);
+  if(!settlement||!isSettlementV2(settlement))throw new ApiError(422,"EXPLICIT_SETTLEMENT_REQUIRED","Select a versioned settlement in this deployment's payment environment.");
+  settlementFactory(settlement);await assertSettlementReady(settlement);
+  const draft=await createReplacementDraft(store,card,settlement);
+  return json({id:draft._id,state:draft.state,replacesCardId:card._id,sourceEnvironment:card.paymentEnvironment??(card.chainId===1952?"testnet":"mainnet"),accountingReset:true,warnings:replacementWarnings},201);
  }
  match=path.match(/^\/owner\/cards\/([^/]+)\/reviewer$/);
  if(match&&method==="POST"){
@@ -135,6 +146,7 @@ function endpointMethods(path:string):string[]|null{
  if(path==="/owner/drafts"||path==="/requests")return ["POST"];
  if(path==="/owner/cards")return ["GET","POST"];
  if(/^\/owner\/cards\/[^/]+\/keys$/.test(path))return ["POST","DELETE"];
+ if(/^\/owner\/cards\/[^/]+\/replacement$/.test(path))return ["GET","POST"];
  if(/^\/demo\/invoices\/[a-f0-9]{32}$/.test(path))return ["GET"];
  return null;
 }
