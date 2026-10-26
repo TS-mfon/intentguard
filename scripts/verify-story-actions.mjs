@@ -23,7 +23,7 @@ command("gh", ["run", "download", String(run.id), "--repo", repository, "--name"
 const report = JSON.parse(await readFile(resolve(directory, "browser-report.json"), "utf8"));
 assert.equal(report.mode, hosted ? "HOSTED_REAL_WEBGL_AND_MEDIA" : "PRODUCTION_REAL_WEBGL_AND_MEDIA", "A complete report for this verification mode is required.");
 if (hosted) assert.equal(report.base, "https://intentguard-tapeout.vercel.app");
-else assert.match(report.base, /^http:\/\/127\\.0\\.0\\.1:\\d+$/);
+else {const address = new URL(report.base); assert.equal(address.protocol, "http:"); assert.equal(address.hostname, "127.0.0.1"); assert.equal(address.pathname, "/"); assert.ok(address.port);}
 assert.deepEqual(report.pageErrors, []);
 assert.deepEqual(report.viewports, [320, 390, 768, 1440, 1920]);
 assert.ok(report.media.bytes > 100000 && report.media.bytes <= 8 * 1024 * 1024);
