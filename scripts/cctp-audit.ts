@@ -83,7 +83,10 @@ try{
  if(!key){const issued=await api("/owner/cards/"+state.cardId+"/keys",{method:"POST",ownerAuth:true,body:{}});assert.equal(issued.response.status,201);key=issued.data.apiKey;await save({encryptedKey:encrypt(key)});}
  if(!state.baseline)await save({baseline:await balances(card)});
  const cases:any[]=state.cases as any[];
- for(const [name,chainId,amount,expected]of [["xlayer",1952,"0.1","PAID"],["base",84532,"0.1","PAID"],["arbitrum",421614,"0.1","PAID"],["mainnet",8453,"0.1","DESTINATION_NOT_ALLOWED"],["limit",84532,"1.000001","BLOCKED"],["prohibited",1952,"0.1","REJECTED"],["evidence",84532,"0.1","NEEDS_EVIDENCE"]] as const){
+ const scenarios=[["xlayer",1952,"0.1","PAID"],["base",84532,"0.1","PAID"],["arbitrum",421614,"0.1","PAID"],["mainnet",8453,"0.1","DESTINATION_NOT_ALLOWED"],["limit",84532,"1.000001","BLOCKED"],["prohibited",1952,"0.1","REJECTED"],["evidence",84532,"0.1","NEEDS_EVIDENCE"]] as const;
+ // Admit independent scenarios before polling so an external bridge-finality
+ // wait cannot stop coverage of another route or the rejection/evidence paths.
+ for(const [name,chainId,amount,expected]of scenarios){
   let c=cases.find(c=>c.name===name);
   let failedAttempts=(c?.failedAttempts??[]) as any[];
   if(expected==="PAID"&&c?.result?.status==="CANCELLED"&&c.result.errorCode==="GENLAYER_REVIEW_FAILED"){
@@ -101,6 +104,10 @@ try{
   if(!c.admission){const submitted=await api("/requests",{method:"POST",agentAuth:true,idem:c.idem,body:c.payload});c.admission=submitted.log;c.requestId=submitted.data.id;await save({cases});}
   if(expected==="DESTINATION_NOT_ALLOWED"){assert.equal(c.admission.response.status,422);assert.equal(c.admission.response.body.error.code,expected);continue;}
   assert.equal(c.admission.response.status,202);
+ }
+ for(const [name,chainId,amount,expected]of scenarios){
+  const c=cases.find(c=>c.name===name);assert.ok(c);
+  if(expected==="DESTINATION_NOT_ALLOWED")continue;
   if(!c.result){c.result=await wait(async()=>{const x=await api("/requests/"+c.requestId,{agentAuth:true});assert.equal(x.response.status,200);console.log("CCTP_AUDIT_STATUS",JSON.stringify({case:name,status:x.data.status,errorCode:x.data.errorCode}));if(["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"].includes(x.data.status))c.terminalLog=x.log;return x.data as RequestView;},x=>["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"].includes(x.status));await save({cases});}
   assert.equal(c.result.status,expected);
   if(expected==="BLOCKED"){assert.equal(c.result.reviewStage.status,"SKIPPED");assert.equal(c.result.genLayerTxHash,undefined);assert.ok(c.result.guard.failures.includes("Payment limit"));continue;}
