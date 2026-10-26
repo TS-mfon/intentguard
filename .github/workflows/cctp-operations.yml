@@ -1,0 +1,62 @@
+name: IntentGuard CCTP provisioning
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Deploy the USDC factory, fund X Layer with five issuer USDC, or verify durable receipts
+        required: true
+        type: choice
+        options:
+          - deploy
+          - fund
+          - verify
+        default: verify
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intentguard-worker
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build reviewed factory artifact
+        run: forge build --root contracts/evm
+      - name: Read-only issuer and artifact preflight
+        run: pnpm exec tsx scripts/cctp-operations.ts check
+      - name: Resume fixed durable provisioning operation
+        env:
+          OPERATIONS_MODE: ${{ inputs.operation }}
+          INTENTGUARD_MODE: ${{ vars.INTENTGUARD_MODE }}
+          XLAYER_CHAIN_ID: ${{ vars.XLAYER_CHAIN_ID }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ vars.MONGODB_DB }}
+          XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}
+          CCTP_CARD_FACTORY_ADDRESS: ${{ vars.CCTP_CARD_FACTORY_ADDRESS }}
+        run: pnpm exec tsx scripts/cctp-operations.ts "$OPERATIONS_MODE"
+      - name: Publish public addresses and receipt state only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cctp-operations-public-${{ inputs.operation }}-${{ github.run_attempt }}
+          path: .local/cctp-operations/public.json
+          if-no-files-found: warn
+          retention-days: 30

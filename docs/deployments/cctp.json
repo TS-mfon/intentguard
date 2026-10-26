@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "network": "testnet",
+  "chainId": 1952,
+  "operator": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+  "protocol": "CCTP_V2",
+  "sourceDomain": 37,
+  "factoryAddress": null,
+  "factoryTxHash": null,
+  "factoryPhase": "NOT_DEPLOYED",
+  "sourceFunding": null,
+  "provisioning": {
+    "worker": ".github/workflows/cctp-operations.yml",
+    "amountAtomic": "5000000",
+    "fundingSourceChainId": 84532,
+    "fundingDestinationChainId": 1952,
+    "signing": "GITHUB_ACTIONS_ONLY",
+    "status": "PREPARED"
+  }
+}

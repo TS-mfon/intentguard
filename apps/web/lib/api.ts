@@ -12,6 +12,8 @@ import type {Card,Draft,Payment} from "./models";
 import {activeStatuses} from "./models";
 import {Evm,activationConfig,type EvmPort} from "./evm";
 import {evidenceAllowed,requestId} from "./worker";
+import {CCTP_TESTNETS} from "../../../packages/shared/assets";
+import {normalizeSettlement,settlementFactory,destinationDomains,cardSymbol,paymentDestination} from "./settlement";
 import {wakeWorker} from "./worker-wake";
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Control":"no-store"}});
 async function body(req:Request){if(!/^application\/json(?:\s*;|$)/i.test(req.headers.get("content-type")??""))throw new ApiError(415,"UNSUPPORTED_MEDIA_TYPE","Use Content-Type: application/json for JSON request bodies");const length=Number(req.headers.get("content-length")??0);if(length>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");const reader=req.body?.getReader();if(!reader)throw new ApiError(400,"INVALID_JSON","Supply a JSON request body");const chunks:Uint8Array[]=[];let size=0;while(true){const result=await reader.read();if(result.done)break;size+=result.value.byteLength;if(size>32768){await reader.cancel();throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB")}chunks.push(result.value)}const raw=new TextDecoder().decode(Buffer.concat(chunks));if(Buffer.byteLength(raw)>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");try{return JSON.parse(raw)}catch{throw new ApiError(400,"INVALID_JSON","Supply a JSON request body")}}
@@ -46,10 +48,14 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  const configured=process.env.DEMO_MERCHANT_ADMIN_KEY??"",provided=req.headers.get("authorization")?.replace(/^Bearer /,"")??"";
  const a=Buffer.from(provided),b=Buffer.from(configured);
  if(b.length<32||a.length!==b.length||!timingSafeEqual(a,b))throw new ApiError(401,"MERCHANT_ADMIN_REQUIRED","Merchant administrator key required");
- const v=parse(z.object({buyer:address,amount:z.string().refine(value=>{try{return parseAmount(value)>0n}catch{return false}}),description:z.string().min(3).max(1000)}).strict(),await body(req));
+ const v=parse(z.object({buyer:address,amount:z.string().refine(value=>{try{return parseAmount(value)>0n}catch{return false}}),description:z.string().min(3).max(1000),chainId:z.number().int().positive().optional(),token:address.optional()}).strict(),await body(req));
+ const invoiceChain=v.chainId??c.chainId,invoiceToken=v.token??c.token;
+ if((v.chainId===undefined)!==(v.token===undefined))throw new ApiError(422,"INVOICE_ASSET_REQUIRED","Provide both chainId and token or omit both for the legacy configured asset.");
+ const issuerRoute=CCTP_TESTNETS[invoiceChain as keyof typeof CCTP_TESTNETS];
+ if((invoiceChain!==c.chainId||invoiceToken.toLowerCase()!==c.token.toLowerCase())&&(!issuerRoute||issuerRoute.token.toLowerCase()!==invoiceToken.toLowerCase()))throw new ApiError(422,"ASSET_OR_ROUTE_UNSUPPORTED","Invoice assets must be the configured legacy token or official USDC on a supported testnet.");
  const recipient=address.parse(process.env.DEMO_MERCHANT_RECIPIENT);
  const invoiceId=randomBytes(16).toString("hex"),issuedAt=Math.floor(Date.now()/1000);
- const invoice={invoiceId,buyer:v.buyer.toLowerCase(),token:c.token.toLowerCase(),chainId:c.chainId,recipient:recipient.toLowerCase(),amount:v.amount,description:v.description,issuedAt,expiresAt:issuedAt+7200};
+ const invoice={invoiceId,buyer:v.buyer.toLowerCase(),token:invoiceToken.toLowerCase(),chainId:invoiceChain,recipient:recipient.toLowerCase(),amount:v.amount,description:v.description,issuedAt,expiresAt:issuedAt+7200};
  await store.create("demoInvoices",{_id:invoiceId,content:JSON.stringify(invoice),createdAt:Date.now()});
  return json({invoice,url:new URL(req.url).origin+"/api/v1/demo/invoices/"+invoiceId},201);
  }
@@ -58,16 +64,16 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  if(path.startsWith("/owner/")){
  const owner=requireOwner(req,c.origin);Object.assign(headers,quotaHeaders(await rateLimit(store,"owner:"+owner,120)));
  const owned=async(id:string)=>{const card=await store.get<Card>("cards",id);if(!card||card.owner!==owner)throw new ApiError(404,"NOT_FOUND","Card not found");return card};
- if(path==="/owner/drafts"&&method==="POST"){const input=parse(z.object({description:z.string().min(10).max(12000),guidance:z.record(z.string(),z.unknown()).optional()}).strict(),await body(req));if(Buffer.byteLength(canonical(input))>16384)throw new ApiError(422,"INPUT_TOO_LARGE","Keep the complete mission and guidance within 16 KiB");const id=requestId(),now=Date.now();await store.create("drafts",{_id:id,owner,input,inputHash:digest(input),state:"QUEUED",createdAt:now,updatedAt:now});await notifyWorker();return json({id,status:"QUEUED"},202);}
+ if(path==="/owner/drafts"&&method==="POST"){const input=parse(z.object({description:z.string().min(10).max(12000),guidance:z.record(z.string(),z.unknown()).optional(),settlement:z.unknown().optional()}).strict(),await body(req));const settlement=normalizeSettlement(input.settlement);if(settlement)settlementFactory(settlement);const interpreterInput={description:input.description,...(input.guidance?{guidance:input.guidance}:{})};if(Buffer.byteLength(canonical(interpreterInput))>16384)throw new ApiError(422,"INPUT_TOO_LARGE","Keep the complete mission and guidance within 16 KiB");const id=requestId(),now=Date.now();await store.create("drafts",{_id:id,owner,input:interpreterInput,inputHash:digest(interpreterInput),...(settlement?{settlement}:{}),state:"QUEUED",createdAt:now,updatedAt:now});await notifyWorker();return json({id,status:"QUEUED"},202);}
  let match=path.match(/^\/owner\/drafts\/([^/]+)$/);
- if(match&&method==="GET"){const d=await store.get<Draft>("drafts",match[1]);if(!d||d.owner!==owner)throw new ApiError(404,"NOT_FOUND","Draft not found");if(["QUEUED","AWAITING_FINALITY"].includes(d.state))await notifyWorker();const result={id:d._id,state:d.state,status:d.result?.status??"PENDING",policy:d.result?.policy??null,questions:d.result?.questions??[],interpretation:d.result?.interpretation??"",genLayerTxHash:d.genLayerTxHash,error:d.error,...(d.state==="FINALIZED"&&d.result?.policy?{activation:{factoryAddress:c.factoryAddress,config:activationConfig(owner,d.result.policy)}}:{})};return json(result);}
+ if(match&&method==="GET"){const d=await store.get<Draft>("drafts",match[1]);if(!d||d.owner!==owner)throw new ApiError(404,"NOT_FOUND","Draft not found");if(["QUEUED","AWAITING_FINALITY"].includes(d.state))await notifyWorker();const result={id:d._id,state:d.state,status:d.result?.status??"PENDING",policy:d.result?.policy??null,questions:d.result?.questions??[],interpretation:d.result?.interpretation??"",genLayerTxHash:d.genLayerTxHash,error:d.error,settlement:d.settlement,...(d.state==="FINALIZED"&&d.result?.policy?{activation:{factoryAddress:settlementFactory(d.settlement),config:activationConfig(owner,d.result.policy,d.settlement),...(d.settlement?{kind:"CCTP_V2",destinationDomains:destinationDomains(d.settlement),settlement:d.settlement}:{})}}:{})};return json(result);}
  if(path==="/owner/cards"&&method==="GET"){const cards=await store.find<Card>("cards",{owner});if(cards.some(card=>card.state==="SETTING_UP"))await notifyWorker();return json({cards:await Promise.all(cards.map(card=>evm.view(card)))});}
  if(path==="/owner/cards"&&method==="POST"){
  const input=parse(z.object({draftId:hash,cardAddress:address,activationTx:hash}).strict(),await body(req));const draft=await store.get<Draft>("drafts",input.draftId);
  if(!draft||draft.owner!==owner)throw new ApiError(404,"NOT_FOUND","Draft not found");
  if(draft.state!=="FINALIZED"||draft.result?.status!=="PROPOSED"||!draft.result.policy)throw new ApiError(409,"POLICY_NOT_FINAL","Wait for a finalized policy proposal");
- let block;try{block=await evm.verifyActivation(owner,draft.result.policy,input.cardAddress,input.activationTx)}catch{throw new ApiError(422,"ACTIVATION_INVALID","Activation must match this owner, policy and configured factory")}
- const now=Date.now();const card:Card={_id:input.draftId,owner,draftId:input.draftId,address:input.cardAddress.toLowerCase(),activationTx:input.activationTx,activationBlock:block,policy:draft.result.policy,policyHash:digest(draft.result.policy),state:"SETTING_UP",keyStatus:"NONE",createdAt:now,updatedAt:now,chainId:c.chainId,token:c.token};
+ let block;try{block=await evm.verifyActivation(owner,draft.result.policy,input.cardAddress,input.activationTx,draft.settlement)}catch{throw new ApiError(422,"ACTIVATION_INVALID","Activation must match this owner, policy and configured factory")}
+ const now=Date.now();const card:Card={_id:input.draftId,owner,draftId:input.draftId,address:input.cardAddress.toLowerCase(),activationTx:input.activationTx,activationBlock:block,policy:draft.result.policy,policyHash:digest(draft.result.policy),state:"SETTING_UP",keyStatus:"NONE",createdAt:now,updatedAt:now,chainId:c.chainId,token:draft.settlement?CCTP_TESTNETS[1952].token:c.token,...(draft.settlement?{settlement:draft.settlement}: {})};
  if(!await store.create("cards",card)){const existing=await owned(card._id);if(existing.address!==card.address)throw new ApiError(409,"DRAFT_ALREADY_ACTIVATED","This draft already has a spending card");if(existing.state==="SETTING_UP")await notifyWorker();return json({card:await evm.view(existing)});}
  await notifyWorker();return json({card:await evm.view(card)},201);
  }
@@ -91,7 +97,7 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  if(path==="/me"&&method==="GET")return json({card:await evm.view(card)});
  if(path==="/requests"&&method==="POST"){
  const idempotency=req.headers.get("idempotency-key");if(!idempotency||!/^[ -~]{1,128}$/.test(idempotency))throw new ApiError(422,"IDEMPOTENCY_REQUIRED","Provide an Idempotency-Key of 1–128 printable characters");
- const input=parse(paymentSchema,await body(req));if(Buffer.byteLength(canonical(input))>14000)throw new ApiError(422,"INPUT_TOO_LARGE","Keep payment details within 14 KiB");
+ const input=parse(paymentSchema,await body(req));paymentDestination(card,input);if(Buffer.byteLength(canonical(input))>14000)throw new ApiError(422,"INPUT_TOO_LARGE","Keep payment details within 14 KiB");
  // Stable card-scoped request ID makes admission atomic even across key rotations.
  const id=digest({cardId:card._id,idempotency}),inputHash=digest(input),existing=await store.get<Payment>("requests",id);
  if(existing){if(existing.inputHash!==inputHash)throw new ApiError(409,"IDEMPOTENCY_CONFLICT","This key was already used for different payment details");if(activeStatuses.includes(existing.status))await notifyWorker();return json({id,status:existing.status},202);}
@@ -109,7 +115,7 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  return responseHeaders(response,correlation,headers);
  };
 }
-export async function requestView(store:Store,p:Payment):Promise<RequestView>{const card=await store.get<Card>("cards",p.cardId);return {id:p._id,cardId:p.cardId,cardName:card?.policy.name??"Agent",status:p.status,request:p.input,requestHash:p.requestHash??"",evidenceHash:p.evidenceHash??"",guard:p.guard,review:p.review,reviewStage:reviewStage(p),errorCode:p.errorCode as string|undefined,genLayerTxHash:p.genLayerTxHash,paymentTxHash:p.paymentTxHash,error:p.error,createdAt:p.createdAt,updatedAt:p.updatedAt};}
+export async function requestView(store:Store,p:Payment):Promise<RequestView>{const card=await store.get<Card>("cards",p.cardId);return {id:p._id,cardId:p.cardId,cardName:card?.policy.name??"Agent",status:p.status,request:p.input,requestHash:p.requestHash??"",evidenceHash:p.evidenceHash??"",guard:p.guard,review:p.review,reviewStage:reviewStage(p),errorCode:p.errorCode as string|undefined,genLayerTxHash:p.genLayerTxHash,paymentTxHash:p.paymentTxHash,bridge:p.bridge,paymentSymbol:card?cardSymbol(card):undefined,error:p.error,createdAt:p.createdAt,updatedAt:p.updatedAt};}
 async function routeInternal(req:Request,scheduleWake?:(task:()=>Promise<unknown>)=>void){
  const pathname=new URL(req.url).pathname;const path=pathname.replace(/^\/api\/v1/,"");
  if(path==="/config"&&req.method==="GET")return json(publicConfiguration());

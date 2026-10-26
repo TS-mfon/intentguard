@@ -12,6 +12,7 @@ export class IntentGuard{
   if(!r.ok){const e=value.error??{};throw new IntentGuardError(String(e.message??"IntentGuard request failed").replaceAll(this.apiKey,"[REDACTED]"),r.status,e.code??"HTTP_ERROR",e.retryable??(r.status===429||r.status>=500),e.requestId??r.headers.get("x-request-id")??undefined,Number(r.headers.get("retry-after"))||undefined,e.details)}
   return value as T;
  }
+ capabilities(){return this.call<{assets:{asset:string;symbol:string;chainId:number;decimals:number;token:string|null;available:boolean;reason:string;sources:string[]}[];spendingNetworks:{chainId:number;name:string;domain:number;token:string;explorerUrl:string}[];cctpFactoryAddress:string|null}>("/config")}
  me(){return this.call<{card:CardView}>("/me")}
  request(payment:PaymentInput,idempotencyKey:string){return this.call<{id:string;status:string}>("/requests",{method:"POST",headers:{"Idempotency-Key":idempotencyKey},body:JSON.stringify(payment)})}
  get(id:string,signal?:AbortSignal){return this.call<RequestView>("/requests/"+encodeURIComponent(id),{signal})}

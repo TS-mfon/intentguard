@@ -3,7 +3,7 @@ import type {Card} from "./models";
 import type {Store} from "./store";
 export async function agentUsage(store:Store,card:Card){
  const {counts,fundsMoved}=await store.usage(card._id),count=(s:string)=>counts[s]??0;
- return {requestCount:Object.values(counts).reduce((a,b)=>a+b,0),paidCount:count("PAID"),blockedCount:count("BLOCKED"),rejectedCount:count("REJECTED"),needsEvidenceCount:count("NEEDS_EVIDENCE"),cancelledCount:count("CANCELLED"),activeCount:["QUEUED","RESERVED","REVIEWING","AWAITING_FINALITY","APPROVED","RETRYING"].reduce((n,s)=>n+count(s),0),fundsMoved,token:String(card.token??configuration().token),chainId:Number(card.chainId??configuration().chainId),asOf:Date.now()};
+ return {requestCount:Object.values(counts).reduce((a,b)=>a+b,0),paidCount:count("PAID"),blockedCount:count("BLOCKED"),rejectedCount:count("REJECTED"),needsEvidenceCount:count("NEEDS_EVIDENCE"),cancelledCount:count("CANCELLED"),activeCount:["QUEUED","RESERVED","REVIEWING","AWAITING_FINALITY","APPROVED","RETRYING","BRIDGING","AWAITING_ATTESTATION","MINTING"].reduce((n,s)=>n+count(s),0),fundsMoved,token:String(card.token??configuration().token),chainId:Number(card.chainId??configuration().chainId),asOf:Date.now()};
 }
 export type AgentUsage=Awaited<ReturnType<typeof agentUsage>>;
 const xml=(v:unknown)=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]!));

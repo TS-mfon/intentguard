@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-10-26T00:55:28.331Z",
+  "network": "testnet",
+  "sourceChainId": 1952,
+  "sourceDomain": 37,
+  "protocol": "CCTP V2",
+  "minFinalityThreshold": 2000,
+  "maxFeeAtomic": "0",
+  "sources": {
+    "usdc": "https://developers.circle.com/stablecoins/usdc-contract-addresses.md",
+    "cctp": "https://developers.circle.com/cctp/references/contract-addresses.md",
+    "usdt0": "https://docs.usdt0.to/api/deployments?chainId=1952"
+  },
+  "documentHashes": {
+    "usdc": "993ced64d29c9374d4494fdedfafa70bf9237d1d7d6be995ad18ed7de3009203",
+    "cctp": "7f036b0f5175352354d5e95d09bc81572bd1cbb11ada9a0217b989f2cd9c8b34",
+    "usdt0": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  "assets": [
+    {
+      "asset": "USDC",
+      "symbol": "USDC",
+      "chainId": 1952,
+      "decimals": 6,
+      "token": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
+      "available": true,
+      "reason": "Circle-issued testnet USDC. X Layer deposits can fund approved CCTP V2 testnet payments.",
+      "sources": [
+        "https://developers.circle.com/stablecoins/usdc-contract-addresses.md",
+        "https://developers.circle.com/cctp/references/contract-addresses.md"
+      ]
+    },
+    {
+      "asset": "USDT0",
+      "symbol": "USDT0",
+      "chainId": 1952,
+      "decimals": 6,
+      "token": null,
+      "available": false,
+      "reason": "Official USDT0 token and OFT deployment on X Layer testnet have not been verified. Mainnet addresses are not accepted as testnet deployments.",
+      "sources": [
+        "https://docs.usdt0.to/api/deployments?chainId=1952",
+        "https://docs.usdt0.to/technical-documentation/deployments.md"
+      ]
+    }
+  ],
+  "chains": [
+    {
+      "chainId": 1952,
+      "name": "X Layer Testnet",
+      "domain": 37,
+      "rpcUrl": "https://testrpc.xlayer.tech",
+      "explorerUrl": "https://www.okx.com/web3/explorer/xlayer-test",
+      "token": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
+      "testnet": true,
+      "messenger": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+      "transmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+      "minter": "0xb43db544E2c27092c107639Ad201b3dEfAbcF192",
+      "blockNumber": "44517257",
+      "decimals": 6,
+      "symbol": "USDC",
+      "localDomain": 37,
+      "paused": {
+        "token": false,
+        "transmitter": false,
+        "minter": false
+      },
+      "minFee": "0",
+      "burnLimitAtomic": "10000000000000",
+      "minterAllowanceAtomic": "999999861137476066",
+      "codeHashes": {
+        "token": "0x20bd4e53c9c59b9a5e412da21ffc71466b518f06407b4db87d1489c3c1e2e933",
+        "messenger": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+        "transmitter": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+        "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
+      },
+      "remotes": [
+        {
+          "chainId": 84532,
+          "domain": 6,
+          "messenger": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
+          "localToken": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3"
+        },
+        {
+          "chainId": 421614,
+          "domain": 3,
+          "messenger": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
+          "localToken": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3"
+        }
+      ],
+      "operator": {
+        "address": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+        "usdcAtomic": "0",
+        "gasWei": "175310600105935119"
+      }
+    },
+    {
+      "chainId": 84532,
+      "name": "Base Sepolia",
+      "domain": 6,
+      "rpcUrl": "https://sepolia.base.org",
+      "explorerUrl": "https://sepolia.basescan.org",
+      "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "testnet": true,
+      "messenger": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+      "transmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+      "minter": "0xb43db544E2c27092c107639Ad201b3dEfAbcF192",
+      "blockNumber": "50271186",
+      "decimals": 6,
+      "symbol": "USDC",
+      "localDomain": 6,
+      "paused": {
+        "token": false,
+        "transmitter": false,
+        "minter": false
+      },
+      "minFee": null,
+      "burnLimitAtomic": "10000000000000",
+      "minterAllowanceAtomic": "99407556388653022",
+      "codeHashes": {
+        "token": "0xedc5281a85c0efecd49999a1ef668390c59b88702f2d4a07029d7f5d63059d6c",
+        "messenger": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+        "transmitter": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+        "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
+      },
+      "remotes": [
+        {
+          "chainId": 1952,
+          "domain": 37,
+          "messenger": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
+          "localToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+        },
+        {
+          "chainId": 421614,
+          "domain": 3,
+          "messenger": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
+          "localToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+        }
+      ],
+      "operator": {
+        "address": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+        "usdcAtomic": "34515000",
+        "gasWei": "18524407958489941"
+      }
+    },
+    {
+      "chainId": 421614,
+      "name": "Arbitrum Sepolia",
+      "domain": 3,
+      "rpcUrl": "https://sepolia-rollup.arbitrum.io/rpc",
+      "explorerUrl": "https://sepolia.arbiscan.io",
+      "token": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+      "testnet": true,
+      "messenger": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+      "transmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+      "minter": "0xb43db544E2c27092c107639Ad201b3dEfAbcF192",
+      "blockNumber": "322861391",
+      "decimals": 6,
+      "symbol": "USDC",
+      "localDomain": 3,
+      "paused": {
+        "token": false,
+        "transmitter": false,
+        "minter": false
+      },
+      "minFee": null,
+      "burnLimitAtomic": "10000000000000",
+      "minterAllowanceAtomic": "437369843039158",
+      "codeHashes": {
+        "token": "0x9a736af6aac290d9196883e8686fc1d127ff657ca534fe4b88d6d40dc0bc6750",
+        "messenger": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+        "transmitter": "0xd2c8d48075d832fb7d07f6db5545a1bee37fdf886325c441a8dd1cef4c9dae99",
+        "minter": "0xfc330d52b7656b971ef47bbb8cd44877181fbc9ac0fe76cb4cb5bb364a992eff"
+      },
+      "remotes": [
+        {
+          "chainId": 1952,
+          "domain": 37,
+          "messenger": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
+          "localToken": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+        },
+        {
+          "chainId": 84532,
+          "domain": 6,
+          "messenger": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
+          "localToken": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+        }
+      ],
+      "operator": {
+        "address": "0xed9edd8586b20524cafa4f568413c504c9b03172",
+        "usdcAtomic": "0",
+        "gasWei": "2387211412401916000"
+      }
+    }
+  ],
+  "usdt0": {
+    "deploymentApiResult": {},
+    "suggestedAddress": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
+    "suggestedTestnetCodeBytes": 0,
+    "verified": false
+  }
+}

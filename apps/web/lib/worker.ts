@@ -5,6 +5,8 @@ import type {Card,Payment,Draft,Job} from "./models";
 import {activeStatuses,terminal} from "./models";
 import type {EvmPort} from "./evm";
 import {PendingFinality,GenLayerTerminalError,type GenLayerPort} from "./genlayer";
+import {canonicalDestination,paymentDestination,isBridge} from "./settlement";
+import {BridgePending,BridgeFailure} from "./cctp";
 import {capture,EvidenceFailure} from "./evidence";
 export const requestId=()=>"0x"+randomBytes(32).toString("hex");
 export function evidenceAllowed(card:Card,input:PaymentInput){
@@ -17,7 +19,8 @@ export function invoiceExpiry(card:Card,p:Payment,snapshots:Awaited<ReturnType<t
  for(const s of snapshots){if(!origins.has(new URL(s.url).origin))continue;let i;try{i=JSON.parse(s.content)}catch{continue}
  if(i.invoiceId!==p.input.invoiceId)continue;
  if(String(i.buyer).toLowerCase()!==card.address.toLowerCase())throw new EvidenceFailure("INVOICE_BUYER_MISMATCH","Invoice buyer must be this agent's vault address.");
- if(String(i.token).toLowerCase()!==processToken(card)||Number(i.chainId)!==cardChain(card))throw new EvidenceFailure("INVOICE_ASSET_MISMATCH","Invoice chain and token must match this agent's immutable payment configuration.");
+ const destination=paymentDestination(card,p.input);
+ if(String(i.token).toLowerCase()!==destination.token||Number(i.chainId)!==destination.chainId)throw new EvidenceFailure("INVOICE_ASSET_MISMATCH","Invoice chain and token must match this agent's immutable payment configuration.");
  if(String(i.recipient).toLowerCase()!==p.input.recipient.toLowerCase())throw new EvidenceFailure("INVOICE_RECIPIENT_MISMATCH","Invoice recipient must match the requested merchant.");
  let invoiceAmount:bigint;try{invoiceAmount=parseAmount(String(i.amount))}catch{throw new EvidenceFailure("INVOICE_AMOUNT_INVALID","Invoice amount must be an exact decimal string with at most six places.");}
  if(invoiceAmount!==parseAmount(p.input.amount))throw new EvidenceFailure("INVOICE_AMOUNT_MISMATCH","Invoice amount must equal the payment request exactly.");
@@ -42,7 +45,10 @@ export class Worker{
  nextQueue=(index+1)%queues.length;
  try{const values=table==="drafts"?await this.draft(job as Draft):table==="cards"?await this.card(job as Card):await this.payment(job as Payment);await this.store.complete(table,job._id,job.leaseToken!,{error:null,errorCode:null,waitStartedAt:null,...values,updatedAt:Date.now(),attempts:0,nextAt:Date.now()+2000});}
  catch(e){
- if(e instanceof GenLayerTerminalError||Date.now()-Number(job.waitStartedAt??Date.now())>30*60*1000){
+ if(table==="requests"&&(e instanceof BridgePending||e instanceof BridgeFailure||["BRIDGING","AWAITING_ATTESTATION","MINTING"].includes(String(job.status)))){
+  // A finalized burn cannot be cancelled/refunded by an API status or timeout.
+  const attempts=Number(job.attempts??0)+1;await this.store.complete(table,job._id,job.leaseToken!,{status:["BRIDGING","AWAITING_ATTESTATION","MINTING"].includes(String(job.status))?job.status:"BRIDGING",error:e instanceof BridgePending||e instanceof BridgeFailure?e.message:"Bridge processing is delayed. The existing source burn remains in reconciliation.",errorCode:e instanceof BridgePending||e instanceof BridgeFailure?e.code:"BRIDGE_PROCESSING_DELAYED",attempts,nextAt:Date.now()+60000,updatedAt:Date.now()});
+ }else if(e instanceof GenLayerTerminalError||Date.now()-Number(job.waitStartedAt??Date.now())>30*60*1000){
   const error=table==="drafts"?"GenLayer could not finalize this proposal successfully. Review the instructions and submit a new proposal.":table==="cards"?"GenLayer reviewer initialization failed. Retry initialization in My agents.":"GenLayer review failed. No payment was authorized; its reservation is being cancelled.";
   const timedOut=!(e instanceof GenLayerTerminalError);
   const values=table==="requests"?{status:"RETRYING",cancelTarget:"CANCELLED",reviewFailure:error}:{state:"FAILED"};
@@ -59,10 +65,11 @@ export class Worker{
  }finally{await this.store.complete("locks","worker",lock.leaseToken!,{nextAt:0,nextQueue});}
  }
  private async draft(d:Draft){if(!d.genLayerTxHash)return {state:"AWAITING_FINALITY",genLayerTxHash:await this.gl.propose(d)};const result=await this.gl.draft(d);return {state:"FINALIZED",result};}
- private async card(c:Card){if(!c.reviewerTx)return {reviewerTx:await this.gl.deployReviewer({...c,reviewerVersion:2}),reviewerVersion:2};return {state:"READY",reviewerAddress:await this.gl.reviewer(c)}}
+ private async card(c:Card){if(!c.reviewerTx)return {reviewerTx:await this.gl.deployReviewer({...c,reviewerVersion:c.settlement?3:2}),reviewerVersion:c.settlement?3:2};return {state:"READY",reviewerAddress:await this.gl.reviewer(c)}}
  async payment(p:Payment):Promise<Record<string,unknown>>{
  const c=await this.store.get<Card>("cards",p.cardId);if(!c)throw Error("Card record missing");
  const chain=await this.evm.request(c,p._id);
+ if(chain.status===5||(chain.status===2&&isBridge(c,p))){if(!p.canonical||!p.requestHash||digest(p.canonical)!==p.requestHash||chain.requestHash!==p.requestHash||chain.evidenceHash!==p.evidenceHash||chain.recipient.toLowerCase()!==p.canonical.recipient.toLowerCase()||chain.amount!==BigInt(p.canonical.amountAtomic))throw new BridgeFailure("BRIDGE_COMMITMENT_MISMATCH","The bridge request differs from its immutable source reservation.");if(!this.evm.reconcileBridge)throw new BridgePending("BRIDGE_WORKER_UNAVAILABLE","The bridge worker is not available yet. Preserve this request ID.");try{return await this.evm.reconcileBridge(c,p)}catch(error){if(error instanceof BridgePending||error instanceof BridgeFailure)throw error;throw new BridgePending("BRIDGE_PROCESSING_DELAYED","Bridge processing is delayed. The existing burn remains durable; the worker will resume the same message.");}}
  if(chain.status===2)return {status:"PAID",paymentTxHash:this.evm.paidHash?await this.evm.paidHash(c,p):(await this.store.get<Doc>("transactions",p._id+":settle"))?.hash??p.paymentTxHash};
  if(chain.status===3||chain.status===4)return {status:chain.status===4?"EXPIRED":p.cancelTarget??"CANCELLED",...(p.reviewFailure?{error:"GenLayer review failed. No payment was authorized; its reservation has been released.",errorCode:p.errorCode??"GENLAYER_REVIEW_FAILED"}:{})};
  const key=await this.store.get<Doc>("keys",p.keyId);const now=Math.floor(Date.now()/1000);
@@ -77,7 +84,8 @@ export class Worker{
  try{evidenceAllowed(c,p.input);snapshots=await capture(p.input,this.fetcher);expiresAt=invoiceExpiry(c,p,snapshots,now);}
  catch(error){return {status:"NEEDS_EVIDENCE",guard,error:error instanceof EvidenceFailure?error.message:"Evidence could not be verified. Provide matching, current public merchant evidence and retry with a new idempotency key.",errorCode:error instanceof EvidenceFailure?error.code:"EVIDENCE_UNAVAILABLE"};}
  const evidenceHash=digest(snapshots);
- const canonical={...p.input,cardId:c._id,cardAddress:c.address,owner:c.owner,policyHash:c.policyHash,token:processToken(c),chainId:cardChain(c),amountAtomic:parseAmount(p.input.amount).toString(),evidenceHash,expiresAt};
+ const {destinationChainId:submittedDestination,...original}=p.input;
+ const canonical={...original,...canonicalDestination(c,p.input),cardId:c._id,cardAddress:c.address,owner:c.owner,policyHash:c.policyHash,token:processToken(c),chainId:cardChain(c),amountAtomic:parseAmount(p.input.amount).toString(),evidenceHash,expiresAt};
  return {canonical,snapshots,evidenceHash,requestHash:digest(canonical),guard};
  }
  // No broadcast until immutable evidence and request commitments were persisted by the prior tick.
@@ -96,6 +104,7 @@ export class Worker{
  // Finality and exact commitment are rechecked immediately before attesting.
  const latest=validateDecision(await this.gl.decision(c,p),c.policy,p.canonical,p.requestHash!);
  if(digest(latest)!==digest(p.review))throw Error("Finalized stored review changed");
+ if(isBridge(c,p)){const sourceTxHash=await this.evm.settle(c,{...p,review:latest}),destination=paymentDestination(c,p.input);return {status:"BRIDGING",bridge:{protocol:"CCTP_V2",phase:"BURNED",sourceChainId:1952,destinationChainId:destination.chainId,destinationDomain:destination.domain,sourceToken:processToken(c),destinationToken:destination.token,amount:p.input.amount,sourceTxHash,updatedAt:Date.now()}};}
  return {status:"PAID",paymentTxHash:await this.evm.settle(c,{...p,review:latest})};
  }
 }

@@ -30,7 +30,7 @@ contract AgentSpendingCard {
         uint64 validUntil;
         address[] allowedRecipients;
     }
-    enum Status { NONE, RESERVED, PAID, CANCELLED, EXPIRED }
+    enum Status { NONE, RESERVED, PAID, CANCELLED, EXPIRED, BRIDGING }
     struct Request {
         bytes32 requestHash;
         bytes32 evidenceHash;
@@ -69,7 +69,7 @@ contract AgentSpendingCard {
     uint64 public totalReserved;
     mapping(address => bool) public recipientAllowed;
     address[] private _recipients;
-    mapping(bytes32 => Request) private _requests;
+    mapping(bytes32 => Request) internal _requests;
     mapping(bytes32 => bytes32) public invoiceRequest;
     mapping(uint64 => PeriodLedger) public periods;
     uint256 private _entered;
@@ -77,7 +77,7 @@ contract AgentSpendingCard {
     bytes32 public constant RELEASE_TYPEHASH = keccak256(
         "Release(bytes32 requestId,bytes32 requestHash,bytes32 policyHash,bytes32 evidenceHash,bytes32 decisionHash,bytes32 genLayerTxHash,uint64 validUntil)"
     );
-    bytes32 private constant DOMAIN_TYPEHASH = keccak256(
+    bytes32 internal constant DOMAIN_TYPEHASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
     );
     uint256 private constant HALF_ORDER = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
@@ -163,7 +163,13 @@ contract AgentSpendingCard {
     }
 
     function reserve(bytes32 id, bytes32 requestHash, bytes32 evidenceHash, bytes32 invoiceKey,
-        address recipient, uint64 amount, uint64 expiresAt) external nonReentrant {
+        address recipient, uint64 amount, uint64 expiresAt) external virtual nonReentrant {
+        _reserve(id, requestHash, evidenceHash, invoiceKey, recipient, amount, expiresAt);
+    }
+
+    /// @dev Shared reservation enforces the same TapeOut and accounting checks for every delivery route.
+    function _reserve(bytes32 id, bytes32 requestHash, bytes32 evidenceHash, bytes32 invoiceKey,
+        address recipient, uint64 amount, uint64 expiresAt) internal {
         if (msg.sender != gateway) revert Unauthorized();
         if (!enabled || revoked) revert Disabled();
         if (id == bytes32(0) || requestHash == bytes32(0) || evidenceHash == bytes32(0)
@@ -201,6 +207,11 @@ contract AgentSpendingCard {
         r.status = Status.PAID;
         _release(r); totalSpent += r.amount; periods[r.periodId].spent += r.amount;
         // Keep paid invoiceRequest forever; cancellation and expiry alone free an invoice.
+        _deliver(id, r, decisionHash, genLayerTxHash);
+    }
+
+    /// @dev Delivery implementations must preserve all-or-nothing settlement and distinguish initiation from receipt.
+    function _deliver(bytes32 id, Request storage r, bytes32 decisionHash, bytes32 genLayerTxHash) internal virtual {
         _transfer(r.recipient, r.amount);
         emit Paid(id, decisionHash, genLayerTxHash, r.recipient, r.amount);
     }
@@ -229,22 +240,22 @@ contract AgentSpendingCard {
     function _release(Request storage r) private {
         --pendingCount; totalReserved -= r.amount; periods[r.periodId].reserved -= r.amount;
     }
-    function _transfer(address recipient, uint256 amount) private {
+    function _transfer(address recipient, uint256 amount) internal {
         (bool ok, bytes memory data) = token.call(abi.encodeCall(IERC20Card.transfer, (recipient, amount)));
         if (!ok || (data.length != 0 && (data.length != 32 || !abi.decode(data, (bool))))) revert TokenTransferFailed();
     }
 
-    function domainSeparator() public view returns (bytes32) {
+    function domainSeparator() public view virtual returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("IntentGuard"), keccak256("1"), block.chainid, address(this)));
     }
     function releaseDigest(bytes32 id, uint64 attestationValidUntil, bytes32 decisionHash, bytes32 genLayerTxHash)
-        public view returns (bytes32) {
+        public view virtual returns (bytes32) {
         Request storage r = _requests[id];
         bytes32 structHash = keccak256(abi.encode(RELEASE_TYPEHASH, id, r.requestHash, policyHash,
             r.evidenceHash, decisionHash, genLayerTxHash, attestationValidUntil));
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
     }
-    function _recover(bytes32 digest, bytes calldata signature) private pure returns (address signer) {
+    function _recover(bytes32 digest, bytes calldata signature) internal pure returns (address signer) {
         if (signature.length != 65) revert InvalidSignature();
         bytes32 r; bytes32 s; uint8 v;
         assembly { r := calldataload(signature.offset) s := calldataload(add(signature.offset, 32))
