@@ -1,0 +1,389 @@
+{
+  "version": 1,
+  "origin": "Original user-supplied review payload, extracted verbatim from the session record",
+  "sha256": "e66b5383ad6aa6a56500e1ea9710e01da9a4ffc4d9949e9494e47bfa727856bf",
+  "utf8Bytes": 73349,
+  "characters": 72986,
+  "sections": [
+    {
+      "line": 17,
+      "heading": "# Hostile final judge memo"
+    },
+    {
+      "line": 31,
+      "heading": "## Fastest rejection triggers"
+    },
+    {
+      "line": 48,
+      "heading": "## Strongest competing-project advantages"
+    },
+    {
+      "line": 58,
+      "heading": "## Five highest-impact fixes"
+    },
+    {
+      "line": 75,
+      "heading": "## Principal engineering and security review"
+    },
+    {
+      "line": 87,
+      "heading": "## Product and commercial verdict"
+    },
+    {
+      "line": 99,
+      "heading": "## TapeOut ecosystem verdict"
+    },
+    {
+      "line": 111,
+      "heading": "## Demo-day verdict and recommended three-minute sequence"
+    },
+    {
+      "line": 135,
+      "heading": "# Corrected final judge verdict"
+    },
+    {
+      "line": 153,
+      "heading": "## Evidence-based scorecard"
+    },
+    {
+      "line": 168,
+      "heading": "# What is actually proven"
+    },
+    {
+      "line": 170,
+      "heading": "## 1. TapeOut integration is meaningful"
+    },
+    {
+      "line": 193,
+      "heading": "## 2. Financial safety is better proven than semantic safety"
+    },
+    {
+      "line": 221,
+      "heading": "## 3. The GenLayer fix is real, but its proof is incomplete"
+    },
+    {
+      "line": 288,
+      "heading": "# High-impact findings"
+    },
+    {
+      "line": 290,
+      "heading": "## F1 \u2014 Release provenance is not submission-grade"
+    },
+    {
+      "line": 316,
+      "heading": "### Why a judge cares"
+    },
+    {
+      "line": 326,
+      "heading": "### Required fix"
+    },
+    {
+      "line": 343,
+      "heading": "### Acceptance criteria"
+    },
+    {
+      "line": 358,
+      "heading": "## F2 \u2014 The core semantic-denial claim remains only partially proven"
+    },
+    {
+      "line": 383,
+      "heading": "### Required fix"
+    },
+    {
+      "line": 403,
+      "heading": "### Acceptance criteria"
+    },
+    {
+      "line": 415,
+      "heading": "## F3 \u2014 The latest live audit still exposes a reliability failure"
+    },
+    {
+      "line": 432,
+      "heading": "### Required fix"
+    },
+    {
+      "line": 449,
+      "heading": "### Acceptance criteria"
+    },
+    {
+      "line": 464,
+      "heading": "## F4 \u2014 CCTP \u201cPAID\u201d still depends on a privileged attestor"
+    },
+    {
+      "line": 486,
+      "heading": "### Required fix"
+    },
+    {
+      "line": 496,
+      "heading": "### Acceptance criteria"
+    },
+    {
+      "line": 510,
+      "heading": "## F5 \u2014 Production evidence and canonical URL are inconsistent"
+    },
+    {
+      "line": 535,
+      "heading": "### Required fix"
+    },
+    {
+      "line": 543,
+      "heading": "## F6 \u2014 Product positioning is technically clear but commercially under-validated"
+    },
+    {
+      "line": 567,
+      "heading": "### Stronger initial wedge"
+    },
+    {
+      "line": 575,
+      "heading": "### Required validation experiment"
+    },
+    {
+      "line": 590,
+      "heading": "# Security review"
+    },
+    {
+      "line": 603,
+      "heading": "# TapeOut ecosystem assessment"
+    },
+    {
+      "line": 647,
+      "heading": "# Demo-day evaluation"
+    },
+    {
+      "line": 649,
+      "heading": "## What a judge will understand quickly"
+    },
+    {
+      "line": 664,
+      "heading": "## Reliable three-minute demo"
+    },
+    {
+      "line": 678,
+      "heading": "## Do not claim during the demo"
+    },
+    {
+      "line": 689,
+      "heading": "# Top five rejection triggers"
+    },
+    {
+      "line": 697,
+      "heading": "# Five highest-impact fixes, in order"
+    },
+    {
+      "line": 699,
+      "heading": "## 1. Produce a clean release candidate"
+    },
+    {
+      "line": 711,
+      "heading": "## 2. Complete the adversarial semantic matrix"
+    },
+    {
+      "line": 726,
+      "heading": "## 3. Resolve the legacy reviewer story"
+    },
+    {
+      "line": 732,
+      "heading": "## 4. Strengthen CCTP proof artifacts"
+    },
+    {
+      "line": 738,
+      "heading": "## 5. Narrow the commercial wedge and prove repeat value"
+    },
+    {
+      "line": 744,
+      "heading": "## Bottom line"
+    },
+    {
+      "line": 761,
+      "heading": "## Verdict"
+    },
+    {
+      "line": 771,
+      "heading": "## 1. The 10-second verdict"
+    },
+    {
+      "line": 773,
+      "heading": "### Initial decision: **CLOSE UNLESS FIXED**"
+    },
+    {
+      "line": 790,
+      "heading": "## 2. 90-second judge log"
+    },
+    {
+      "line": 798,
+      "heading": "## 3. Adversarial teardown and upgrade matrix"
+    },
+    {
+      "line": 816,
+      "heading": "## 4. The four unforgiving questions"
+    },
+    {
+      "line": 818,
+      "heading": "### 1. What service does it provide?"
+    },
+    {
+      "line": 826,
+      "heading": "### 2. Who are the users and how do you reach them?"
+    },
+    {
+      "line": 834,
+      "heading": "### 3. Why would users pay?"
+    },
+    {
+      "line": 844,
+      "heading": "### 4. Why would they come back?"
+    },
+    {
+      "line": 856,
+      "heading": "## 5. Criteria scorecard"
+    },
+    {
+      "line": 858,
+      "heading": "### Current demonstrated readiness"
+    },
+    {
+      "line": 876,
+      "heading": "### Potential after fixes"
+    },
+    {
+      "line": 891,
+      "heading": "## 6. Top rejection risks"
+    },
+    {
+      "line": 893,
+      "heading": "### Finding 1: Semantic rejection is not reliably proven"
+    },
+    {
+      "line": 918,
+      "heading": "### Finding 2: Live deployment cannot be independently confirmed from this review"
+    },
+    {
+      "line": 935,
+      "heading": "### Finding 3: No confirmed TapeCode security-audit completion"
+    },
+    {
+      "line": 952,
+      "heading": "### Finding 4: Deployment manifest has conflicting addresses"
+    },
+    {
+      "line": 969,
+      "heading": "### Finding 5: The TapeOut claim is technically qualified but competitively weak"
+    },
+    {
+      "line": 986,
+      "heading": "### Finding 6: Commercial model is unvalidated"
+    },
+    {
+      "line": 1003,
+      "heading": "### Finding 7: Onboarding is too heavy for a first-use product"
+    },
+    {
+      "line": 1020,
+      "heading": "### Finding 8: Testnet economics do not validate the product\u2019s value"
+    },
+    {
+      "line": 1037,
+      "heading": "### Finding 9: Attestor is a critical trust bottleneck"
+    },
+    {
+      "line": 1054,
+      "heading": "### Finding 10: Demo plan overclaims current behavior"
+    },
+    {
+      "line": 1071,
+      "heading": "## 7. Critical technical and security findings"
+    },
+    {
+      "line": 1073,
+      "heading": "### Confirmed or strongly evidenced"
+    },
+    {
+      "line": 1083,
+      "heading": "### Unverified risks requiring targeted tests"
+    },
+    {
+      "line": 1100,
+      "heading": "## 8. TapeOut/X Layer integration audit"
+    },
+    {
+      "line": 1102,
+      "heading": "### Verified from repository evidence"
+    },
+    {
+      "line": 1111,
+      "heading": "### Weak or superficial from a judging perspective"
+    },
+    {
+      "line": 1119,
+      "heading": "### Required submission evidence"
+    },
+    {
+      "line": 1135,
+      "heading": "## 9. Product and commercial weaknesses"
+    },
+    {
+      "line": 1137,
+      "heading": "### Problem severity is plausible but not proven"
+    },
+    {
+      "line": 1149,
+      "heading": "### The architecture may be overbuilt for the first buyer"
+    },
+    {
+      "line": 1155,
+      "heading": "### Retention is asserted"
+    },
+    {
+      "line": 1161,
+      "heading": "### Pricing lacks unit economics"
+    },
+    {
+      "line": 1177,
+      "heading": "## 10. What works"
+    },
+    {
+      "line": 1189,
+      "heading": "## 11. Five highest-leverage fixes before December 7, 2026"
+    },
+    {
+      "line": 1227,
+      "heading": "## 12. Recommended 3-minute demo script"
+    },
+    {
+      "line": 1229,
+      "heading": "### 0:00\u20130:20 \u2014 Problem"
+    },
+    {
+      "line": 1239,
+      "heading": "### 0:20\u20130:50 \u2014 Create the mandate"
+    },
+    {
+      "line": 1254,
+      "heading": "### 0:50\u20131:15 \u2014 Show TapeOut integration"
+    },
+    {
+      "line": 1273,
+      "heading": "### 1:15\u20131:45 \u2014 Successful payment"
+    },
+    {
+      "line": 1279,
+      "heading": "### 1:45\u20132:10 \u2014 Rejection and block"
+    },
+    {
+      "line": 1290,
+      "heading": "### 2:10\u20132:30 \u2014 Replay and auditability"
+    },
+    {
+      "line": 1300,
+      "heading": "### 2:30\u20132:50 \u2014 Customer and revenue model"
+    },
+    {
+      "line": 1311,
+      "heading": "### 2:50\u20133:00 \u2014 Final qualification"
+    },
+    {
+      "line": 1319,
+      "heading": "## 13. Unverified items"
+    }
+  ]
+}
