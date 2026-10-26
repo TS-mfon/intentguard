@@ -1,0 +1,127 @@
+name: IntentGuard mainnet payment beta worker
+
+# Configure the protected mainnet environment and its isolated principals first.
+# Enabling this worker is a release action after the quote, security and canary gates.
+on:
+  workflow_dispatch:
+    inputs:
+      duration_seconds:
+        description: Queue processing duration (10 to 240 seconds)
+        required: false
+        default: "180"
+        type: string
+      release_ref:
+        description: Exact approved 40-character source commit; defaults to the mainnet environment release
+        required: false
+        type: string
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: intentguard-worker-mainnet
+  cancel-in-progress: false
+
+jobs:
+  worker:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.MAINNET_WORKER_SCHEDULE_ENABLED == 'true')
+    environment: mainnet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      MAINNET_WORKER_ENABLED: ${{ vars.MAINNET_WORKER_ENABLED }}
+      RELEASE_REF: ${{ inputs.release_ref || vars.INTENTGUARD_SOURCE_COMMIT }}
+      INTENTGUARD_SOURCE_COMMIT: ${{ vars.INTENTGUARD_SOURCE_COMMIT }}
+      INTENTGUARD_PAYMENT_ENV: mainnet
+      INTENTGUARD_MODE: mainnet
+      XLAYER_CHAIN_ID: "196"
+      MONGODB_DB: ${{ vars.MONGODB_DB }}
+      INTENTGUARD_DATABASE_ROLE: worker
+      GENLAYER_NETWORK: studionet
+      GENLAYER_CHAIN_ID: "61999"
+      INTENTGUARD_REPOSITORY_ROOT: ${{ github.workspace }}
+      WORKER_RUN_SECONDS: ${{ inputs.duration_seconds || '180' }}
+      XLAYER_RPC_URL: ${{ vars.XLAYER_RPC_URL }}
+      PAYMENT_TOKEN: ${{ vars.PAYMENT_TOKEN }}
+      CCTP_CARD_FACTORY_ADDRESS: ${{ vars.CCTP_CARD_FACTORY_ADDRESS }}
+      CARD_FACTORY_ADDRESS: ${{ vars.CARD_FACTORY_ADDRESS }}
+      GATEWAY_ADDRESS: ${{ vars.GATEWAY_ADDRESS }}
+      ATTESTOR_ADDRESS: ${{ vars.ATTESTOR_ADDRESS }}
+      TAPEOUT_PROCESSOR: ${{ vars.TAPEOUT_PROCESSOR }}
+      TAPEOUT_CIRCUIT_ID: ${{ vars.TAPEOUT_CIRCUIT_ID }}
+      TAPEOUT_BEACON: ${{ vars.TAPEOUT_BEACON }}
+      TAPEOUT_IMPLEMENTATION: ${{ vars.TAPEOUT_IMPLEMENTATION }}
+      TAPEOUT_NETLIST_HASH: ${{ vars.TAPEOUT_NETLIST_HASH }}
+      GENLAYER_INTERPRETER_ADDRESS: ${{ vars.GENLAYER_INTERPRETER_ADDRESS }}
+      GENLAYER_RPC_URL: ${{ vars.GENLAYER_RPC_URL }}
+      GENLAYER_GENESIS_HASH: ${{ vars.GENLAYER_GENESIS_HASH }}
+      APP_URL: ${{ vars.APP_URL }}
+      INTENTGUARD_RELEASE_ID: ${{ vars.INTENTGUARD_RELEASE_ID }}
+      INTENTGUARD_VERIFIED_MANIFEST: ${{ vars.INTENTGUARD_VERIFIED_MANIFEST }}
+      INTENTGUARD_VERIFIED_MANIFEST_SHA256: ${{ vars.INTENTGUARD_VERIFIED_MANIFEST_SHA256 }}
+      GENLAYER_CONSENSUS_ADDRESS: ${{ vars.GENLAYER_CONSENSUS_ADDRESS }}
+      BASE_RPC_URL: ${{ vars.BASE_RPC_URL }}
+      ARBITRUM_RPC_URL: ${{ vars.ARBITRUM_RPC_URL }}
+      OPTIMISM_RPC_URL: ${{ vars.OPTIMISM_RPC_URL }}
+      ETHEREUM_RPC_URL: ${{ vars.ETHEREUM_RPC_URL }}
+      POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
+      AVALANCHE_RPC_URL: ${{ vars.AVALANCHE_RPC_URL }}
+      UNICHAIN_RPC_URL: ${{ vars.UNICHAIN_RPC_URL }}
+      LINEA_RPC_URL: ${{ vars.LINEA_RPC_URL }}
+      WORLD_CHAIN_RPC_URL: ${{ vars.WORLD_CHAIN_RPC_URL }}
+      HYPEREVM_RPC_URL: ${{ vars.HYPEREVM_RPC_URL }}
+    steps:
+      - name: Refuse unapproved release or mixed environment before checkout and signing
+        run: |
+          if [[ "$MAINNET_WORKER_ENABLED" != "true" ]]; then
+            echo "Mainnet worker is disabled pending release acceptance."
+            exit 1
+          fi
+          if ! [[ "$RELEASE_REF" =~ ^[0-9a-f]{40}$ ]] || [[ "$RELEASE_REF" != "$INTENTGUARD_SOURCE_COMMIT" ]]; then
+            echo "Only the exact approved mainnet source commit can execute."
+            exit 1
+          fi
+          if [[ "$MONGODB_DB" != "intentguard_mainnet" || -z "$APP_URL" || -z "$INTENTGUARD_RELEASE_ID" || -z "$INTENTGUARD_VERIFIED_MANIFEST" || ! "$INTENTGUARD_VERIFIED_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ || -z "$GENLAYER_CONSENSUS_ADDRESS" || ! "$GENLAYER_GENESIS_HASH" =~ ^0x[0-9a-f]{64}$ ]]; then
+            echo "Mainnet database, origin, release identity and verified deployment manifest are required."
+            exit 1
+          fi
+          if ! [[ "$WORKER_RUN_SECONDS" =~ ^[0-9]{1,3}$ ]] || (( 10#$WORKER_RUN_SECONDS < 10 || 10#$WORKER_RUN_SECONDS > 240 )); then
+            echo "Worker duration must be between 10 and 240 seconds."
+            exit 1
+          fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.RELEASE_REF }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.18.0"
+          cache: pnpm
+      - name: Install the immutable release lock
+        run: pnpm install --frozen-lockfile
+      - name: Execute the isolated mainnet queue
+        env:
+          # Dedicated names prevent fallback to the existing repository testnet secrets.
+          # Never copy the testnet principals or signing keys into this environment.
+          MONGODB_URI: ${{ secrets.MAINNET_MONGODB_URI }}
+          XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.MAINNET_XLAYER_OPERATOR_PRIVATE_KEY }}
+          REVIEW_ATTESTOR_PRIVATE_KEY: ${{ secrets.MAINNET_REVIEW_ATTESTOR_PRIVATE_KEY }}
+          GENLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.MAINNET_GENLAYER_OPERATOR_PRIVATE_KEY }}
+          GITHUB_WORKER_TOKEN: ${{ github.token }}
+          GITHUB_WORKER_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKER_WORKFLOW: worker-mainnet.yml
+          GITHUB_WORKER_REF: main
+        run: |
+          for required in MONGODB_URI XLAYER_OPERATOR_PRIVATE_KEY REVIEW_ATTESTOR_PRIVATE_KEY GENLAYER_OPERATOR_PRIVATE_KEY; do
+            if [[ -z "${!required}" ]]; then
+              echo "A required mainnet principal is missing."
+              exit 1
+            fi
+          done
+          pnpm exec tsx apps/worker/main.ts --duration-seconds "$WORKER_RUN_SECONDS"

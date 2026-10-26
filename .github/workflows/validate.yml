@@ -11,20 +11,22 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 11.9.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: "24.18.0"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Check production dependency advisories
-        run: pnpm audit --prod
+      - name: Check web and worker runtime dependency advisories
+        run: pnpm audit
       - run: npm ci --ignore-scripts --prefix packages/mcp
       - run: pnpm typecheck
       - run: pnpm test
@@ -40,20 +42,39 @@ jobs:
         run: pnpm exec tsx scripts/story-browser.ts
       - name: Preserve story browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: story-browser-evidence
           path: .local/story-screenshots
           if-no-files-found: ignore
           retention-days: 7
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
         with:
-          version: stable
+          version: v1.8.6
       - run: node tools/check.mjs evm
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.13.5"
+          python-version: "3.13.12"
       - name: GenLayer contract and independent validator checks
         run: |
-          uvx --from genvm-linter genvm-lint check contracts/genlayer/permission_interpreter.py
-          uvx --from genvm-linter genvm-lint check contracts/genlayer/purchase_reviewer.py
-          uvx --from genvm-linter genvm-lint check contracts/genlayer/versions/purchase_reviewer_v3.py
-          uvx --from genlayer-test gltest contracts/genlayer/tests/direct -v
+          uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/permission_interpreter.py
+          uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/purchase_reviewer.py
+          uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/versions/purchase_reviewer_v3.py
+          uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/versions/purchase_reviewer_v4.py
+          uvx --from genlayer-test==0.29.2 gltest contracts/genlayer/tests/direct -v
+
+  packaging:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.18.0"
+      - name: Verify workflow pins and release-input boundaries
+        run: node tools/production/verify-workflows.mjs
+      - name: Verify locked Docker images and isolated worker retry
+        run: node tools/production/verify-packaging.mjs

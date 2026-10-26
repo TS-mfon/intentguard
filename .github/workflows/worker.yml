@@ -16,21 +16,24 @@ permissions:
   actions: write
 
 concurrency:
-  group: intentguard-worker
+  group: intentguard-worker-testnet
   cancel-in-progress: false
 
 jobs:
   worker:
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 11.9.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: "24.18.0"
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
@@ -45,6 +48,8 @@ jobs:
           XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}
           REVIEW_ATTESTOR_PRIVATE_KEY: ${{ secrets.REVIEW_ATTESTOR_PRIVATE_KEY }}
           GENLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.GENLAYER_OPERATOR_PRIVATE_KEY }}
+          INTENTGUARD_PAYMENT_ENV: testnet
+          GENLAYER_NETWORK: studionet
           INTENTGUARD_MODE: ${{ vars.INTENTGUARD_MODE }}
           XLAYER_CHAIN_ID: ${{ vars.XLAYER_CHAIN_ID }}
           XLAYER_RPC_URL: ${{ vars.XLAYER_RPC_URL }}
@@ -69,7 +74,7 @@ jobs:
             echo "Worker duration must be between 10 and 240 seconds."
             exit 1
           fi
-          if [[ "$INTENTGUARD_MODE" != "testnet" || "$XLAYER_CHAIN_ID" != "1952" ]]; then
+          if [[ "$INTENTGUARD_MODE" != "testnet" || "$XLAYER_CHAIN_ID" != "1952" || "$MONGODB_DB" == "intentguard_mainnet" ]]; then
             echo "This workflow is authorized only for X Layer testnet chain 1952."
             exit 1
           fi

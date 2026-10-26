@@ -209,11 +209,12 @@
         {
           "artifact": "tools/production/verify-packaging.mjs",
           "check": "node tools/production/verify-packaging.mjs",
-          "scope": "Independent driver rerun: locked worker/web images, non-root users, real cross-container HTTP and durable retry/lease release.",
-          "verifiedAt": "2026-10-26T06:18:00.000Z"
+          "scope": "Independent driver rerun: locked worker/web images, non-root users, real cross-container HTTP and durable retry/lease release."
         }
       ],
-      "fixCommits": [],
+      "fixCommits": [
+        "b0f750f"
+      ],
       "retestCommits": [],
       "baselineClassification": "Confirmed: Docker builds web and starts worker; clean-machine packaging remains unverified."
     },
@@ -224,7 +225,7 @@
       "acceptance": "Actions pinned to commit SHAs; tool versions pinned; minimal permissions; untrusted PR jobs cannot access execution secrets.",
       "ownerLeaf": "1.2",
       "observingGate": "leaf-1.2:R07",
-      "status": "OPEN",
+      "status": "VERIFIED",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -235,7 +236,13 @@
           "line": 590
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "tools/production/verify-workflows.mjs",
+          "check": "node tools/production/verify-workflows.mjs",
+          "scope": "Independent driver rerun: actionlint, immutable Actions pins,17 invalid release-input cases and4 mutation controls; deployment activation still gated."
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Confirmed: mutable action tags and unpinned toolchains remain."

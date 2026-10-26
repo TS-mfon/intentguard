@@ -17,25 +17,28 @@ permissions:
   contents: read
 
 concurrency:
-  group: intentguard-worker
+  group: intentguard-worker-testnet
   cancel-in-progress: false
 
 jobs:
   provision:
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 11.9.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: "24.18.0"
           cache: pnpm
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
         with:
-          version: stable
+          version: v1.8.6
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Build reviewed factory artifact
@@ -45,16 +48,23 @@ jobs:
       - name: Resume fixed durable provisioning operation
         env:
           OPERATIONS_MODE: ${{ inputs.operation }}
+          INTENTGUARD_PAYMENT_ENV: testnet
+          GENLAYER_NETWORK: studionet
           INTENTGUARD_MODE: ${{ vars.INTENTGUARD_MODE }}
           XLAYER_CHAIN_ID: ${{ vars.XLAYER_CHAIN_ID }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ vars.MONGODB_DB }}
           XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}
           CCTP_CARD_FACTORY_ADDRESS: ${{ vars.CCTP_CARD_FACTORY_ADDRESS }}
-        run: pnpm exec tsx scripts/cctp-operations.ts "$OPERATIONS_MODE"
+        run: |
+          if [[ "$INTENTGUARD_MODE" != "testnet" || "$XLAYER_CHAIN_ID" != "1952" || "$MONGODB_DB" == "intentguard_mainnet" ]]; then
+            echo "Legacy operations accept only the existing testnet deployment."
+            exit 1
+          fi
+          pnpm exec tsx scripts/cctp-operations.ts "$OPERATIONS_MODE"
       - name: Publish public addresses and receipt state only
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cctp-operations-public-${{ inputs.operation }}-${{ github.run_attempt }}
           path: .local/cctp-operations/public.json
