@@ -1,3 +1,5 @@
+import {assertSigningLease} from "./signing-lease";
+import {transactionBinding,validateTransactionJournal} from "./transaction-profile";
 import {createPublicClient,createWalletClient,defineChain,http,parseAbi,encodeFunctionData,encodeAbiParameters,keccak256,padHex,decodeEventLog,parseTransaction,type Hex,type Address,type Abi,type TransactionReceipt} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import artifacts from "../../../contracts/evm/abi.json";
@@ -90,16 +92,20 @@ export class Cctp{
   const d=this.destination(id,card);requireValue(await d.public.getChainId()===id,"Destination RPC chain mismatch.");
   const privateKey=process.env.XLAYER_OPERATOR_PRIVATE_KEY;requireValue(privateKey,"Worker bridge signing key is unavailable.");const account=privateKeyToAccount(hex(privateKey));requireValue(account.address.toLowerCase()===this.evm.cfg.gateway?.toLowerCase(),"Destination relayer key mismatch.");
   const wallet=createWalletClient({chain:d.chain,account,transport:http(d.rpc,{timeout:12000,retryCount:0})}),key="cctp:"+id+":"+p._id+":receive";
-  let saved=await this.store.get<Doc&{hash:Hex;raw:Hex}>("transactions",key),receipt=saved?await d.public.getTransactionReceipt({hash:saved.hash}).catch(()=>null):null;
+  const data=encodeFunctionData({abi:transmitterAbi,functionName:"receiveMessage",args:[hex(message),hex(attestation)]}),binding=transactionBinding(this.evm.cfg),expected={chainId:id,to:d.c.transmitter,data,gateway:account.address,binding,requireBinding:this.evm.cfg.mainnet};
+  let saved=await this.store.get<Doc&{hash:Hex;raw:Hex;binding?:unknown}>("transactions",key);
+  if(saved)await validateTransactionJournal(saved,expected);
+  let receipt=saved?await d.public.getTransactionReceipt({hash:saved.hash}).catch(()=>null):null;
   if(receipt?.status==="reverted"){await this.store.create("transactions",{...saved!,_id:key+":failed:"+saved!.hash,failedAt:Date.now()});await this.store.take("transactions",key);saved=null;receipt=null;}
   if(!saved){
-   if(await d.public.getBalance({address:account.address})===0n)throw new BridgePending("DESTINATION_GAS_REQUIRED","The Actions relayer needs test ETH on the destination chain. The source burn remains durable; it will not be repeated.");
+   await assertSigningLease(this.store,"requests",p._id,p.leaseToken);
+   if(await d.public.getBalance({address:account.address})===0n)throw new BridgePending("DESTINATION_GAS_REQUIRED","The Actions relayer needs "+d.chain.nativeCurrency.symbol+" for gas on "+d.chain.name+". The source burn remains durable; it will not be repeated.");
    const nonce=Math.max(...await Promise.all(["latest","pending"].map(blockTag=>d.public.getTransactionCount({address:account.address,blockTag:blockTag as "latest"|"pending"}))));
-   const data=encodeFunctionData({abi:transmitterAbi,functionName:"receiveMessage",args:[hex(message),hex(attestation)]}),prepared=await wallet.prepareTransactionRequest({to:d.c.transmitter,data,nonce});prepared.gas=prepared.gas*125n/100n+50000n;
-   const raw=await wallet.signTransaction(prepared),candidate={_id:key,hash:keccak256(raw),raw,createdAt:Date.now(),blockStart:(await d.public.getBlockNumber()).toString()};saved=await this.store.create("transactions",candidate)?candidate:await this.store.get("transactions",key);
+   const prepared=await wallet.prepareTransactionRequest({to:d.c.transmitter,data,nonce});prepared.gas=prepared.gas*125n/100n+50000n;
+   const raw=await wallet.signTransaction(prepared),candidate={_id:key,hash:keccak256(raw),raw,binding,createdAt:Date.now(),blockStart:(await d.public.getBlockNumber()).toString()};saved=await this.store.create("transactions",candidate)?candidate:await this.store.get("transactions",key);
   }
-  requireValue(saved,"Destination transaction persistence failed.");
-  if(!receipt){await wallet.sendRawTransaction({serializedTransaction:saved.raw}).catch(async error=>{if(!await d.public.getTransaction({hash:saved!.hash}).catch(()=>null))throw error;});receipt=await d.public.waitForTransactionReceipt({hash:saved.hash,confirmations:2,timeout:25000,pollingInterval:1000});}
+  requireValue(saved,"Destination transaction persistence failed.");await validateTransactionJournal(saved,expected);
+  if(!receipt){await assertSigningLease(this.store,"requests",p._id,p.leaseToken);await wallet.sendRawTransaction({serializedTransaction:saved.raw}).catch(async error=>{if(!await d.public.getTransaction({hash:saved!.hash}).catch(()=>null))throw error;});receipt=await d.public.waitForTransactionReceipt({hash:saved.hash,confirmations:2,timeout:25000,pollingInterval:1000});}
   return verifyDestinationReceipt(receipt,message,card,p.canonical!);
  }
  async reconcile(card:Card,p:Payment):Promise<Record<string,unknown>>{assertCardEnvironment(card);

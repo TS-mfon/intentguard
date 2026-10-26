@@ -2,9 +2,11 @@ import {readFile} from "node:fs/promises";
 import {createAccount,createClient,decodeInputData} from "genlayer-js";
 import {studionet} from "genlayer-js/chains";
 import {TransactionHashVariant,transactionsStatusNumberToName,executionResultNumberToName,transactionResultNumberToName,CalldataAddress,type CalldataEncodable,type GenLayerTransaction,type Hash as GLHash} from "genlayer-js/types";
-import {createPublicClient,http,decodeEventLog,keccak256,toBytes,toHex,type Abi,type Hex,type Address} from "viem";
+import {createPublicClient,http,decodeEventLog,keccak256,parseTransaction,toBytes,toHex,type Abi,type Hex,type Address} from "viem";
 import {canonical,digest,policySchema,isSettlementV2,type DraftResult,type ReviewDecision} from "../../../packages/shared";
 import {configuration,STUDIONET_CHAIN_ID,STUDIONET_CONSENSUS} from "./config";
+import {assertSigningLease} from "./signing-lease";
+import {validateTransactionJournal} from "./transaction-profile";
 import {assertCardEnvironment} from "./settlement";
 import type {Store,Doc} from "./store";
 import type {Card,Draft,Payment} from "./models";
@@ -79,16 +81,25 @@ export class GenLayer implements GenLayerPort{
  }
  account(){const key=process.env.GENLAYER_OPERATOR_PRIVATE_KEY;if(!key)throw Error("GenLayer operator key is required");return createAccount(key as Hex)}
  async identity(){if(this.cfg.genLayerNetwork!=="studionet"||await this.public.getChainId()!==STUDIONET_CHAIN_ID)throw Error("Unexpected GenLayer review network");if(this.cfg.mainnet){if(this.cfg.genLayerConsensus?.toLowerCase()!==STUDIONET_CONSENSUS)throw Error("Studionet SDK consensus identity mismatch");const genesis=await this.public.getBlock({blockNumber:0n});if(genesis.hash?.toLowerCase()!==this.cfg.genLayerGenesis?.toLowerCase())throw Error("Studionet genesis identity mismatch");}}
- async send(id:string,action:(client:ReturnType<typeof createClient>)=>Promise<unknown>){
+ async send(id:string,action:(client:ReturnType<typeof createClient>)=>Promise<unknown>,lease?:{table:string;id:string;token?:string}){
  await this.identity();const binding={reviewNetwork:"studionet",reviewChainId:STUDIONET_CHAIN_ID,paymentEnvironment:this.cfg.paymentEnvironment,reviewGenesis:this.cfg.genLayerGenesis??null,reviewConsensus:this.cfg.genLayerConsensus??STUDIONET_CONSENSUS};
- let saved=await this.store.get<Signed>("transactions","gl:"+id);if(saved&&((this.cfg.mainnet&&!saved.binding)||(saved.binding&&canonical(saved.binding)!==canonical(binding))))throw Error("GenLayer journal belongs to another deployment");if(saved?.protocolHash)return saved.protocolHash;
- if(!saved){
- const account=this.account();const capture={...account,signTransaction:async(...args:Parameters<typeof account.signTransaction>)=>{throw new Prepared(await account.signTransaction(...args))}};
+ let saved=await this.store.get<Signed>("transactions","gl:"+id);if(saved&&((this.cfg.mainnet&&!saved.binding)||(saved.binding&&canonical(saved.binding)!==canonical(binding))))throw Error("GenLayer journal belongs to another deployment");
+ const account=this.account();let prepared:Hex;
+ {
+ const capture={...account,signTransaction:async(...args:Parameters<typeof account.signTransaction>)=>{throw new Prepared(await account.signTransaction(...args))}};
  const client=createClient({chain:studionet,endpoint:this.cfg.genLayerRpc,account:capture});
- try{await action(client);throw Error("GenLayer did not produce a signed transaction")}catch(e){if(!(e instanceof Prepared))throw e;const row={_id:"gl:"+id,raw:e.raw,evmHash:keccak256(e.raw),binding,createdAt:Date.now()};if(await this.store.create("transactions",row))saved=row;else saved=await this.store.get("transactions",row._id);}
+ try{await action(client);throw Error("GenLayer did not produce a signed transaction")}catch(e){if(!(e instanceof Prepared))throw e;prepared=e.raw;}
  }
+ const intended=parseTransaction(prepared!);
+ if(!intended.to||!intended.data)throw Error("GenLayer transaction intent is missing");
+ if(lease)await assertSigningLease(this.store,lease.table,lease.id,lease.token);
+ if(!saved){const row={_id:"gl:"+id,raw:prepared!,evmHash:keccak256(prepared!),binding,createdAt:Date.now()};saved=await this.store.create("transactions",row)?row:await this.store.get("transactions",row._id);}
  if(!saved)throw Error("Signed GenLayer transaction was not persisted");
+ if((this.cfg.mainnet&&!saved.binding)||(saved.binding&&canonical(saved.binding)!==canonical(binding)))throw Error("GenLayer journal belongs to another deployment");
+ await validateTransactionJournal({raw:saved.raw,hash:saved.evmHash},{chainId:STUDIONET_CHAIN_ID,to:intended.to,data:intended.data,gateway:account.address,binding:{paymentEnvironment:this.cfg.paymentEnvironment,paymentChainId:STUDIONET_CHAIN_ID,gateway:account.address.toLowerCase()},requireBinding:false});
+ if(saved.protocolHash)return saved.protocolHash;
  // Recover the same raw transaction after a crash; a new nonce can never replace this job.
+ if(lease)await assertSigningLease(this.store,lease.table,lease.id,lease.token);
  const hash=await this.client.sendRawTransaction({serializedTransaction:saved.raw}).catch(async e=>{
  const exists=await this.public.getTransaction({hash:saved!.evmHash}).catch(()=>null);if(!exists)throw e;return saved!.evmHash;});
  let protocolHash:string;
@@ -108,7 +119,7 @@ export class GenLayer implements GenLayerPort{
  await this.store.patch("transactions",saved._id,{protocolHash});return protocolHash;
  }
  async read(address:string,functionName:string,args:string[]=[]){await this.identity();return this.client.readContract({address:address as Address,functionName,args,jsonSafeReturn:true,transactionHashVariant:TransactionHashVariant.LATEST_FINAL})}
- async propose(d:Draft){return this.send("draft:"+d._id,c=>c.writeContract({address:this.cfg.interpreter as Address,functionName:"propose",args:[d._id,canonical(d.input)],value:0n}))}
+ async propose(d:Draft){return this.send("draft:"+d._id,c=>c.writeContract({address:this.cfg.interpreter as Address,functionName:"propose",args:[d._id,canonical(d.input)],value:0n}),{table:"drafts",id:d._id,token:d.leaseToken})}
  async draft(d:Draft){if(!d.genLayerTxHash)throw Error("Missing draft transaction");const tx=await this.client.getTransaction({hash:d.genLayerTxHash as GLHash});assertFinalized(tx,{target:this.cfg.interpreter!,method:"propose",args:[d._id,canonical(d.input)],sender:this.account().address});
  if(await this.read(this.cfg.interpreter!,"get_draft_input_hash",[d._id])!==d.inputHash)throw Error("Draft input commitment mismatch");
  const raw=await this.read(this.cfg.interpreter!,"get_draft",[d._id]);const result=JSON.parse(String(raw)) as DraftResult;
@@ -116,7 +127,7 @@ export class GenLayer implements GenLayerPort{
  if(result.status==="PROPOSED")result.policy=policySchema.parse(result.policy);else if(result.policy!==null)throw Error("Clarification must not authorize policy");return result;}
  reviewerArgs(c:Card){assertCardEnvironment(c);const args=[genLayerAddress(this.account().address),canonical(c.policy),c.policyHash,Number(c.chainId??this.cfg.chainId),String(c.token??this.cfg.token).toLowerCase(),...(c.settlement?[canonical(c.settlement)]:[])];if(c.reviewerVersion===4){if(!c.settlement||!isSettlementV2(c.settlement))throw Error("V4 reviewer requires explicit settlement permissions");args.push(canonical({version:4,paymentEnvironment:c.settlement.paymentEnvironment,reviewEnvironment:"testnet"}));}return args;}
  async reviewerSource(version:number){if(![1,2,3,4].includes(version))throw Error("Unsupported reviewer source version");return readFile(new URL(version===4?"../../../contracts/genlayer/versions/purchase_reviewer_v4.py":version===1?"../../../contracts/genlayer/versions/purchase_reviewer_v1.py":version===3?"../../../contracts/genlayer/versions/purchase_reviewer_v3.py":"../../../contracts/genlayer/purchase_reviewer.py",import.meta.url));}
- async deployReviewer(c:Card){const source=await this.reviewerSource(Number(c.reviewerVersion??2));return this.send("reviewer:"+c._id+(c.reviewerAttempt?":attempt:"+Number(c.reviewerAttempt):""),client=>client.deployContract({code:source,args:this.reviewerArgs(c)}))}
+ async deployReviewer(c:Card){const source=await this.reviewerSource(Number(c.reviewerVersion??2));return this.send("reviewer:"+c._id+(c.reviewerAttempt?":attempt:"+Number(c.reviewerAttempt):""),client=>client.deployContract({code:source,args:this.reviewerArgs(c)}),{table:"cards",id:c._id,token:c.leaseToken})}
  async reviewer(c:Card){assertCardEnvironment(c);if(!c.reviewerTx)throw Error("Missing reviewer deployment");const tx=await this.client.getTransaction({hash:c.reviewerTx as GLHash});assertFinalized(tx);const decoded=tx.txDataDecoded;
  if(!decoded||decoded.type!=="deploy"||!("contractAddress" in decoded))throw Error("Expected reviewer deployment transaction");
  const source=(await this.reviewerSource(Number(c.reviewerVersion??1))).toString("utf8");
@@ -127,6 +138,6 @@ export class GenLayer implements GenLayerPort{
  if(await this.read(address,"get_policy_hash")!==c.policyHash)throw Error("Reviewer policy mismatch");
  if(String(await this.read(address,"get_operator")).toLowerCase()!==this.account().address.toLowerCase())throw Error("Reviewer operator mismatch");
  if(Number(await this.read(address,"get_chain_id"))!==Number(c.chainId??this.cfg.chainId)||String(await this.read(address,"get_token")).toLowerCase()!==String(c.token??this.cfg.token).toLowerCase())throw Error("Reviewer payment network mismatch");if(c.settlement&&await this.read(address,"get_settlement_hash")!==digest(c.settlement))throw Error("Reviewer settlement permission mismatch");if(c.reviewerVersion===4){const profile={version:4,paymentEnvironment:(c.settlement as import("../../../packages/shared").SettlementV2).paymentEnvironment,reviewEnvironment:"testnet"};if(Number(await this.read(address,"get_version"))!==4||await this.read(address,"get_settlement_profile_hash")!==digest(profile))throw Error("Reviewer environment profile mismatch");}return address;}
- async submit(c:Card,p:Payment){assertCardEnvironment(c);if(!c.reviewerAddress||!p.canonical||!p.snapshots)throw Error("Missing review context");return this.send("review:"+p._id,client=>client.writeContract({address:c.reviewerAddress as Address,functionName:"review",args:[p._id,canonical(p.canonical),canonical(p.snapshots)],value:0n}))}
+ async submit(c:Card,p:Payment){assertCardEnvironment(c);if(!c.reviewerAddress||!p.canonical||!p.snapshots)throw Error("Missing review context");return this.send("review:"+p._id,client=>client.writeContract({address:c.reviewerAddress as Address,functionName:"review",args:[p._id,canonical(p.canonical),canonical(p.snapshots)],value:0n}),{table:"requests",id:p._id,token:p.leaseToken})}
  async decision(c:Card,p:Payment){assertCardEnvironment(c);if(!p.genLayerTxHash||!c.reviewerAddress||!p.canonical||!p.snapshots)throw Error("Missing review transaction");const tx=await this.client.getTransaction({hash:p.genLayerTxHash as GLHash});assertFinalized(tx,{target:c.reviewerAddress,method:"review",args:[p._id,canonical(p.canonical),canonical(p.snapshots)],sender:this.account().address});return JSON.parse(String(await this.read(c.reviewerAddress,"get_review",[p._id]))) as ReviewDecision;}
 }

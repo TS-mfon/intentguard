@@ -7,6 +7,7 @@ import {settlementFactory,destinationDomains,cardSymbol,isBridge,settlementToken
 import {Cctp,bridgeRouteHash} from "./cctp";
 import {configuration} from "./config";
 import {runtimeManifest} from "./deployment-profile";
+import {assertSigningLease} from "./signing-lease";
 import {verifyPaymentReceipt} from "./payment-proof";
 import {transactionBinding,validateTransactionJournal} from "./transaction-profile";
 import type {Card,Payment,ChainRequest} from "./models";
@@ -50,8 +51,8 @@ export class Evm implements EvmPort{
  async read(address:string,functionName:string,args:unknown[]=[]){await this.identity();return this.public.readContract({address:asAddress(address),abi:cardAbi,functionName,args});}
  async preview(card:Card,input:Payment["input"],expiresAt:number){assertCardEnvironment(card);const [allow,mask]=await this.read(card.address,"preview",[asAddress(input.recipient),parseAmount(input.amount),BigInt(expiresAt)]) as [boolean,number];return {allow,failures:failures.filter((_,i)=>(Number(mask)&(1<<i))!==0)}}
  async request(card:Card,id:string){assertCardEnvironment(card);return await this.read(card.address,"getRequest",[asHex(id)]) as ChainRequest}
- async execute(key:string,address:string,method:string,args:unknown[],abi:Abi=cardAbi):Promise<string>{
- await this.identity(); const privateKey=process.env.XLAYER_OPERATOR_PRIVATE_KEY;if(!privateKey)throw Error("Gateway signing key is required");
+ async execute(key:string,address:string,method:string,args:unknown[],abi:Abi=cardAbi,lease?:{id:string;token?:string}):Promise<string>{
+ await this.identity();if(lease)await assertSigningLease(this.store,"requests",lease.id,lease.token); const privateKey=process.env.XLAYER_OPERATOR_PRIVATE_KEY;if(!privateKey)throw Error("Gateway signing key is required");
  const account=privateKeyToAccount(asHex(privateKey));if(account.address.toLowerCase()!==this.cfg.gateway?.toLowerCase())throw Error("Gateway key does not match configured signer");
  const wallet=createWalletClient({chain:this.chain,account,transport:http(this.cfg.rpcUrl,{timeout:15000,retryCount:0})});
  const data=encodeFunctionData({abi,functionName:method,args}),binding=transactionBinding(this.cfg);
@@ -59,24 +60,24 @@ export class Evm implements EvmPort{
  if(tx)await validateTransactionJournal(tx,{chainId:this.cfg.chainId,to:address,data,gateway:account.address,binding,requireBinding:this.cfg.mainnet});
  const [latestNonce,pendingNonce]=await Promise.all(["latest","pending"].map(blockTag=>this.public.getTransactionCount({address:account.address,blockTag:blockTag as "latest"|"pending"})));const nonce=Math.max(latestNonce,pendingNonce);
  if(tx&&!await this.public.getTransactionReceipt({hash:tx.hash}).catch(()=>null)&&latestNonce>Number(parseTransaction(tx.raw).nonce)){const stale=await this.store.take("transactions",key);if(stale&&stale.hash!==tx.hash)throw Error("Transaction journal changed during nonce recovery");tx=null;}
- if(!tx){const prepared=await wallet.prepareTransactionRequest({to:asAddress(address),data,nonce});prepared.gas=prepared.gas*125n/100n+50000n;const raw=await wallet.signTransaction(prepared);const candidate={_id:key,raw,hash:keccak256(raw),binding,createdAt:Date.now(),blockStart:(await this.public.getBlockNumber()).toString()};
+ if(!tx){if(lease)await assertSigningLease(this.store,"requests",lease.id,lease.token);const prepared=await wallet.prepareTransactionRequest({to:asAddress(address),data,nonce});prepared.gas=prepared.gas*125n/100n+50000n;const raw=await wallet.signTransaction(prepared);const candidate={_id:key,raw,hash:keccak256(raw),binding,createdAt:Date.now(),blockStart:(await this.public.getBlockNumber()).toString()};
  if(!await this.store.create("transactions",candidate))tx=await this.store.get("transactions",key);else tx=candidate;}
  if(!tx)throw Error("Transaction persistence failed");
  await validateTransactionJournal(tx,{chainId:this.cfg.chainId,to:address,data,gateway:account.address,binding,requireBinding:this.cfg.mainnet});
  let receipt=await this.public.getTransactionReceipt({hash:tx.hash}).catch(()=>null);
- if(!receipt){await wallet.sendRawTransaction({serializedTransaction:tx.raw}).catch(async e=>{if(!await this.public.getTransaction({hash:tx!.hash}).catch(()=>null))throw e});receipt=await this.public.waitForTransactionReceipt({hash:tx.hash,timeout:25000,confirmations:2,pollingInterval:1000});}
+ if(!receipt){if(lease)await assertSigningLease(this.store,"requests",lease.id,lease.token);await wallet.sendRawTransaction({serializedTransaction:tx.raw}).catch(async e=>{if(!await this.public.getTransaction({hash:tx!.hash}).catch(()=>null))throw e});receipt=await this.public.waitForTransactionReceipt({hash:tx.hash,timeout:25000,confirmations:2,pollingInterval:1000});}
  if(receipt.status!=="success")throw Error("Onchain transaction reverted");return tx.hash;
  }
  async reserve(card:Card,p:Payment){assertCardEnvironment(card);if(!p.canonical||!p.requestHash||!p.evidenceHash)throw Error("Missing commitments");
- const r=p.canonical;const cross=isBridge(card,p);return this.execute(p._id+":reserve",card.address,cross?"reserveBridge":"reserve",[asHex(p._id),asHex(p.requestHash),asHex(p.evidenceHash),asHex(digest(r.recipient.toLowerCase()+"|"+r.invoiceId)),asAddress(r.recipient),BigInt(r.amountAtomic),BigInt(r.expiresAt),...(cross?[r.destinationDomain!]:[])],cardAbiFor(card));}
- async cancel(card:Card,p:Payment){const r=await this.request(card,p._id);if(r.status!==1)return;await this.execute(p._id+":cancel",card.address,Number(r.expiresAt)<=Math.floor(Date.now()/1000)?"expire":"cancel",[asHex(p._id)],cardAbi);}
+ const r=p.canonical;const cross=isBridge(card,p);return this.execute(p._id+":reserve",card.address,cross?"reserveBridge":"reserve",[asHex(p._id),asHex(p.requestHash),asHex(p.evidenceHash),asHex(digest(r.recipient.toLowerCase()+"|"+r.invoiceId)),asAddress(r.recipient),BigInt(r.amountAtomic),BigInt(r.expiresAt),...(cross?[r.destinationDomain!]:[])],cardAbiFor(card),{id:p._id,token:p.leaseToken});}
+ async cancel(card:Card,p:Payment){const r=await this.request(card,p._id);if(r.status!==1)return;await this.execute(p._id+":cancel",card.address,Number(r.expiresAt)<=Math.floor(Date.now()/1000)?"expire":"cancel",[asHex(p._id)],cardAbi,{id:p._id,token:p.leaseToken});}
  async settle(card:Card,p:Payment){assertCardEnvironment(card);if(!p.canonical||!p.review||!p.genLayerTxHash||!p.requestHash||p.review.decision!=="APPROVE")throw Error("No finalized approval");
  const key=process.env.REVIEW_ATTESTOR_PRIVATE_KEY;if(!key)throw Error("Review attestor key is required");const account=privateKeyToAccount(asHex(key));if(account.address.toLowerCase()!==this.cfg.attestor?.toLowerCase())throw Error("Attestor key mismatch");
  const validUntil=BigInt(p.canonical.expiresAt),decisionHash=asHex(digest(p.review)),cross=isBridge(card,p);
  const routeHash=cross?bridgeRouteHash(p.canonical.destinationDomain!,p.canonical.recipient,BigInt(p.canonical.amountAtomic)):undefined;
  if(cross){const route=await this.public.readContract({address:asAddress(card.address),abi:cardAbiFor(card),functionName:"getBridgeRequest",args:[asHex(p._id)]}) as {routeHash:string;destinationDomain:number};if(route.routeHash.toLowerCase()!==routeHash||Number(route.destinationDomain)!==p.canonical.destinationDomain)throw Error("Bridge route commitment mismatch");}
  const signature=await account.signTypedData({domain:{name:"IntentGuard",version:String(cardContractVersion(card)),chainId:this.cfg.chainId,verifyingContract:asAddress(card.address)},primaryType:cross?"BridgeRelease":"Release",types:{[cross?"BridgeRelease":"Release"]:(cross?artifacts.bridgeRelease:artifacts.release).fields.map(([name,type])=>({name,type}))},message:{requestId:asHex(p._id),requestHash:asHex(p.requestHash),policyHash:asHex(card.policyHash),evidenceHash:asHex(p.canonical.evidenceHash),decisionHash,genLayerTxHash:asHex(p.genLayerTxHash),validUntil,...(routeHash?{routeHash}:{})}});
- const hash=await this.execute(p._id+":settle",card.address,"settle",[asHex(p._id),validUntil,decisionHash,asHex(p.genLayerTxHash),signature],cardAbiFor(card));
+ const hash=await this.execute(p._id+":settle",card.address,"settle",[asHex(p._id),validUntil,decisionHash,asHex(p.genLayerTxHash),signature],cardAbiFor(card),{id:p._id,token:p.leaseToken});
  if(!cross)await this.confirmPayment(card,p,hash);return hash;
  }
  async confirmPayment(card:Card,p:Payment,hash:string){
