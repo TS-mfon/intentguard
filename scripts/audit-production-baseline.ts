@@ -1,0 +1,24 @@
+import {spawnSync} from "node:child_process";
+import {createRequire} from "node:module";
+import {runInNewContext} from "node:vm";
+import {EventEmitter} from "node:events";
+import assert from "node:assert/strict";
+import ts from "typescript";
+import * as shared from "../packages/shared";
+const baseline=process.argv[2]??"9d9eeb6";
+if(!/^[a-f0-9]{7,40}$/.test(baseline))throw Error("Use a reviewed baseline commit hash");
+const source=spawnSync("git",["show",baseline+":apps/web/lib/evidence.ts"],{encoding:"utf8"});
+if(source.status!==0)throw Error("Baseline source is unavailable");
+assert.match(source.stdout,/timeout:12000/);assert.doesNotMatch(source.stdout,/Absolute deadline/);
+const response=new EventEmitter() as any;response.statusCode=200;response.headers={"content-type":"text/plain"};
+let request:any;const https={request:(_url:unknown,_options:unknown,handler:(r:any)=>void)=>{
+ request=new EventEmitter() as any;request.destroy=(error:Error)=>request.emit("error",error);request.end=()=>queueMicrotask(()=>handler(response));return request;
+}};
+const require=createRequire(import.meta.url),exports:Record<string,any>={};
+const code=ts.transpileModule(source.stdout,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
+runInNewContext(code,{exports,Buffer,URL,TextDecoder,require:(name:string)=>name==="node:https"?https:name==="node:dns/promises"?{lookup:async()=>[{address:"1.1.1.1",family:4}]}:name==="../../../packages/shared"?shared:require(name)});
+let resolved=false;const pending=exports.safeFetch("https://merchant.example/invoice").then(()=>{resolved=true});
+const trickle=setInterval(()=>response.emit("data",Buffer.from(" ")),5);
+await new Promise(resolve=>setTimeout(resolve,12500));assert.equal(resolved,false);
+clearInterval(trickle);response.emit("end");await pending;
+console.log("S04_BASELINE_INACTIVITY_ONLY: byte trickle exceeded 12 seconds without a wall-clock abort; controlled transport, no network requests");

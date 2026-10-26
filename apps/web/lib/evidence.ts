@@ -28,14 +28,35 @@ export function pinnedLookup(chosen:LookupAddress):LookupFunction{
   else callback(null,chosen.address,chosen.family);
  };
 }
-export async function safeFetch(raw:string):Promise<string>{
- const url=new URL(raw);if(url.protocol!=="https:"||url.username||url.password||(url.port&&url.port!=="443"))throw Error("Only public HTTPS evidence is supported");
- const host=url.hostname.replace(/^\[|\]$/g,"");const addresses=await lookup(host,{all:true});if(!addresses.length||addresses.some(a=>!publicIp(a.address)))throw Error("Evidence source resolves to a private/reserved network");
- const chosen=addresses[0];return new Promise((resolve,reject)=>{const request=https.request(url,{method:"GET",timeout:12000,lookup:pinnedLookup(chosen)},res=>{
- if(res.statusCode!==200){res.resume();reject(Error("Evidence must return HTTP 200 without redirects"));return}
- const type=String(res.headers["content-type"]??"").toLowerCase();if(!type.includes("json")&&!type.startsWith("text/")){res.resume();reject(Error("Evidence must be text or JSON"));return}
- const chunks:Buffer[]=[];let size=0;res.on("data",(chunk:Buffer)=>{size+=chunk.length;if(size>65536){request.destroy(Error("Evidence exceeds 64 KiB"));return}chunks.push(chunk)});res.on("end",()=>{try{resolve(new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks)))}catch{reject(Error("Evidence must be valid UTF-8"))}});res.on("error",reject)});
- request.on("timeout",()=>request.destroy(Error("Evidence fetch timed out")));request.on("error",reject);request.end();
- });
+type EvidenceTransport={lookup:typeof lookup;request:typeof https.request};
+export function createEvidenceFetcher(transport:EvidenceTransport,deadlineMs=12000){
+ return async function fetchEvidence(raw:string):Promise<string>{
+  const url=new URL(raw);if(url.protocol!=="https:"||url.username||url.password||(url.port&&url.port!=="443"))throw Error("Only public HTTPS evidence is supported");
+  const host=url.hostname.replace(/^\[|\]$/g,"");
+  return new Promise((resolve,reject)=>{
+   let settled=false,request:ReturnType<typeof https.request>|undefined;
+   const finish=(error?:Error,content?:string)=>{if(settled)return;settled=true;clearTimeout(timer);if(error){request?.destroy(error);reject(error)}else resolve(content!);};
+   // Absolute deadline starts before DNS and cannot be extended by trickling bytes.
+   const timer=setTimeout(()=>finish(Error("Evidence fetch timed out")),deadlineMs);
+   transport.lookup(host,{all:true}).then(addresses=>{
+    if(settled)return;
+    if(!addresses.length||addresses.some(a=>!publicIp(a.address))){finish(Error("Evidence source resolves to a private/reserved network"));return}
+    request=transport.request(url,{method:"GET",timeout:deadlineMs,lookup:pinnedLookup(addresses[0]),headers:{"Accept-Encoding":"identity"}},res=>{
+     if(res.statusCode!==200){finish(Error("Evidence must return HTTP 200 without redirects"));return}
+     const type=String(res.headers["content-type"]??"").toLowerCase(),encoding=String(res.headers["content-encoding"]??"identity").toLowerCase();
+     if(!type.includes("json")&&!type.startsWith("text/")){finish(Error("Evidence must be text or JSON"));return}
+     if(encoding!=="identity"){finish(Error("Evidence must use identity content encoding"));return}
+     const length=res.headers["content-length"];
+     if(length!==undefined&&(!/^\d+$/.test(String(length))||Number(length)>65536)){finish(Error("Evidence exceeds 64 KiB"));return}
+     const chunks:Buffer[]=[];let size=0;
+     res.on("data",(chunk:Buffer)=>{if(settled)return;size+=chunk.length;if(size>65536){finish(Error("Evidence exceeds 64 KiB"));return}chunks.push(chunk)});
+     res.on("end",()=>{try{finish(undefined,new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks)))}catch{finish(Error("Evidence must be valid UTF-8"))}});
+     res.on("aborted",()=>finish(Error("Evidence response was interrupted")));res.on("error",finish);
+    });
+    request.on("timeout",()=>finish(Error("Evidence fetch timed out")));request.on("error",finish);request.end();
+   }).catch(error=>finish(error instanceof Error?error:Error("Evidence lookup failed")));
+  });
+ };
 }
+export const safeFetch=createEvidenceFetcher({lookup,request:https.request});
 export async function capture(input:PaymentInput,fetcher=safeFetch):Promise<Snapshot[]>{const snapshots:Snapshot[]=[];let total=0;for(const item of input.evidence){const content=await fetcher(item.url);if(!content||Buffer.byteLength(content)>65536)throw Error("Evidence source exceeds 64 KiB or is empty");if(snapshots.some(s=>s.url===item.url))throw Error("Evidence URLs must be unique");total+=Buffer.byteLength(content);if(total>131072)throw Error("Evidence bundle exceeds 128 KiB");const hash=contentDigest(content);if(item.sha256&&hash.toLowerCase()!==("0x"+item.sha256.replace(/^0x/,"")).toLowerCase())throw new EvidenceFailure("EVIDENCE_HASH_MISMATCH","Declared evidence SHA-256 does not match the fetched bytes.");snapshots.push({url:item.url,sha256:hash,content,fetchedAt:Math.floor(Date.now()/1000)})}return snapshots}
