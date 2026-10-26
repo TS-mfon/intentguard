@@ -1,5 +1,7 @@
 # IntentGuard: 12-request funds audit
 
+Later UI, documentation and API corrections are recorded in the [follow-up verification](AUDIT-12-FOLLOWUP.md). This file preserves the original audit outcomes.
+
 ## 1. Execution verdict
 
 **Status: FAILED overall. Fund delivery: YES for both approved purchases.**
@@ -104,7 +106,7 @@ The response model supports asynchronous agents: the admitted ID is stable, Requ
 
 A hosted proposal waited 473.002 seconds while the browser polled and worker progress depended on delayed schedules or manual dispatch. Durable admission and authenticated pending reads now wake Actions; trigger leases coalesce calls, heartbeat/deadline checks reuse healthy workers, and bounded runs continue pending jobs.
 
-[Automatic wake evidence](../deployments/worker-wake.json): hosted admission at 2026-10-25T04:19:15.357Z; worker creation at 2026-10-25T04:19:19Z; finalized proposal and successful run verified at 2026-10-25T04:32:02.528Z. The user's original policy and vault were preserved.
+[Automatic wake evidence](deployments/worker-wake.json): hosted admission at 2026-10-25T04:19:15.357Z; worker creation at 2026-10-25T04:19:19Z; finalized proposal and successful run verified at 2026-10-25T04:32:02.528Z. The user's original policy and vault were preserved.
 
 **F2 — Terminal GenLayer failures retried indefinitely. High availability impact; FIXED and deployed.**
 
@@ -161,13 +163,13 @@ This run did not live-exercise credential rotation/revocation, owner pause/revok
 
 ### Published release and acceptance evidence
 
-[Release manifest](../deployments/audit-12-release.json) records Vercel deployment dpl_3UC7Uq4y3S6RCAgBDQP9tQV7GD2B, READY on both production aliases, built from source commit 68f89426b01121013a720823e319bd3346b3b1b2. [Fresh hosted browser evidence](../deployments/hosted-browser.json) confirms wallet login, setup, actual landing activity, the new balance/rate-limit/invoice documentation, and finalized contract reasoning, with no page errors at the checked viewports.
+[Release manifest](deployments/audit-12-release.json) records Vercel deployment dpl_3UC7Uq4y3S6RCAgBDQP9tQV7GD2B, READY on both production aliases, built from source commit 68f89426b01121013a720823e319bd3346b3b1b2. [Fresh hosted browser evidence](deployments/hosted-browser.json) confirms wallet login, setup, actual landing activity, the new balance/rate-limit/invoice documentation, and finalized contract reasoning, with no page errors at the checked viewports.
 
 Acceptance gates: 9 worker-repair gates plus 6 audit-completion gates met; 0 unmet, 0 abandoned. These gates verify execution, reconciliation and honest reporting. They do not convert the audit's two failed semantic expectations into passed outcomes.
 
 ## 4. Raw logs
 
-[Complete masked request/response log](audit-12-raw-logs.json), [case results and protocol receipts](audit-12-results.json), and [supplementary read-only API and TapeOut evidence](audit-12-supplementary.json), and [fresh remote protocol verification](audit-12-remote-verification.json). The log contains all twelve payment intents, eleven captured payment responses, fresh merchant invoice calls and terminal GET responses. Call 9 explicitly records its missing response. No API key, merchant credential or signed transaction bytes are included.
+[Complete masked request/response log](audits/audit-12-raw-logs.json), [case results and protocol receipts](audits/audit-12-results.json), and [supplementary read-only API and TapeOut evidence](audits/audit-12-supplementary.json), and [fresh remote protocol verification](audits/audit-12-remote-verification.json). The log contains all twelve payment intents, eleven captured payment responses, fresh merchant invoice calls and terminal GET responses. Call 9 explicitly records its missing response. No API key, merchant credential or signed transaction bytes are included.
 
 Exact first payment request:
 

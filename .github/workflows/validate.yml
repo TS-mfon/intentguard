@@ -23,6 +23,8 @@ jobs:
           node-version: "24"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Check production dependency advisories
+        run: pnpm audit --prod
       - run: npm ci --ignore-scripts --prefix packages/mcp
       - run: pnpm typecheck
       - run: pnpm test
@@ -36,6 +38,14 @@ jobs:
         run: pnpm exec tsx scripts/identity-browser.ts
       - name: Verify story playback, audio controls and scroll progression
         run: pnpm exec tsx scripts/story-browser.ts
+      - name: Preserve story browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-browser-evidence
+          path: .local/story-screenshots
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable

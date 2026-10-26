@@ -180,6 +180,8 @@ GenLayer uses **Optimistic Democracy**, validators and possible appeals. Validat
 
 The [real 12-request audit](docs/AUDIT-12-FINDINGS.md) documents successful transfers, financial denials, evidence errors, anti-replay and two semantic cases that safely cancelled after consensus failure rather than producing the expected committed rejection. Keep these reliability limits visible until new live evidence demonstrates a correction.
 
+The [follow-up verification](docs/AUDIT-12-FOLLOWUP.md) records wallet login recovery, actual usage cards, structured API errors, sectioned documentation, the cinematic story checks and the remaining reviewer/attestor limitations.
+
 ## Trust model
 
 ```mermaid
@@ -344,7 +346,7 @@ SVG is downloadable from the API; the UI also exports PNG and opens an X compose
 
 The interface uses a distinctive engraved card/agent identity, sectioned docs, accessible scroll/entrance/micro/loading motion and an original rendered background film. Motion pauses offscreen, supports manual pause and respects reduced-motion preferences.
 
-The [Why we exist story](https://intentguard-tapeout.vercel.app/why-we-exist) shows an agent presenting its ATM card through numerical permission, evidence review and exact settlement. Its original film has synchronized sound, explicit playback/volume controls and a native scrolling mechanical journey. Playback is an illustrative protocol flow; real usage remains in the explorer. Reduced motion presents readable static sections.
+The [Why we exist story](https://intentguard-tapeout.vercel.app/why-we-exist) follows an original 3D agent and engraved ATM card through a six-act native-scroll camera journey: human mandate, TapeOut permission, GenLayer evidence, X Layer settlement and receipt. Pointer movement, opt-in ambient sound and transaction cues complement the scene. A blocked branch skips review and illustrates no transfer. The original 28-second film includes playback, sound, volume, replay and transcript controls. Graphics/media failures preserve the readable story with retry; reduced motion locks the scene and leaves film playback deliberate. Illustrations remain separate from actual explorer records.
 
 ## Skills and MCP
 

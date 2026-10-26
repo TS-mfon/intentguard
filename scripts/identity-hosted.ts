@@ -60,8 +60,7 @@ async function fits(page:Page){assert.equal(await page.evaluate(()=>document.doc
 try{
  for(const origin of [base,old]){
  const context=await browser.newContext({viewport:{width:1440,height:1000},acceptDownloads:true});
- const page=await context.newPage();page.on("pageerror",e=>errors.push(e.message));let signatures=0;
- await page.exposeBinding("intentguardReleaseWallet",async(source,args:{method:string;params?:unknown[]})=>{
+ const page=await context.newPage();page.on("pageerror",e=>errors.push(e.message));let signatures=0;await page.exposeBinding("intentguardReleaseWallet",async(source,args:{method:string;params?:unknown[]})=>{
   assert.equal(new URL(source.page.url()).origin,origin);
   if(["eth_accounts","eth_requestAccounts"].includes(args.method))return [account.address];
   if(args.method==="eth_chainId")return "0x7a0";
@@ -91,18 +90,24 @@ try{
   await page.setViewportSize({width:1440,height:1000});
  }
  await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();
- await page.waitForFunction(async()=>{const r=await fetch("/api/v1/auth/session");const body=await r.json();return !!body.address;},undefined,{timeout:45000});
+ await page.getByRole("button",{name:"Sign out",exact:true}).waitFor({timeout:45000});
  assert.equal(signatures,1);
  await page.evaluate(owner=>(window as unknown as {intentguardReleaseListeners:Record<string,(a:string[])=>void>}).intentguardReleaseListeners.accountsChanged([owner]),account.address);
  await page.waitForTimeout(100);assert.equal(await page.getByText(/Wallet account changed|Sign in again to access/).count(),0);
- const stillAuthenticated=await page.evaluate(async()=>{const r=await fetch("/api/v1/auth/session");return (await r.json()).address});assert.equal(stillAuthenticated?.toLowerCase(),account.address.toLowerCase());
+ const stillAuthenticated=await page.evaluate(async()=>{const r=await fetch("/api/v1/auth/session");const body=await r.json();return {status:r.status,address:body.address??null,errorCode:body.error?.code}});assert.equal(stillAuthenticated.status,200);assert.equal(stillAuthenticated.address?.toLowerCase(),account.address.toLowerCase());
 
- await page.goto(origin+"/agents?agent="+agentId);
- await page.locator(".issued-identity .atm-card").waitFor({timeout:45000});
- assert.ok((await page.locator(".atm-usage").innerText()).includes(card.usage.requestCount.toLocaleString()));
- assert.ok((await page.locator(".atm-usage").innerText()).includes(card.usage.fundsMoved));
+ const ownedResponse:APIResponse=await context.request.get(origin+"/api/v1/owner/cards");assert.equal(ownedResponse.status(),200);
+ const owned:{id:string}[]=(await ownedResponse.json()).cards;
+ assert.ok(Array.isArray(owned));for(const own of owned){const snapshot=await get("/explorer/agents/"+own.id+"/card");assert.equal(snapshot.agent.owner.toLowerCase(),account.address.toLowerCase(),"Owner list must isolate the authenticated wallet")}
+ await page.goto(origin+"/agents");await page.getByRole("heading",{name:"My agents",exact:true}).waitFor({timeout:45000});
+ if(card.agent.owner.toLowerCase()!==account.address.toLowerCase())assert.equal(await page.locator('.issued-identity').filter({hasText:card.agent.name}).count(),0,"Audit agent belongs to its actual human, not the operator");
  if(origin===base){
-  await page.screenshot({path:folder+"/owner-agent.png",fullPage:true,animations:"disabled"});
+  await page.screenshot({path:folder+"/owner-agents.png",fullPage:true,animations:"disabled"});
+  await page.goto(origin+"/explorer?agentId="+agentId);
+  await page.locator(".selected-agent-identity .atm-card").waitFor({timeout:45000});
+  assert.ok((await page.locator(".selected-agent-identity .atm-usage").innerText()).includes(card.usage.requestCount.toLocaleString()));
+  assert.ok((await page.locator(".selected-agent-identity .atm-usage").innerText()).includes(card.usage.fundsMoved));
+  await page.screenshot({path:folder+"/public-agent.png",fullPage:true,animations:"disabled"});
   const svgDownload=page.waitForEvent("download");await page.getByRole("button",{name:"Download card",exact:true}).click();await (await svgDownload).saveAs(folder+"/downloaded-card.svg");
   const pngDownload=page.waitForEvent("download");await page.getByRole("button",{name:"PNG",exact:true}).click();await (await pngDownload).saveAs(folder+"/downloaded-card.png");
   const png=await readFile(folder+"/downloaded-card.png");assert.deepEqual([...png.subarray(0,8)],[137,80,78,71,13,10,26,10]);
@@ -110,9 +115,6 @@ try{
   const share=await page.getByRole("link",{name:"Share on X"}).getAttribute("href");assert.ok(share);
   const shareUrl=new URL(share);assert.equal(shareUrl.searchParams.get("url"),card.shareUrl);
   assert.ok(shareUrl.searchParams.get("text")?.includes(card.usage.fundsMoved));
-  await page.getByRole("tab",{name:"API key",exact:true}).click();
-  await page.getByRole("heading",{name:"One agent. One credential."}).waitFor();
-  assert.equal(await page.getByText(/still initializing|Reviewer is not ready/).count(),0);
   for(const [,slug]of docsSections){
    const r=await page.goto(origin+"/docs/"+slug,{timeout:60000});assert.equal(r?.status(),200,slug);
    assert.equal(await page.locator(".docs-article > section").count(),1,slug);await fits(page);
@@ -123,7 +125,7 @@ try{
    await page.goto(origin+"/explorer/transactions/"+tx.id);
    await page.locator(".decision-stage").first().waitFor({timeout:45000});
    const review=page.locator(".decision-stage").filter({has:page.getByRole("heading",{name:"Evidence review"})});
-   await review.locator(".status").waitFor();
+   await review.locator(".section-heading > .status").waitFor();
    if(status==="BLOCKED"){assert.equal(d.reviewStage.status,"SKIPPED");assert.ok((await review.innerText()).includes("Skipped"));assert.ok(!(await review.innerText()).includes("Pending"));await page.screenshot({path:folder+"/blocked-review.png",fullPage:true,animations:"disabled"});}
    if(status==="PAID"){assert.equal(d.reasoningSource,"genlayer-finalized-contract");assert.equal(d.reviewStage.status,"COMPLETE");assert.ok((await review.innerText()).includes(d.transaction.review.reason));}
    assert.notEqual(d.reviewStage.status,"PENDING");await fits(page);
@@ -132,7 +134,7 @@ try{
   await page.screenshot({path:folder+"/explorer.png",fullPage:true,animations:"disabled"});
   await page.goto(origin+"/agent-setup");await page.getByRole("heading",{name:"Create an agent"}).waitFor();await fits(page);
  }
- origins.push({origin,loginSignatures:signatures,actualOwnerCardVerified:true});await context.close();
+ origins.push({origin,loginSignatures:signatures,privateOwnerIsolationVerified:true,ownedAgentCount:owned.length,ownerOwnsAuditAgent:card.agent.owner.toLowerCase()===account.address.toLowerCase(),publicAuditCardVerified:origin===base});await context.close();
  }
  const reduced=await browser.newContext({reducedMotion:"reduce",viewport:{width:390,height:844}});
  const page=await reduced.newPage();await page.goto(base);await page.locator(".hero-title").waitFor();

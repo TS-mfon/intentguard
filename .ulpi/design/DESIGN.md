@@ -46,3 +46,6 @@ With reduced motion: no autoplay, no transforms or shimmer, visible poster and s
 Focus 2px accent offset 4px. Touch controls at least 48px. Semantic buttons/links, Radix modal/tab behavior, keyboard navigation retained.
 ## Voice
 Plain, specific, technical. Create agent → agent created. Download card, Share on X, Review skipped, Review failed, Needs evidence, Paid. No sample identities, sample financial data, or unverified performance claims. TEST-USDT always labeled testnet with no monetary value.
+
+## Cinematic story variation (2026-10-25 user amendment)
+Only /why-we-exist uses the immersive luxury/refined presentation specified in why-we-exist-cinematic.md: authored full viewport 3D agent/card, studio shading, native scroll camera choreography and large sparse typography. Existing product screens retain this industrial/signage identity. Same mark, palette, fonts and accessible controls; motion intensity 9 for the story, static with reduced motion. Cinematic pose/camera movement overrides the original small-scroll-reveal limit only inside this route. Active Theory/Cuberto/Lusion references are recorded with actual intake evidence in the per-feature spec; no proprietary assets are copied.
