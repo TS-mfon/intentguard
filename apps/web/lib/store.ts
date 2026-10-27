@@ -61,7 +61,7 @@ export const mongoClientOptions={serverSelectionTimeoutMS:10000,connectTimeoutMS
 const pending=new Map<string,Promise<Store>>();
 export function database():Promise<Store>{
  const uri=process.env.MONGODB_URI;if(!uri)throw Error("MONGODB_URI is required");
- const cfg=configuration(),identity=JSON.stringify({uri,db:cfg.databaseName,environment:cfg.paymentEnvironment,release:cfg.releaseId,gateway:cfg.gateway,attestor:cfg.attestor,origin:cfg.origin});
+ const cfg=configuration(),identity=JSON.stringify({uri,db:cfg.databaseName,environment:cfg.paymentEnvironment,release:cfg.releaseId,gateway:cfg.gateway,attestor:cfg.attestor,origin:cfg.origin,frontendOrigin:cfg.frontendOrigin});
  const key=createHash("sha256").update(identity).digest("hex");
  const existing=pending.get(key);if(existing)return existing;
  const client=new MongoClient(uri,mongoClientOptions);

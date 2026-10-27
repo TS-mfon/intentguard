@@ -3,13 +3,13 @@ import {z} from "zod";
 import {randomBytes,randomUUID,timingSafeEqual} from "node:crypto";
 import {address,hash,parseAmount,paymentSchema,digest,canonical,isSettlementV2,type RequestView,type DraftView} from "../../../packages/shared";
 import {ApiError,responseError,responseHeaders} from "./errors";
-import {assertApplicationOrigin} from "./origins";
+import {assertApplicationOrigin,ownerContext,browserCors} from "./origins";
 import {createExplorer} from "./explorer";
 import {reviewStage} from "./review-stage";
 import {configuration} from "./config";
 import {publicDeploymentConfiguration} from "./capabilities";
 import {runtimeManifest} from "./deployment-profile";
-import {challenge,login,requireOwner,requireAgent,ownerSession,issueKey,revokeKeys,rateLimit} from "./auth";
+import {challenge,login,requireOwner,requireAgent,requestOwnerSession,logoutOwnerSession,ownerSessionExpiry,issueKey,revokeKeys,rateLimit} from "./auth";
 import {database,type Store} from "./store";
 import type {Card,Draft,Payment} from "./models";
 import {activeStatuses} from "./models";
@@ -30,18 +30,20 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  const response=await (async():Promise<Response>=>{
  try{
  const allowed=endpointMethods(path);
+ Object.assign(headers,browserCors(req,allowed??[]));
+ if(req.method==="OPTIONS")return new Response(null,{status:204});
  if(!allowed)throw new ApiError(404,"NOT_FOUND","API endpoint not found");
  if(!allowed.includes(req.method))throw new ApiError(405,"METHOD_NOT_ALLOWED","Use "+allowed.join(" or ")+" for this endpoint",undefined,undefined,allowed.join(", "));
 
  const c=configuration(),method=req.method;
  if(path==="/config"&&method==="GET")return json(await publicDeploymentConfiguration());
- if(path==="/auth/session"&&method==="GET")return json({address:process.env.SESSION_SECRET?ownerSession(req.headers.get("cookie")):null});
- if(path==="/auth/logout"&&method==="POST"){origin(req);return new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}});}
+ if(path==="/auth/session"&&method==="GET")return json({address:process.env.SESSION_SECRET?await requestOwnerSession(store,req):null});
+ if(path==="/auth/logout"&&method==="POST"){await logoutOwnerSession(store,req);return new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}});}
  if(path==="/health"&&method==="GET"){const config=await publicDeploymentConfiguration(),runtime=await store.get("locks","worker-runtime"),heartbeat=Number(runtime?.heartbeatAt??0),workerFresh=heartbeat>Date.now()-15*60000;return json({status:config.configured&&workerFresh?"ready":"degraded",releaseId:c.releaseId,sourceCommit:c.sourceCommit,paymentEnvironment:c.paymentEnvironment,paymentChainId:c.chainId,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewInfrastructure:"studionet-simulator",deploymentVerified:config.configured,database:"reachable",worker:{fresh:workerFresh,lastHeartbeatAt:heartbeat||null},readinessReasons:[...config.readinessReasons,...(workerFresh?[]:["WORKER_STALE"])]},config.configured&&workerFresh?200:503);}
  if(requireConfigured&&!c.configured)throw new ApiError(503,"NOT_CONFIGURED","IntentGuard runtime is not configured");
  if(c.mainnet){try{await runtimeManifest(c)}catch{throw new ApiError(503,"DEPLOYMENT_NOT_VERIFIED","The mainnet deployment proof does not match this runtime.");}}
- if(path==="/auth/challenge"&&method==="POST"){origin(req);const v=parse(z.object({address}).strict(),await body(req));await rateLimit(store,"login:"+v.address.toLowerCase(),10);return json(await challenge(store,v.address,new URL(req.url).origin));}
- if(path==="/auth/login"&&method==="POST"){origin(req);const v=parse(z.object({address,signature:z.string().regex(/^0x[0-9a-fA-F]+$/)}).strict(),await body(req));const cookie=await login(store,v.address,v.signature);return Response.json({address:v.address.toLowerCase()},{headers:{"Cache-Control":"no-store","Set-Cookie":"ig_session="+cookie+"; Path=/; HttpOnly; SameSite=Strict; Max-Age=3600"+(new URL(req.url).protocol==="https:"?"; Secure":"")}});}
+ if(path==="/auth/challenge"&&method==="POST"){origin(req);const v=parse(z.object({address}).strict(),await body(req));await rateLimit(store,"login:"+v.address.toLowerCase(),10);const context=ownerContext(req);return json(await challenge(store,v.address,context.origin,context.transport));}
+ if(path==="/auth/login"&&method==="POST"){origin(req);const v=parse(z.object({address,signature:z.string().regex(/^0x[0-9a-fA-F]+$/)}).strict(),await body(req));const context=ownerContext(req),cookie=await login(store,v.address,v.signature,context);if(context.transport==="owner-bearer")return json({address:v.address.toLowerCase(),ownerSession:cookie,expiresAt:ownerSessionExpiry(cookie)});return Response.json({address:v.address.toLowerCase()},{headers:{"Cache-Control":"no-store","Set-Cookie":"ig_session="+cookie+"; Path=/; HttpOnly; SameSite=Strict; Max-Age=3600"+(new URL(req.url).protocol==="https:"?"; Secure":"")}});}
  if(path.startsWith("/explorer/")){const result=await createExplorer(store,evm)(req,path);return result instanceof Response?result:json(result)}
  if(c.testnet&&path.startsWith("/demo/invoices")){
  const match=path.match(/^\/demo\/invoices\/([a-f0-9]{32})$/);
@@ -68,7 +70,7 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  throw new ApiError(404,"NOT_FOUND","Invoice endpoint not found");
  }
  if(path.startsWith("/owner/")){
- const owner=requireOwner(req,c.origin);Object.assign(headers,quotaHeaders(await rateLimit(store,"owner:"+owner,120)));
+ const owner=await requireOwner(req,c.origin,store);Object.assign(headers,quotaHeaders(await rateLimit(store,"owner:"+owner,120)));
  const owned=async(id:string)=>{const card=await store.get<Card>("cards",id);if(!card||card.owner!==owner)throw new ApiError(404,"NOT_FOUND","Card not found");assertCardEnvironment(card);return card};
  if(path==="/owner/drafts"&&method==="POST"){const input=parse(z.object({description:z.string().min(10).max(12000),guidance:z.record(z.string(),z.unknown()).optional(),settlement:z.unknown().optional()}).strict(),await body(req));const settlement=normalizeSettlement(input.settlement);if(settlement){settlementFactory(settlement);await assertSettlementReady(settlement);}const interpreterInput={description:input.description,...(input.guidance?{guidance:input.guidance}:{})};if(Buffer.byteLength(canonical(interpreterInput))>16384)throw new ApiError(422,"INPUT_TOO_LARGE","Keep the complete mission and guidance within 16 KiB");const id=requestId(),now=Date.now();await store.create("drafts",{_id:id,owner,input:interpreterInput,inputHash:digest(interpreterInput),...(settlement?{settlement}:{}),state:"QUEUED",createdAt:now,updatedAt:now});await notifyWorker();return json({id,status:"QUEUED"},202);}
  let match=path.match(/^\/owner\/drafts\/([^/]+)$/);
@@ -133,11 +135,17 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
 }
 export async function requestView(store:Store,p:Payment):Promise<RequestView>{const card=await store.get<Card>("cards",p.cardId);return {id:p._id,cardId:p.cardId,cardName:card?.policy.name??"Agent",status:p.status,request:p.input,requestHash:p.requestHash??"",evidenceHash:p.evidenceHash??"",guard:p.guard,review:p.review,reviewStage:reviewStage(p),errorCode:p.errorCode as string|undefined,genLayerTxHash:p.genLayerTxHash,paymentTxHash:p.paymentTxHash,bridge:p.bridge,paymentSymbol:card?cardSymbol(card):undefined,paymentEnvironment:card?.paymentEnvironment??configuration().paymentEnvironment,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewerVersion:card?.reviewerVersion,error:p.error,createdAt:p.createdAt,updatedAt:p.updatedAt};}
 async function routeInternal(req:Request,scheduleWake?:(task:()=>Promise<unknown>)=>void){
- const pathname=new URL(req.url).pathname;const path=pathname.replace(/^\/api\/v1/,"");
- if(path==="/config"&&req.method==="GET")return json(await publicDeploymentConfiguration());
- if(path==="/auth/session"&&req.method==="GET")return json({address:process.env.SESSION_SECRET?ownerSession(req.headers.get("cookie")):null});
- if(path==="/auth/logout"&&req.method==="POST"){try{origin(req);return new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}})}catch(e){return responseError(e)}}
- try{const methods=endpointMethods(path);if(!methods)throw new ApiError(404,"NOT_FOUND","API endpoint not found");if(!methods.includes(req.method))throw new ApiError(405,"METHOD_NOT_ALLOWED","Use "+methods.join(" or ")+" for this endpoint",undefined,undefined,methods.join(", "));const store=await database();return await createApi(store,new Evm(store),scheduleWake?{wake:()=>scheduleWake(()=>wakeWorker(store))}:undefined)(req,path)}catch(e){return responseError(e)}
+ const pathname=new URL(req.url).pathname,path=pathname.replace(/^\/api\/v1/,""),headers:Record<string,string>={};
+ try{
+  const methods=endpointMethods(path);Object.assign(headers,browserCors(req,methods??[]));
+  if(req.method==="OPTIONS")return responseHeaders(new Response(null,{status:204}),randomUUID(),headers);
+  if(!methods)throw new ApiError(404,"NOT_FOUND","API endpoint not found");
+  if(!methods.includes(req.method))throw new ApiError(405,"METHOD_NOT_ALLOWED","Use "+methods.join(" or ")+" for this endpoint",undefined,undefined,methods.join(", "));
+  if(path==="/config")return responseHeaders(json(await publicDeploymentConfiguration()),randomUUID(),headers);
+  if(path==="/auth/session"&&!req.headers.get("authorization")?.startsWith("Owner "))return responseHeaders(json({address:process.env.SESSION_SECRET?await requestOwnerSession(undefined,req):null}),randomUUID(),headers);
+  if(path==="/auth/logout"&&!req.headers.get("authorization")?.startsWith("Owner ")){await logoutOwnerSession(undefined,req);return responseHeaders(new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}}),randomUUID(),headers);}
+  const store=await database();return await createApi(store,new Evm(store),scheduleWake?{wake:()=>scheduleWake(()=>wakeWorker(store))}:undefined)(req,path);
+ }catch(e){return responseHeaders(responseError(e),randomUUID(),headers);}
 }
 
 function quotaHeaders(quota:{limit:number;remaining:number;reset:number}){return {"RateLimit-Limit":String(quota.limit),"RateLimit-Remaining":String(quota.remaining),"RateLimit-Reset":String(quota.reset),"RateLimit-Policy":quota.limit+";w=60"}}

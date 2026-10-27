@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import {existsSync} from "node:fs";
+import {spawnSync} from "node:child_process";
+const expectedFiles=["tests/cross-origin-auth.test.ts","tests/api.test.ts","tests/owner-challenge-security.test.ts","tests/runtime-profile.test.ts","tests/deployment-profile.test.ts","tests/database-profile.test.ts"];
+for(const file of expectedFiles)assert.ok(existsSync(file),"Required test file is missing: "+file);
+const result=spawnSync("pnpm",["exec","tsx","--test","--test-reporter=spec","tests/cross-origin-auth.test.ts","tests/api.test.ts","tests/owner-challenge-security.test.ts","tests/runtime-profile.test.ts","tests/deployment-profile.test.ts","tests/database-profile.test.ts"],{encoding:"utf8",timeout:120000,maxBuffer:4*1024*1024});
+const output=(result.stdout??"")+(result.stderr??"");
+if(result.error||result.status!==0){process.stderr.write(output);throw Error("Browser authority checks failed");}
+for(const field of ["fail","cancelled","skipped","todo"])assert.match(output,new RegExp(field+" 0(?:\\s|$)"));
+assert.ok(Number(output.match(/tests (\d+)/)?.[1])>=47,"Required authority cases did not execute");
+for(const name of ["approved frontend preflight is explicit and does not enable third-party cookies","cross-origin owner login binds API frontend and payment scope and authorizes the owner","copied owner token cannot cross origin API environment or session transport","owner logout revokes persisted token and expiry cannot authorize dashboard access","same-origin testnet cookies still work and cannot authenticate across frontend origins","challenge origin and transport changes are rejected before consumption","public config and preflight stay truthful without a database or release","owner session persistence failure cannot issue an apparently usable token","verified deployment identity binds source release contracts origin and review chain","mainnet identity rejects every cross-environment or signing-role mismatch","mainnet rejects reviewer substitution, ambiguous environment and asset","challenge expiry during atomic claim cannot mint a fresh owner session","session expiry during the durable authority read cannot authenticate","delayed session persistence cannot return an expired owner token","public card share links use the approved frontend instead of the API host"])assert.ok(output.includes("✔ "+name+" ("),"Missing passing control: "+name);
+console.log(output.match(/tests \d+/)?.[0]);console.log("BROWSER_AUTH_VERIFIED");

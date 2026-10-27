@@ -1,6 +1,6 @@
 import type {Db,IndexDescription} from "mongodb";
 import type {configuration} from "./config";
-export type DatabaseIdentity={_id:string;version:1;paymentEnvironment:string;paymentChainId:number;databaseName:string;releaseId:string;origin:string;gateway:string;attestor:string};
+export type DatabaseIdentity={_id:string;version:1;paymentEnvironment:string;paymentChainId:number;databaseName:string;releaseId:string;origin:string;frontendOrigin:string;gateway:string;attestor:string};
 type Config=ReturnType<typeof configuration>;
 export const requiredIndexes:Record<string,IndexDescription[]>={
  rate:[{key:{expiresAt:1},name:"expiry",expireAfterSeconds:0}],
@@ -12,7 +12,7 @@ export const requiredIndexes:Record<string,IndexDescription[]>={
 };
 export function expectedDatabaseIdentity(cfg:Config):DatabaseIdentity{
  if(!cfg.mainnet||!cfg.releaseId||!cfg.gateway||!cfg.attestor)throw Error("Explicit mainnet release identity required");
- return {_id:"environment",version:1,paymentEnvironment:"mainnet",paymentChainId:196,databaseName:"intentguard_mainnet",releaseId:cfg.releaseId,origin:cfg.origin,gateway:cfg.gateway.toLowerCase(),attestor:cfg.attestor.toLowerCase()};
+ return {_id:"environment",version:1,paymentEnvironment:"mainnet",paymentChainId:196,databaseName:"intentguard_mainnet",releaseId:cfg.releaseId,origin:cfg.origin,frontendOrigin:cfg.frontendOrigin,gateway:cfg.gateway.toLowerCase(),attestor:cfg.attestor.toLowerCase()};
 }
 export function validateDatabaseIdentity(actual:unknown,expected:DatabaseIdentity){
  if(!actual||typeof actual!=="object")throw Error("Mainnet database must be bootstrapped separately");
