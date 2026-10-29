@@ -2,7 +2,7 @@ import {canonical,digest,validateDecision,hash,type ReviewDecision} from "../../
 import {ApiError} from "./errors";
 import {reviewStage} from "./review-stage";
 import {agentUsage,cardSvg} from "./agent-card";
-import {cardSymbol} from "./settlement";
+import {cardSymbol,paymentDestination} from "./settlement";
 import {configuration} from "./config";
 import {GenLayer,assertFinalized} from "./genlayer";
 import {MemoryStore,type Store} from "./store";
@@ -34,7 +34,14 @@ async function publicAgent(card:Card,evm:EvmPort,store?:Store){
  return {id:card._id,name:card.policy.name,mission:card.policy.mission,address:card.address,owner:card.owner,policyHash:card.policyHash,chainId:Number(card.chainId??configuration().chainId),token:String(card.token??configuration().token),paymentSymbol:cardSymbol(card),settlement:card.settlement,status:view?.status??"UNAVAILABLE",setupState:card.state,reviewerAddress:card.reviewerAddress??"",reviewerTx:card.reviewerTx??null,reviewerVersion:card.reviewerVersion??null,paymentEnvironment:card.paymentEnvironment??configuration().paymentEnvironment,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,criteria:card.policy.criteria,allowedCategories:card.policy.allowedCategories,financial:card.policy.financial,balances:view?.balances??null,createdAt:card.createdAt,...(store?{usage:await agentUsage(store,card)}:{})};
 }
 function publicTransaction(p:Payment,card:Card|null){
- return {id:p._id,cardId:p.cardId,agentName:card?.policy.name??"Agent",status:p.status,paymentEnvironment:card?.paymentEnvironment??configuration().paymentEnvironment,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewerVersion:card?.reviewerVersion??null,reviewStage:reviewStage(p),errorCode:p.errorCode??null,amount:p.input.amount,recipient:p.input.recipient,category:p.input.category,purchaseDescription:p.input.purchaseDescription,createdAt:p.createdAt,updatedAt:p.updatedAt,guard:p.guard,review:p.review,genLayerTxHash:p.genLayerTxHash,paymentTxHash:p.paymentTxHash,bridge:p.bridge,paymentSymbol:card?cardSymbol(card):undefined,destinationChainId:p.canonical?.destinationChainId??card?.chainId,destinationToken:p.canonical?.destinationToken??card?.token,requestHash:p.requestHash??"",evidenceHash:p.evidenceHash??"",chainId:Number(card?.chainId??configuration().chainId),token:String(card?.token??configuration().token)};
+ const destinationChainId=p.canonical?.destinationChainId??p.bridge?.destinationChainId??p.input.destinationChainId??card?.chainId;
+ let destinationToken=p.canonical?.destinationChainId===destinationChainId?p.canonical?.destinationToken:undefined;
+ destinationToken??=p.bridge?.destinationChainId===destinationChainId?p.bridge?.destinationToken:undefined;
+ // Early guard/evidence failures have no canonical request yet. Resolve the
+ // stored attempt through the card's asset profile without changing its history.
+ // Invalid routes remain visible, with no invented source token as destination.
+ if(destinationToken===undefined&&card){try{destinationToken=paymentDestination(card,{...p.input,destinationChainId}).token}catch{}}
+ return {id:p._id,cardId:p.cardId,agentName:card?.policy.name??"Agent",status:p.status,paymentEnvironment:card?.paymentEnvironment??configuration().paymentEnvironment,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewerVersion:card?.reviewerVersion??null,reviewStage:reviewStage(p),errorCode:p.errorCode??null,amount:p.input.amount,recipient:p.input.recipient,category:p.input.category,purchaseDescription:p.input.purchaseDescription,createdAt:p.createdAt,updatedAt:p.updatedAt,guard:p.guard,review:p.review,genLayerTxHash:p.genLayerTxHash,paymentTxHash:p.paymentTxHash,bridge:p.bridge,paymentSymbol:card?cardSymbol(card):undefined,destinationChainId,destinationToken,requestHash:p.requestHash??"",evidenceHash:p.evidenceHash??"",chainId:Number(card?.chainId??configuration().chainId),token:String(card?.token??configuration().token)};
 }
 export function createExplorer(store:Store,evm:EvmPort,readReview:PublicReviewReader=contractReasoning){
  return async(req:Request,path:string)=>{

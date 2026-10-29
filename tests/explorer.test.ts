@@ -5,8 +5,10 @@ import {createApi} from "../apps/web/lib/api";
 import {assertApplicationOrigin} from "../apps/web/lib/origins";
 import {MemoryStore} from "../apps/web/lib/store";
 import {card,input,FakeEvm} from "./fixtures";
-import {digest,type ReviewDecision} from "../packages/shared";
-import type {Payment} from "../apps/web/lib/models";
+import {digest,type ReviewDecision,type CanonicalRequest} from "../packages/shared";
+import {CCTP_TESTNETS} from "../packages/shared/assets";
+import {paymentRoute} from "../packages/shared/payment-profiles";
+import type {Card,Payment} from "../apps/web/lib/models";
 process.env.SESSION_SECRET="explorer-test-secret-at-least32-characters";
 process.env.APP_URL="http://localhost:3000";
 const request=(path:string)=>new Request("https://app.example/api/v1"+path);
@@ -40,6 +42,48 @@ test("public agent failures show unavailable balances rather than fabricated zer
  const {store}=await setup(),evm=new FakeEvm();evm.view=async()=>{throw Error("RPC unavailable")};
  const result=await createExplorer(store,evm)(request("/explorer/agents"),"/explorer/agents") as {agents:{status:string;balances:unknown}[]};
  assert.equal(result.agents[0].status,"UNAVAILABLE");assert.equal(result.agents[0].balances,null);
+});
+async function destinationProjection(c:Card,p:Partial<Payment>){
+ const store=new MemoryStore();await store.create("cards",c);
+ const row:Payment={_id:digest("destination"),owner:c.owner,cardId:c._id,keyId:"private",input:{...input,destinationChainId:84532},inputHash:digest(input),status:"BLOCKED",createdAt:1,updatedAt:2,...p};
+ await store.create("requests",row);const explore=createExplorer(store,new FakeEvm());
+ const path="/explorer/transactions/"+row._id;
+ const detail=await explore(request(path),path) as {transaction:{destinationChainId?:number;destinationToken?:string;chainId:number;token:string}};
+ const list=await explore(request("/explorer/transactions"),"/explorer/transactions") as {transactions:typeof detail.transaction[]};
+ assert.deepEqual(list.transactions[0].destinationChainId,detail.transaction.destinationChainId);
+ assert.deepEqual(list.transactions[0].destinationToken,detail.transaction.destinationToken);
+ assert.deepEqual(await store.get("requests",row._id),row,"Public reads must preserve request history");
+ return detail.transaction;
+}
+const usdcCard:Card={...card,chainId:1952,token:CCTP_TESTNETS[1952].token,paymentEnvironment:"testnet",settlement:{asset:"USDC",destinationChainIds:[1952,84532,421614]}};
+for(const status of ["BLOCKED","NEEDS_EVIDENCE"] as const)test("early "+status+" preserves the attempted Base Sepolia asset in public detail and activity",async()=>{
+ const result=await destinationProjection(usdcCard,{status});
+ assert.equal(result.destinationChainId,84532);assert.equal(result.destinationToken,CCTP_TESTNETS[84532].token.toLowerCase());
+ assert.equal(result.chainId,1952);assert.equal(result.token,usdcCard.token);
+});
+test("canonical and bridge identities take precedence over stored input without mixing destination assets",async()=>{
+ const bridge:NonNullable<Payment["bridge"]>={protocol:"CCTP_V2",phase:"BURNED",sourceChainId:1952,destinationChainId:421614,destinationDomain:3,sourceToken:usdcCard.token!,destinationToken:CCTP_TESTNETS[421614].token,amount:input.amount,sourceTxHash:digest("burn"),updatedAt:2};
+ const fromBridge=await destinationProjection(usdcCard,{bridge});
+ assert.equal(fromBridge.destinationChainId,421614);assert.equal(fromBridge.destinationToken,bridge.destinationToken);
+ const canonical:CanonicalRequest={...input,destinationChainId:84532,destinationToken:CCTP_TESTNETS[84532].token,cardId:card._id,cardAddress:card.address,owner:card.owner,policyHash:card.policyHash,token:usdcCard.token!,chainId:1952,amountAtomic:"5000001",evidenceHash:digest("evidence"),expiresAt:123};
+ const fromCanonical=await destinationProjection(usdcCard,{canonical,bridge});
+ assert.equal(fromCanonical.destinationChainId,84532);assert.equal(fromCanonical.destinationToken,canonical.destinationToken);
+ const missingCanonicalToken=await destinationProjection(usdcCard,{canonical:{...canonical,destinationToken:undefined},bridge});
+ assert.equal(missingCanonicalToken.destinationToken,CCTP_TESTNETS[84532].token.toLowerCase());
+});
+test("early versioned mainnet attempts resolve their own environment while local payments retain the card token",async()=>{
+ const c:Card={...card,token:paymentRoute("mainnet",196).token,paymentEnvironment:"mainnet",settlement:{version:2,paymentEnvironment:"mainnet",asset:"USDC",destinationChainIds:[196,8453]}};
+ const result=await destinationProjection(c,{input:{...input,destinationChainId:8453}});
+ assert.equal(result.destinationChainId,8453);assert.equal(result.destinationToken,paymentRoute("mainnet",8453).token);
+ const local=await destinationProjection(card,{input});assert.equal(local.destinationChainId,196);assert.equal(local.destinationToken,card.token);
+});
+test("unsupported and wrong-asset attempts remain readable without a fabricated destination token",async()=>{
+ for(const [c,destinationChainId] of [[usdcCard,999999],[usdcCard,8453],[card,84532]] as const){
+  const result=await destinationProjection(c,{input:{...input,destinationChainId}});
+  assert.equal(result.destinationChainId,destinationChainId);assert.equal(result.destinationToken,undefined);
+ }
+ const usdt0:Card={...card,paymentEnvironment:"mainnet",settlement:{version:2,paymentEnvironment:"mainnet",asset:"USDT0",destinationChainIds:[196]}};
+ const result=await destinationProjection(usdt0,{input:{...input,destinationChainId:8453}});assert.equal(result.destinationToken,undefined);
 });
 test("transaction details display verified contract reasoning and hide unverified persisted reasons",async()=>{
  const {store,rows}=await setup(),p=rows[0];
