@@ -44,7 +44,10 @@ try{
   assert.equal(docker(["image","inspect","intentguard-packaging-"+target,"--format","{{.Config.User}}"]),"node");
  }
  docker(["network","create","--internal",prefix]);network=true;
- const mongoName=prefix+"-mongo";docker(["run","--detach","--name",mongoName,"--network",prefix,"--network-alias","mongo","mongo:8.0@sha256:d0d926f94df099bff534b7ee5b5986458131a22489dfff8664509af0c1e2ca9c"]);containers.push(mongoName);
+ // MongoDB 8.x's tcmalloc/kernel guard refuses newer CI kernels (SERVER-121912).
+ // This disposable CRUD/lease fixture uses the supported 7.0 maintenance line;
+ // hosted database versions and the actual worker acceptance remain unchanged.
+ const mongoName=prefix+"-mongo";docker(["run","--detach","--name",mongoName,"--network",prefix,"--network-alias","mongo","mongo:7.0.45@sha256:8bb4442761a63a8dda452744082cdac9644b429807eb977b42324a63cef59ca4"]);containers.push(mongoName);
  // A cold CI host may take longer than a warm development daemon to initialize
  // MongoDB. Bound startup, fail immediately on exit, and retain its actual logs.
  let ready=false,lastMongoError="";const mongoDeadline=Date.now()+60000;

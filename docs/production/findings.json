@@ -110,7 +110,7 @@
       "id": "R03",
       "priority": "P0",
       "title": "Establish one release identity per environment.",
-      "acceptance": "Immutable source tag → lock/toolchain hashes → build → circuit/vendor/reviewer hashes → contracts → deployment → audits.",
+      "acceptance": "Immutable source tag \u2192 lock/toolchain hashes \u2192 build \u2192 circuit/vendor/reviewer hashes \u2192 contracts \u2192 deployment \u2192 audits.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R03",
       "status": "PARTIAL",
@@ -217,10 +217,15 @@
           "artifact": "tools/production/verify-packaging.mjs",
           "check": "node tools/production/verify-packaging.mjs",
           "scope": "Independent driver rerun: locked worker/web images, non-root users, real cross-container HTTP and durable retry/lease release."
+        },
+        {
+          "artifact": "docs/production/PACKAGING-VERIFICATION.md",
+          "scope": "Clean CI kernel/startup diagnostics identify the fixture boundary; final current-source container acceptance still required."
         }
       ],
       "fixCommits": [
-        "b0f750f"
+        "b0f750f",
+        "bc6b5b7"
       ],
       "retestCommits": [],
       "baselineClassification": "Confirmed: Docker builds web and starts worker; clean-machine packaging remains unverified."
@@ -709,9 +714,16 @@
           "check": "node tools/production/verify-frontend.mjs",
           "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "artifact": "tests/explorer.test.ts",
+          "check": "node node_modules/tsx/dist/cli.mjs --test tests/explorer.test.ts",
+          "scope": "Ten tests preserve early destination identity, canonical/bridge precedence, safe unsupported routes and unchanged historical request data."
         }
       ],
-      "fixCommits": [],
+      "fixCommits": [
+        "649760f"
+      ],
       "retestCommits": [],
       "baselineClassification": "Partial: hosted identity/media/docs/card checks previously passed; preserve these while introducing isolated environments."
     },
@@ -862,7 +874,7 @@
       "id": "R25",
       "priority": "P1",
       "title": "Produce the submission demo from verified records.",
-      "acceptance": "Video ≤3 minutes; every displayed payment, block, rejection, evidence failure, and replay maps to public release evidence.",
+      "acceptance": "Video \u22643 minutes; every displayed payment, block, rejection, evidence failure, and replay maps to public release evidence.",
       "ownerLeaf": "3.2",
       "observingGate": "leaf-3.2:R25",
       "status": "OPEN",
@@ -992,7 +1004,7 @@
     "localVerification": {
       "evmTests": 133,
       "genlayerTests": 206,
-      "apiWorkerTests": 186,
+      "apiWorkerTests": 191,
       "circuitTests": 6,
       "mainnetToolingTests": 78,
       "typecheck": true,
@@ -1004,6 +1016,14 @@
       ],
       "dockerWebAndWorker": true,
       "scope": "Local implementation and preparation only; current hosted publication, mainnet receipts and exported film require independent evidence."
+    },
+    "publicationRepairs": {
+      "apiDestinationFixCommit": "649760f",
+      "ciLauncherFixCommit": "bc6b5b7",
+      "validateJobPassed": "https://github.com/TS-mfon/intentguard/actions/runs/40969146120",
+      "packagingFailure": "MongoDB 8.0.32 fixture refuses newer CI Linux kernels; supported pinned disposable 7.0.45 fixture prepared",
+      "finalArtifactReport": ".local/completion/FINAL-REPORT.md",
+      "finalPublicationAndFilmRequireIndependentVerification": true
     }
   }
 }
