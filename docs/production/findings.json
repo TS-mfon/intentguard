@@ -113,7 +113,7 @@
       "acceptance": "Immutable source tag → lock/toolchain hashes → build → circuit/vendor/reviewer hashes → contracts → deployment → audits.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R03",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -128,7 +128,14 @@
           "line": 699
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/RELEASE-PREPARATION.md",
+          "check": "node tools/production/verify-release-preparation.mjs --final",
+          "scope": "Source/compiler/ABI/circuit/reviewer/frontend provenance implemented; regenerate after clean final source commit. This preparation is not a deployed release manifest.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Partial: latest code/audit deployment aligned, but immutable two-environment release chain not established."
@@ -277,6 +284,12 @@
           "artifact": "docs/production/RUNTIME-ISOLATION.md",
           "check": "node tools/production/verify-runtime.mjs",
           "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
+        },
+        {
+          "artifact": "docs/production/FRONTEND-PREPARATION.md",
+          "check": "node tools/production/verify-frontend.mjs",
+          "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
+          "verifiedAt": "2026-10-29"
         }
       ],
       "fixCommits": [
@@ -410,7 +423,7 @@
       "acceptance": "Owner creates a replacement card, verifies policy/reviewer, rotates credentials, and withdraws/redeposits available funds; pending reservations and old history remain intact.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R12",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -425,7 +438,14 @@
           "line": 893
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/FRONTEND-PREPARATION.md",
+          "check": "node tools/production/verify-frontend.mjs",
+          "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Confirmed limitation: legacy funded reviewers remain immutable and unrepaired; explicit replacement required."
@@ -549,7 +569,7 @@
       "acceptance": "Reproductions, regression tests, fix commits, deployed verification, and a final scoped report with no unresolved confirmed security defects.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R17",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -572,7 +592,14 @@
           "line": 1083
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/FRONTEND-PREPARATION.md",
+          "check": "node tools/production/verify-frontend.mjs",
+          "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "No zero-vulnerability claim. Existing tests are not a comprehensive adversarial audit; TapeCode applicability is externally unverified."
@@ -619,7 +646,7 @@
       "acceptance": "Verified container/name, file hashes, resumed chunk uploads, working routes, wallet login, API permissions, and gateway compatibility.",
       "ownerLeaf": "3.1",
       "observingGate": "leaf-3.1:R19",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -638,7 +665,14 @@
           "line": 1111
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/FRONTEND-PREPARATION.md",
+          "check": "node tools/production/verify-frontend.mjs",
+          "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Official TapeKit source and mainnet code establish X Layer static hosting support; application frontend not published there."
@@ -650,7 +684,7 @@
       "acceptance": "Real latest-three transactions, accurate downloads, unique icon/logo, wallet login, explorer, sectioned docs, story animation/audio, and reduced-motion behavior.",
       "ownerLeaf": "3.1",
       "observingGate": "leaf-3.1:R20",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -669,7 +703,14 @@
           "line": 1319
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/FRONTEND-PREPARATION.md",
+          "check": "node tools/production/verify-frontend.mjs",
+          "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Partial: hosted identity/media/docs/card checks previously passed; preserve these while introducing isolated environments."
@@ -681,7 +722,7 @@
       "acceptance": "README, OpenAPI, SDK, MCP resources, skills, and machine-readable guides agree and support integration without a separate docs link.",
       "ownerLeaf": "3.2",
       "observingGate": "leaf-3.2:R21",
-      "status": "OPEN",
+      "status": "VERIFIED",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -696,7 +737,14 @@
           "line": 826
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "tools/production/verify-product.mjs",
+          "check": "node tools/production/verify-product.mjs",
+          "scope": "Independent parent execution passed SDK11, real MCP stdio3, standalone types/vendoring, synchronized OpenAPI and observed API/schema checks; protocol0.4 settlementV2/reviewerV4.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Partial: existing SDK/MCP/skills/docs exist; environment and mainnet interfaces need synchronization."
@@ -708,7 +756,7 @@
       "acceptance": "A visitor reaches a real paid or blocked record within 60 seconds without connecting a wallet; setup remains resumable.",
       "ownerLeaf": "3.2",
       "observingGate": "leaf-3.2:R22",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -727,7 +775,13 @@
           "line": 1137
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/DEMO.md",
+          "scope": "Actual historical public testnet records are linked for wallet-free first use; current hosted timed acceptance remains required.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Confirmed product concern: narrow initial buyer and faster real-record walkthrough need validation."
@@ -739,7 +793,7 @@
       "acceptance": "Review, RPC, Actions, database, gas, support, and hosting costs traced to measurements or clearly labelled assumptions.",
       "ownerLeaf": "3.2",
       "observingGate": "leaf-3.2:R23",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -758,7 +812,13 @@
           "line": 1161
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/COMMERCIAL.md",
+          "scope": "Archived testnet operation latencies are measured independently; per-category ongoing costs and support remain incomplete; pricing clearly unvalidated.",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Confirmed evidence gap: proposed revenue model has no measured production unit economics or validated price."
@@ -836,7 +896,7 @@
       "acceptance": "Reviewed deployment quote, authorized spending cap, verified bytecode/configuration, real limited canaries, and isolated mainnet records.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R26",
-      "status": "OPEN",
+      "status": "PARTIAL",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -856,6 +916,16 @@
           "artifact": "contracts/evm/V4-VALIDATION.md",
           "check": "node tools/production/verify-mainnet-contracts.mjs",
           "scope": "133 local EVM tests; issuer/deployment/canaries pending"
+        },
+        {
+          "artifact": "docs/production/RELEASE-PREPARATION.md",
+          "scope": "Only historical protocol fees measured:0.0066OKB CPU,0.08OKB opener,zero monthly activation. Fresh exact staged estimates and explicit cap required; no mainnet broadcasts or canaries occurred.",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "artifact": "docs/production/MAINNET-DEPLOYMENT.md",
+          "check": "node tools/production/verify-mainnet-deploy.mjs",
+          "scope": "78 preparation regressions verify quote/cap/signer/receipt recovery, Studionet genesis, ERC6551 token tuple and CPU registry mining races; no signed or broadcast deployment."
         }
       ],
       "fixCommits": [
@@ -895,5 +965,45 @@
       "retestCommits": [],
       "baselineClassification": "New integrated acceptance scope; all root completion claims remain pending."
     }
-  ]
+  ],
+  "recovery": {
+    "sessions": [
+      "01a16b8e-b514-7482-83c3-7bdb9b2ade64",
+      "01a16dfe-290c-7dc2-b9e5-7681f0e854f4",
+      "01a183a8-cf08-7702-bb27-5eb78530817d",
+      "01a187a7-aab3-7573-a19c-765bf9cb44b8",
+      "01a18931-0d09-7af0-b37e-019af635e753"
+    ],
+    "plan": "docs/production/SESSION-RECOVERY.md",
+    "recoveredAt": "2026-10-29",
+    "originalSemanticAudit": {
+      "score": "10/12",
+      "resolved": false,
+      "laterTestnet8of8DoesNotReplace": true
+    },
+    "outreach": {
+      "status": "HELD_BY_USER",
+      "drafts": "docs/production/PILOT-OUTREACH.md",
+      "precondition": "User tests3agents and5requests",
+      "customerEvidenceComplete": false
+    },
+    "mainnetSpendingCap": null,
+    "fullAcceptance": false,
+    "localVerification": {
+      "evmTests": 133,
+      "genlayerTests": 206,
+      "apiWorkerTests": 186,
+      "circuitTests": 6,
+      "mainnetToolingTests": 78,
+      "typecheck": true,
+      "identityBrowser": true,
+      "storyBrowser": true,
+      "staticPaymentProfiles": [
+        "mainnet",
+        "testnet"
+      ],
+      "dockerWebAndWorker": true,
+      "scope": "Local implementation and preparation only; current hosted publication, mainnet receipts and exported film require independent evidence."
+    }
+  }
 }
