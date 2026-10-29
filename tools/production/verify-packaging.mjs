@@ -45,7 +45,16 @@ try{
  }
  docker(["network","create","--internal",prefix]);network=true;
  const mongoName=prefix+"-mongo";docker(["run","--detach","--name",mongoName,"--network",prefix,"--network-alias","mongo","mongo:8.0@sha256:d0d926f94df099bff534b7ee5b5986458131a22489dfff8664509af0c1e2ca9c"]);containers.push(mongoName);
- let ready=false;for(let i=0;i<40;i++){try{mongo("db.runCommand({ping:1})");ready=true;break}catch{}await wait(500)}assert(ready);
+ // A cold CI host may take longer than a warm development daemon to initialize
+ // MongoDB. Bound startup, fail immediately on exit, and retain its actual logs.
+ let ready=false,lastMongoError="";const mongoDeadline=Date.now()+60000;
+ while(Date.now()<mongoDeadline){
+  const state=JSON.parse(docker(["inspect",mongoName,"--format","{{json .State}}"]));
+  assert.equal(state.Running,true,"Disposable MongoDB exited: "+JSON.stringify(state)+"\n"+docker(["logs",mongoName]));
+  try{mongo("db.runCommand({ping:1})");ready=true;break}catch(error){lastMongoError=String(error.message).slice(-2000)}
+  await wait(500);
+ }
+ assert(ready,"Disposable MongoDB did not become ready within 60s: "+lastMongoError+"\n"+docker(["logs",mongoName]));
  mongo('db.requests.insertOne({_id:"packaging-retry",cardId:"nonexistent-local-card",status:"QUEUED",createdAt:Date.now()})');
  const env={
   INTENTGUARD_MODE:"local",INTENTGUARD_PAYMENT_ENV:"local",XLAYER_CHAIN_ID:"31337",XLAYER_RPC_URL:"http://127.0.0.1:1",GENLAYER_RPC_URL:"http://127.0.0.1:1",GENLAYER_NETWORK:"studionet",

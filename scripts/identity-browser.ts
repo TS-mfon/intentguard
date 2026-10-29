@@ -2,6 +2,7 @@ import {chromium,type Page} from "@playwright/test";
 import {spawn} from "node:child_process";
 import {createServer} from "node:net";
 import {mkdir,readFile,writeFile} from "node:fs/promises";
+import {fileURLToPath} from "node:url";
 import assert from "node:assert/strict";
 import {card,policy,input,owner,FakeEvm} from "../tests/fixtures";
 import {digest,type Policy,type Settlement,type BridgeView} from "../packages/shared";
@@ -12,7 +13,9 @@ await readFile(new URL("../apps/web/.next/BUILD_ID",import.meta.url),"utf8");
 // NextURL normalizes loopback IP hostnames to localhost; bind the fixture to
 // that actual request origin so the production origin guard stays unchanged.
 const base="http://localhost:"+port;
-const server=spawn("pnpm",["--filter","@intentguard/web","start","--hostname","localhost","--port",String(port)],{cwd:new URL("../",import.meta.url),stdio:["ignore","pipe","pipe"],detached:process.platform!=="win32",env:{PATH:process.env.PATH,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1",APP_URL:base,FRONTEND_URL:base,INTENTGUARD_MODE:"local",INTENTGUARD_PAYMENT_ENV:"local",XLAYER_CHAIN_ID:"31337",...(process.env.SystemRoot?{SystemRoot:process.env.SystemRoot}:{})}});
+// Start the installed server directly. pnpm's runtime dependency reconciliation
+// can attempt a reinstall when this deliberately isolated environment omits CI.
+const server=spawn(process.execPath,[fileURLToPath(new URL("../apps/web/node_modules/next/dist/bin/next",import.meta.url)),"start","--hostname","localhost","--port",String(port)],{cwd:new URL("../apps/web/",import.meta.url),stdio:["ignore","pipe","pipe"],detached:process.platform!=="win32",env:{PATH:process.env.PATH,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1",APP_URL:base,FRONTEND_URL:base,INTENTGUARD_MODE:"local",INTENTGUARD_PAYMENT_ENV:"local",XLAYER_CHAIN_ID:"31337",...(process.env.SystemRoot?{SystemRoot:process.env.SystemRoot}:{})}});
 let output="";server.stdout.on("data",c=>output+=c.toString());server.stderr.on("data",c=>output+=c.toString());
 let browser:Awaited<ReturnType<typeof chromium.launch>>|undefined;
 const folder=new URL("../.local/identity-screenshots/",import.meta.url);await mkdir(folder,{recursive:true});
