@@ -15,3 +15,7 @@ test-results/
 *.tsbuildinfo
 contracts/evm/integration-report.json
 .vercel
+
+# Generated quotes bind the current commit; committing them changes that identity.
+docs/deployments/release-preparation.json
+docs/deployments/mainnet-quote.json
