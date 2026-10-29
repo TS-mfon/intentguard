@@ -7,12 +7,13 @@ const result=spawnSync(process.execPath,["--test","--test-reporter=spec","tools/
 if(result.error||result.status!==0){process.stderr.write((result.stdout??"")+(result.stderr??""));throw Error("Hosting planner checks failed");}
 const output=result.stdout;
 for(const field of ["fail","cancelled","skipped","todo"])assert.match(output,new RegExp(field+" 0(?:\\s|$)"),"All hosting regressions must run successfully");
-const tests=Number(output.match(/tests (\d+)/)?.[1]);assert.equal(tests,12,"Missing hosting regressions");
+const tests=Number(output.match(/tests (\d+)/)?.[1]);assert.equal(tests,13,"Missing hosting regressions");
 const required=[
  "metadata decoder literals remain public while encoded source-map payloads are rejected",
  "official TapeKit source and circuit NAND metadata match exact pinned bytes",
  "static bundle positive control has stable per-file hashes chunks MIME and gateway deep links",
  "forbidden paths symlinks NFD source maps and secret literals fail against a valid bundle",
+ "public credentials guide is allowed while secret files and payloads remain forbidden",
  "wrong chain mutable circuit beacon code and implementation changes cannot become quotes",
  "expired mutated quotes exact caps and static directory identity cannot bypass plan guards",
  "unknown required fees remain incomplete and provisioning exposes unsimulated dependent stages",

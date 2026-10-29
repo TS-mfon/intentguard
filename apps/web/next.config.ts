@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+import type {NextConfig} from "next";
+const exported=process.env.INTENTGUARD_STATIC_EXPORT==="1";
 const config:NextConfig={
- output:"standalone",
+ output:exported?"export":"standalone",
  poweredByHeader:false,
- outputFileTracingIncludes:{"/api/**":["../../contracts/genlayer/**/*.py"]},
+ ...(exported?{trailingSlash:true,images:{unoptimized:true}}:{outputFileTracingIncludes:{"/api/**":["../../contracts/genlayer/**/*.py"]}}),
 };
 export default config;

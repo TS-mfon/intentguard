@@ -4,13 +4,15 @@ import {resolve,join,extname} from "node:path";
 import {hash,digest,regularBytes,PINS} from "./protocol.mjs";
 const MIME={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".mjs":"text/javascript; charset=utf-8",".json":"application/json",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".gif":"image/gif",".avif":"image/avif",".svg":"image/svg+xml",".ico":"image/x-icon",".woff":"font/woff",".woff2":"font/woff2",".ttf":"font/ttf",".otf":"font/otf",".wasm":"application/wasm",".mp4":"video/mp4",".webm":"video/webm",".mp3":"audio/mpeg",".ogg":"audio/ogg",".wav":"audio/wav",".txt":"text/plain; charset=utf-8",".xml":"application/xml",".pdf":"application/pdf",".bin":"application/octet-stream"};
 const FORBIDDEN=/^(?:\.env(?:\..*)?|\.git|\.next|node_modules|\.local|\.tape|\.well-known|secrets?(?:\..*)?|credentials?(?:\..*)?)(?:$|\/)|(?:\.(?:map|ts|tsx|jsx|pem|key|p12|pfx|keystore|bak|sql|sqlite|log|yml|yaml|toml)$)|(?:^|\/)(?:package(?:-lock)?\.json|pnpm-lock\.yaml|Dockerfile)$/i;
+// The public credentials guide is generated documentation, not a secret store.
+const publicCredentialsGuide=path=>/^docs\/credentials\/(?:index\.(?:html|txt)|__next\.[^/]+\.txt)$/.test(path);
 export function validatePath(path){
  assert.ok(typeof path==="string"&&path.length>0&&Buffer.byteLength(path)<=1024,"Invalid static path");
  assert.equal(path.normalize("NFC"),path,"Paths must be Unicode NFC");
  assert.ok(!/[\\%?#\u0000-\u001f\u007f]/.test(path),"Ambiguous or unsafe gateway path");
  assert.ok(!path.startsWith("/")&&!path.endsWith("/")&&!path.includes("//"),"Invalid path separator");
  assert.ok(path.split("/").every(p=>p!==""&&p!=="."&&p!==".."&&!p.startsWith(".")),"Hidden/traversal paths are forbidden");
- assert.ok(!FORBIDDEN.test(path)&&!path.split("/").some(p=>FORBIDDEN.test(p)),"Forbidden source or secret path");
+ assert.ok(!FORBIDDEN.test(path)&&!path.split("/").some(p=>FORBIDDEN.test(p))||publicCredentialsGuide(path),"Forbidden source or secret path");
  assert.ok(MIME[extname(path).toLowerCase()],"Unsupported static MIME type");
  return path;
 }
@@ -49,7 +51,7 @@ export async function scanBundle(directory,{fallback="index.html",apiOrigins=[]}
    assert.equal(path.normalize("NFC"),path,"Paths must be Unicode NFC");
    const full=join(directory,path),st=await lstat(full);assert.ok(!st.isSymbolicLink(),"Symlinks are forbidden");
    if(st.isDirectory()){
-    assert.ok(!entry.name.startsWith(".")&&!FORBIDDEN.test(entry.name),"Forbidden directory");await walk(path);
+    assert.ok(!entry.name.startsWith(".")&&(!FORBIDDEN.test(entry.name)||path==="docs/credentials"),"Forbidden directory: "+path);await walk(path);
    }else{
     validatePath(path);assert.ok(st.isFile(),"Special files are forbidden");
     assert.ok(st.size<=PINS.limits.chunkBytes*PINS.limits.maxChunks,"File exceeds 350 chunks");

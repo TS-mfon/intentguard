@@ -9,14 +9,16 @@ import {CCTP_TESTNETS,TESTNET_ASSETS} from "../packages/shared/assets";
 import {decodeFunctionData,parseAbi} from "viem";
 const port=await new Promise<number>(resolve=>{const s=createServer();s.listen(0,"127.0.0.1",()=>{const a=s.address();s.close(()=>resolve(typeof a==="object"&&a?a.port:3999))})});
 await readFile(new URL("../apps/web/.next/BUILD_ID",import.meta.url),"utf8");
-const base="http://127.0.0.1:"+port;
-const server=spawn("pnpm",["--filter","@intentguard/web","start","--port",String(port)],{cwd:new URL("../",import.meta.url),stdio:["ignore","pipe","pipe"],detached:process.platform!=="win32",env:{...process.env,APP_URL:base}});
+// NextURL normalizes loopback IP hostnames to localhost; bind the fixture to
+// that actual request origin so the production origin guard stays unchanged.
+const base="http://localhost:"+port;
+const server=spawn("pnpm",["--filter","@intentguard/web","start","--hostname","localhost","--port",String(port)],{cwd:new URL("../",import.meta.url),stdio:["ignore","pipe","pipe"],detached:process.platform!=="win32",env:{PATH:process.env.PATH,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1",APP_URL:base,FRONTEND_URL:base,INTENTGUARD_MODE:"local",INTENTGUARD_PAYMENT_ENV:"local",XLAYER_CHAIN_ID:"31337",...(process.env.SystemRoot?{SystemRoot:process.env.SystemRoot}:{})}});
 let output="";server.stdout.on("data",c=>output+=c.toString());server.stderr.on("data",c=>output+=c.toString());
 let browser:Awaited<ReturnType<typeof chromium.launch>>|undefined;
 const folder=new URL("../.local/identity-screenshots/",import.meta.url);await mkdir(folder,{recursive:true});
 const pageErrors:string[]=[];
 async function noOverflow(page:Page){assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,"Viewport overflow at "+page.url())}
-const config={assets:TESTNET_ASSETS,spendingNetworks:Object.values(CCTP_TESTNETS),cctpFactoryAddress:"0x"+"66".repeat(20),mode:"testnet",networkName:"X Layer Testnet",paymentSymbol:"TEST-USDT",chainId:1952,token:String(card.token),factoryAddress:"0x"+"55".repeat(20),configured:true,explorerUrl:"https://www.oklink.com/xlayer-test",genLayerExplorerUrl:"https://explorer-studio.genlayer.com"};
+const config={assets:TESTNET_ASSETS,spendingNetworks:Object.values(CCTP_TESTNETS),cctpFactoryAddress:"0x"+"66".repeat(20),mode:"testnet",paymentEnvironment:"testnet",reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewInfrastructure:"studionet-simulator",apiOrigin:base,frontendOrigin:base,applicationUrl:base,ownerSessionTransport:"cookie",settlementVersion:1,readinessReasons:[],releaseId:null,sourceCommit:null,networkName:"X Layer Testnet",paymentSymbol:"TEST-USDT",chainId:1952,token:String(card.token),factoryAddress:"0x"+"55".repeat(20),configured:true,explorerUrl:"https://www.oklink.com/xlayer-test",genLayerExplorerUrl:"https://explorer-studio.genlayer.com"};
 const view={...await new FakeEvm().view(card),chainId:1952,reviewerAddress:"0x"+"44".repeat(20),keyStatus:"NONE"};
 const usdcView={...view,token:CCTP_TESTNETS[1952].token,paymentSymbol:"USDC",settlement:{asset:"USDC",destinationChainIds:[1952,84532,421614]} as Settlement};
 const publicAgent={id:card._id,name:policy.name,mission:policy.mission,address:card.address,owner,policyHash:digest(policy),chainId:1952,token:String(card.token),status:"ACTIVE",reviewerAddress:view.reviewerAddress,createdAt:Date.now(),financial:policy.financial,balances:view.balances,criteria:policy.criteria};
@@ -24,7 +26,9 @@ const transactions=Array.from({length:5},(_,i)=>({id:"0x"+String(i+1).padStart(6
 try{
  const deadline=Date.now()+60000;while(Date.now()<deadline){if(await fetch(base).then(r=>r.ok).catch(()=>false))break;await new Promise(r=>setTimeout(r,500))}
  if(!await fetch(base).then(r=>r.ok).catch(()=>false))throw Error("Production server failed: "+output.slice(-2000));
- for(const method of ["PUT","PATCH","OPTIONS"]){const rejected=await fetch(base+"/api/v1/config",{method});assert.equal(rejected.status,405);assert.equal(rejected.headers.get("Allow"),"GET");const body=await rejected.json();assert.equal(body.error.code,"METHOD_NOT_ALLOWED");assert.equal(rejected.headers.get("X-Request-Id"),body.error.requestId);}
+ for(const method of ["PUT","PATCH"]){const rejected=await fetch(base+"/api/v1/config",{method});assert.equal(rejected.status,405);assert.equal(rejected.headers.get("Allow"),"GET");const body=await rejected.json();assert.equal(body.error.code,"METHOD_NOT_ALLOWED");assert.equal(rejected.headers.get("X-Request-Id"),body.error.requestId);}
+ const denied=await fetch(base+"/api/v1/config",{method:"OPTIONS"});assert.equal(denied.status,403);assert.equal((await denied.json()).error.code,"ORIGIN_DENIED");
+ const preflight=await fetch(base+"/api/v1/config",{method:"OPTIONS",headers:{Origin:base,"Access-Control-Request-Method":"GET","Access-Control-Request-Headers":"X-IntentGuard-Environment"}});if(preflight.status!==204){const publicConfig=await(await fetch(base+"/api/v1/config")).json();throw Error(JSON.stringify({status:preflight.status,body:await preflight.text(),base,apiOrigin:publicConfig.apiOrigin,frontendOrigin:publicConfig.frontendOrigin,mode:publicConfig.mode,server:output.slice(0,600)}));}assert.equal(preflight.headers.get("Access-Control-Allow-Origin"),base);assert.equal(preflight.headers.get("Access-Control-Allow-Credentials"),null);
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
  const page=await context.newPage();page.on("pageerror",e=>pageErrors.push(e.message));

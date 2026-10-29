@@ -13,6 +13,7 @@ await mkdir(folder, {recursive: true});
 const consoles: string[] = [];
 const errors: string[] = [], checks: string[] = [], visual: unknown[] = [];
 const widths = [320, 390, 768, 1440, 1920];
+const shortViewports = [{width: 320, height: 568}, {width: 390, height: 844}, {width: 768, height: 700}, {width: 1440, height: 768}, {width: 1920, height: 900}];
 const ids = ["the-instruction", "the-mandate", "the-circuit", "the-evidence", "the-transfer", "the-receipt"];
 function recordCheck(value: string) {checks.push(value); console.log("STORY_CHECK", value)}
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -53,6 +54,30 @@ async function probePage(page: Page) {
 
 async function noOverflow(page: Page) {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, "Horizontal overflow at " + await page.evaluate(() => innerWidth));
+}
+type ControlRect = {x: number; y: number; width: number; height: number};
+function controlsIntersect(a: ControlRect, b: ControlRect) {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+// A positive overlap and a separate pair exercise the rectangle oracle itself.
+assert.equal(controlsIntersect({x: 0, y: 0, width: 20, height: 20}, {x: 10, y: 10, width: 20, height: 20}), true);
+assert.equal(controlsIntersect({x: 0, y: 0, width: 20, height: 20}, {x: 0, y: 28, width: 20, height: 20}), false);
+async function heroActionsDistinct(page: Page) {
+  const film = page.getByRole("button", {name: "Watch the protocol film", exact: true});
+  const invitation = page.getByRole("link", {name: "Scroll to follow the card", exact: true});
+  await film.waitFor({state: "visible"}); await invitation.waitFor({state: "visible"});
+  const a = await film.boundingBox(), b = await invitation.boundingBox();
+  assert.ok(a && b, "Hero actions have actual rendered bounds");
+  assert.equal(controlsIntersect(a, b), false, "Film and scroll invitation overlap");
+  const viewport = page.viewportSize()!;
+  for (const [name, rect] of [["film", a], ["scroll", b]] as const) {
+    assert.ok(rect.width > 100 && rect.height >= 44, name + " has readable text and a touch target");
+    assert.ok(rect.x >= 0 && rect.x + rect.width <= viewport.width + 1, name + " is horizontally visible");
+    await (name === "film" ? film : invitation).scrollIntoViewIfNeeded();
+    const visible = await (name === "film" ? film : invitation).boundingBox();
+    assert.ok(visible && visible.y >= 0 && visible.y + visible.height <= viewport.height + 1, name + " is fully reachable in the viewport");
+  }
+  visual.push({view: "hero-action-layout", viewport, film: a, scroll: b});
 }
 async function stageAt(page: Page, index: number) {
   await page.evaluate(({id}) => {
@@ -218,6 +243,7 @@ try {
   assert.deepEqual(await audioStates(page), [], "No AudioContext before user approval");
   assert.equal(await page.locator("[data-story-journey]").getAttribute("data-story-audio"), "off");
   await noOverflow(page);
+  await heroActionsDistinct(page);
   await page.screenshot({path: new URL("hero-1440.png", folder).pathname});
 
   await page.evaluate(() => {if (document.activeElement instanceof HTMLElement) document.activeElement.blur()});
@@ -386,6 +412,7 @@ try {
     await page.getByRole("button", {name: "Pause scene", exact: true}).click();
     await page.waitForFunction(() => document.querySelector("[data-story-journey]")?.getAttribute("data-paused") === "true");
     await delay(600);
+    await heroActionsDistinct(page);
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.screenshot({path: new URL("hero-" + width + ".png", folder).pathname});
     await page.getByRole("button", {name: "Resume scene", exact: true}).click();
@@ -393,6 +420,13 @@ try {
     if (width <= 768) await page.screenshot({path: new URL("receipt-" + width + ".png", folder).pathname});
   }
   recordCheck("all six chapters have no overflow at 320/390/768/1440/1920");
+
+  for (const viewport of shortViewports) {
+    await page.setViewportSize(viewport); await stageAt(page, 0); await noOverflow(page);
+    await heroActionsDistinct(page);
+    await page.screenshot({path: new URL("hero-actions-" + viewport.width + "x" + viewport.height + ".png", folder).pathname});
+  }
+  recordCheck("film and scroll actions have separate visible touch targets across desktop mobile and short heights");
 
   // Suspend the previous animated canvas while reviewing a fresh device context.
   await page.getByRole("button", {name: "Pause scene", exact: true}).click();
@@ -404,6 +438,7 @@ try {
   await portraitPage.getByRole("button", {name: "Pause scene", exact: true}).click();
   await portraitPage.waitForFunction(() => document.querySelector("[data-story-journey]")?.getAttribute("data-paused") === "true");
   await delay(600); await noOverflow(portraitPage);
+  await heroActionsDistinct(portraitPage);
   await portraitPage.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await portraitPage.screenshot({path: new URL("hero-390x844.png", folder).pathname});
   await portraitContext.close();

@@ -333,8 +333,7 @@ export function WhyWeExist() {
         <section id={chapterIds[0]} className={styles.hero} data-story-chapter aria-labelledby="why-title">
           <div className={styles.heroTop}><span>INTENTGUARD / WHY WE EXIST</span><span>THE HUMAN ISSUES THE MANDATE.</span></div>
           <h1 id="why-title">INTELLIGENCE.<br/><span>WITH PERMISSION.</span></h1>
-          <div className={styles.heroDeck}><p>An ATM card for your agent.<br/>A boundary for its ambition.</p><span>You set the mission and spending limits.<br/>The agent earns permission before payment.</span><button onClick={openFilm} className={styles.heroFilm}><Play size={15}/>Watch the protocol film</button></div>
-          <a href="#the-mandate" className={styles.scrollInvitation}>Scroll to follow the card<ArrowDown size={18}/></a>
+          <div className={styles.heroDeck}><p>An ATM card for your agent.<br/>A boundary for its ambition.</p><span>You set the mission and spending limits.<br/>The agent earns permission before payment.</span><div className={styles.heroActions}><button onClick={openFilm} className={styles.heroFilm}><Play size={15}/>Watch the protocol film</button><a href="#the-mandate" className={styles.scrollInvitation}>Scroll to follow the card<ArrowDown size={18}/></a></div></div>
         </section>
 
         <section id={chapterIds[1]} className={styles.chapter + " " + styles.rightChapter} data-story-chapter aria-labelledby="mandate-title">

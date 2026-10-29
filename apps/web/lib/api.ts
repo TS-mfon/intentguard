@@ -23,6 +23,13 @@ const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Contr
 async function body(req:Request){if(!/^application\/json(?:\s*;|$)/i.test(req.headers.get("content-type")??""))throw new ApiError(415,"UNSUPPORTED_MEDIA_TYPE","Use Content-Type: application/json for JSON request bodies");const length=Number(req.headers.get("content-length")??0);if(length>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");const reader=req.body?.getReader();if(!reader)throw new ApiError(400,"INVALID_JSON","Supply a JSON request body");const chunks:Uint8Array[]=[];let size=0;while(true){const result=await reader.read();if(result.done)break;size+=result.value.byteLength;if(size>32768){await reader.cancel();throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB")}chunks.push(result.value)}const raw=new TextDecoder().decode(Buffer.concat(chunks));if(Buffer.byteLength(raw)>32768)throw new ApiError(413,"BODY_TOO_LARGE","Request exceeds 32 KiB");try{return parseStrictJson(raw)}catch{throw new ApiError(400,"INVALID_JSON","Supply a JSON request body")}}
 function parse<T>(schema:z.ZodType<T>,value:unknown):T{const r=schema.safeParse(value);if(!r.success)throw new ApiError(422,"INVALID_INPUT",r.error.issues[0]?.message??"Invalid input",r.error.issues.map(i=>({field:i.path.join("."),code:i.code,message:i.message})));return r.data}
 function origin(req:Request){return assertApplicationOrigin(req,configuration().origin)}
+async function requestConfiguration(req:Request){
+ const config=await publicDeploymentConfiguration(),c=configuration(),target=new URL(req.url).origin;
+ // Existing testnet aliases serve the same API and use their own host cookies.
+ // Separate frontends and mainnet keep their explicitly pinned origins.
+ if(c.testnet&&c.frontendOrigin===c.origin&&target!==c.origin)return {...config,apiOrigin:target,frontendOrigin:target};
+ return config;
+}
 export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=()=>wakeWorker(store)}:{requireConfigured?:boolean;wake?:()=>unknown|Promise<unknown>}={}){
  const notifyWorker=async()=>{try{await wake();}catch{console.error("Worker wake failed; the durable queue is retained for recovery.");}};
  return async (req:Request,path:string):Promise<Response>=>{
@@ -36,7 +43,7 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
  if(!allowed.includes(req.method))throw new ApiError(405,"METHOD_NOT_ALLOWED","Use "+allowed.join(" or ")+" for this endpoint",undefined,undefined,allowed.join(", "));
 
  const c=configuration(),method=req.method;
- if(path==="/config"&&method==="GET")return json(await publicDeploymentConfiguration());
+ if(path==="/config"&&method==="GET")return json(await requestConfiguration(req));
  if(path==="/auth/session"&&method==="GET")return json({address:process.env.SESSION_SECRET?await requestOwnerSession(store,req):null});
  if(path==="/auth/logout"&&method==="POST"){await logoutOwnerSession(store,req);return new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}});}
  if(path==="/health"&&method==="GET"){const config=await publicDeploymentConfiguration(),runtime=await store.get("locks","worker-runtime"),heartbeat=Number(runtime?.heartbeatAt??0),workerFresh=heartbeat>Date.now()-15*60000;return json({status:config.configured&&workerFresh?"ready":"degraded",releaseId:c.releaseId,sourceCommit:c.sourceCommit,paymentEnvironment:c.paymentEnvironment,paymentChainId:c.chainId,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewInfrastructure:"studionet-simulator",deploymentVerified:config.configured,database:"reachable",worker:{fresh:workerFresh,lastHeartbeatAt:heartbeat||null},readinessReasons:[...config.readinessReasons,...(workerFresh?[]:["WORKER_STALE"])]},config.configured&&workerFresh?200:503);}
@@ -141,7 +148,7 @@ async function routeInternal(req:Request,scheduleWake?:(task:()=>Promise<unknown
   if(req.method==="OPTIONS")return responseHeaders(new Response(null,{status:204}),randomUUID(),headers);
   if(!methods)throw new ApiError(404,"NOT_FOUND","API endpoint not found");
   if(!methods.includes(req.method))throw new ApiError(405,"METHOD_NOT_ALLOWED","Use "+methods.join(" or ")+" for this endpoint",undefined,undefined,methods.join(", "));
-  if(path==="/config")return responseHeaders(json(await publicDeploymentConfiguration()),randomUUID(),headers);
+  if(path==="/config")return responseHeaders(json(await requestConfiguration(req)),randomUUID(),headers);
   if(path==="/auth/session"&&!req.headers.get("authorization")?.startsWith("Owner "))return responseHeaders(json({address:process.env.SESSION_SECRET?await requestOwnerSession(undefined,req):null}),randomUUID(),headers);
   if(path==="/auth/logout"&&!req.headers.get("authorization")?.startsWith("Owner ")){await logoutOwnerSession(undefined,req);return responseHeaders(new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}}),randomUUID(),headers);}
   const store=await database();return await createApi(store,new Evm(store),scheduleWake?{wake:()=>scheduleWake(()=>wakeWorker(store))}:undefined)(req,path);

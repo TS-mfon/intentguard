@@ -90,6 +90,14 @@ test("forbidden paths symlinks NFD source maps and secret literals fail against 
  await writeFile(join(directory,"app.js"),'const private_key = "0x'+"ab".repeat(32)+'";');await assert.rejects(scanBundle(directory),/Secret/);
  await writeFile(join(directory,"app.js"),fixtureContents["app.js"]);assert.equal((await scanBundle(directory,{apiOrigins:bundle.apiOrigins})).directorySha256,bundle.directorySha256);
 }));
+test("public credentials guide is allowed while secret files and payloads remain forbidden",()=>withBundle(async(directory)=>{
+ await mkdir(join(directory,"docs/credentials"));
+ await writeFile(join(directory,"docs/credentials/index.html"),"<html>Agent credentials: keep your key in a secret manager.</html>");
+ assert.ok((await scanBundle(directory)).files.some(f=>f.path==="docs/credentials/index.html"));
+ for(const path of ["docs/credentials/private.key","docs/credentials/credentials.json","credentials/index.html","docs/credentials/payload.js","docs/credentials/index.html.bak"])assert.throws(()=>validatePath(path));
+ await writeFile(join(directory,"docs/credentials/index.html"),'const session_secret = "'+"fixture-secret-value".repeat(3)+'";');
+ await assert.rejects(scanBundle(directory),/Secret literal/);
+}));
 test("wrong chain mutable circuit beacon code and implementation changes cannot become quotes",()=>withBundle(async(_,bundle)=>{
  assert.equal(quote(bundle).status,"READ_ONLY_QUOTE");
  for(const mutate of [p=>p.chainId=1952,p=>p.beaconOwner=OWNER,p=>p.circuitImplementation=OWNER,p=>p.implementations.registry=OWNER,p=>p.codeSha256[PINS.contracts.opener]="0".repeat(64),p=>p.site.holder=CONTAINER]){
