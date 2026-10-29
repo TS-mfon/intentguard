@@ -1,29 +1,47 @@
-import type {CardView,PaymentInput,RequestView} from "../shared";
-export type ProtocolErrorDetail={field?:string;code?:string;message?:string};
-export class IntentGuardError extends Error{
- constructor(message:string,public status:number,public code:string,public retryable:boolean,public requestId?:string,public retryAfterSeconds?:number,public details?:unknown){super(message);this.name="IntentGuardError";}
+import {ProtocolClient, OwnerClient} from "./client.mjs";
+import type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions} from "./client.mjs";
+import type {CardView, PaymentInput, RequestView, RequestStatus, PublicConfiguration, HealthView, PageOptions, PublicAgentPage, PublicTransactionPage, PublicTransactionDetail, AgentCardSnapshot, BridgeProofView, DraftInput, DraftView, ReplacementView, ReplacementInput, ReplacementResult} from "./types";
+export {IntentGuardError, canonicalJson, commitment, normalizeSettlement, validatePayment} from "./client.mjs";
+export type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions};
+export type * from "./types";
+export type ProtocolErrorDetail = {field?: string; code?: string; message?: string};
+
+/** Source SDK; no default host or payment environment and no arbitrary wallet signing. */
+export class IntentGuard {
+  #client: ProtocolClient;
+  constructor(options: ClientOptions) { this.#client = new ProtocolClient(options); }
+  capabilities(options?: CallOptions) { return this.#client.capabilities(options) as Promise<PublicConfiguration>; }
+  health(options?: CallOptions) { return this.#client.health(options) as Promise<HealthView>; }
+  me(options?: CallOptions) { return this.#client.me(options) as Promise<{card: CardView}>; }
+  request(payment: PaymentInput, idempotencyKey: string, options?: CallOptions) { return this.#client.request(payment, idempotencyKey, options) as Promise<{id: string; status: RequestStatus}>; }
+  get(id: string, options?: CallOptions) { return this.#client.get(id, options) as Promise<RequestView>; }
+  wait(id: string, options?: WaitOptions) { return this.#client.wait(id, options) as Promise<RequestView>; }
+  listAgents(page?: PageOptions, options?: CallOptions) { return this.#client.listAgents(page, options) as Promise<PublicAgentPage>; }
+  listTransactions(page?: PageOptions & {agentId?: string; status?: RequestStatus}, options?: CallOptions) { return this.#client.listTransactions(page, options) as Promise<PublicTransactionPage>; }
+  getTransaction(id: string, options?: CallOptions) { return this.#client.getTransaction(id, options) as Promise<PublicTransactionDetail>; }
+  getAgentCard(id: string, options?: CallOptions) { return this.#client.getAgentCard(id, options) as Promise<AgentCardSnapshot>; }
+  getBridgeProof(id: string, options?: CallOptions) { return this.#client.getBridgeProof(id, options) as Promise<BridgeProofView>; }
 }
-export class IntentGuard{
- constructor(private baseUrl:string,private apiKey:string){}
- private async call<T>(path:string,init:RequestInit={}):Promise<T>{
-  const headers=new Headers(init.headers);headers.set("Accept","application/json");headers.set("Authorization","Bearer "+this.apiKey);if(init.body)headers.set("Content-Type","application/json");
-  let r:Response;try{r=await fetch(this.baseUrl.replace(/\/$/,"")+"/api/v1"+path,{...init,headers,signal:init.signal??AbortSignal.timeout(20000),redirect:"error"})}catch{throw new IntentGuardError("IntentGuard transport unavailable. Preserve the operation ID and Idempotency-Key.",0,"TRANSPORT_UNAVAILABLE",true)}
-  let value;try{value=await r.json()}catch{throw new IntentGuardError("IntentGuard returned a non-JSON response.",r.status,"INVALID_RESPONSE",true,r.headers.get("x-request-id")??undefined)}
-  if(!r.ok){const e=value.error??{};throw new IntentGuardError(String(e.message??"IntentGuard request failed").replaceAll(this.apiKey,"[REDACTED]"),r.status,e.code??"HTTP_ERROR",e.retryable??(r.status===429||r.status>=500),e.requestId??r.headers.get("x-request-id")??undefined,Number(r.headers.get("retry-after"))||undefined,e.details)}
-  return value as T;
- }
- capabilities(){return this.call<{assets:{asset:string;symbol:string;chainId:number;decimals:number;token:string|null;available:boolean;reason:string;sources:string[]}[];spendingNetworks:{chainId:number;name:string;domain:number;token:string;explorerUrl:string}[];cctpFactoryAddress:string|null}>("/config")}
- me(){return this.call<{card:CardView}>("/me")}
- request(payment:PaymentInput,idempotencyKey:string){return this.call<{id:string;status:string}>("/requests",{method:"POST",headers:{"Idempotency-Key":idempotencyKey},body:JSON.stringify(payment)})}
- get(id:string,signal?:AbortSignal){return this.call<RequestView>("/requests/"+encodeURIComponent(id),{signal})}
- async wait(id:string,{timeoutMs=600000,intervalMs=5000,signal}:{timeoutMs?:number;intervalMs?:number;signal?:AbortSignal}={}){
-  if(!Number.isFinite(timeoutMs)||timeoutMs<0||!Number.isFinite(intervalMs)||intervalMs<100)throw new IntentGuardError("Use a nonnegative timeout and polling interval of at least 100 ms.",0,"INVALID_WAIT_OPTIONS",false);
-  const end=Date.now()+timeoutMs;
-  while(Date.now()<end){
-   signal?.throwIfAborted();const r=await this.get(id,signal);if(["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","EXPIRED","CANCELLED"].includes(r.status))return r;
-   const delay=Math.min(intervalMs,Math.max(0,end-Date.now()));
-   if(delay)await new Promise<void>((resolve,reject)=>{const cleanup=()=>signal?.removeEventListener("abort",abort),timer=setTimeout(()=>{cleanup();resolve()},delay),abort=()=>{clearTimeout(timer);cleanup();reject(signal?.reason??new Error("Polling aborted"))};signal?.addEventListener("abort",abort,{once:true});if(signal?.aborted)abort();});
-  }
-  throw new IntentGuardError("Request remains pending; poll the same request ID. Do not create a new payment because polling timed out.",0,"POLL_TIMEOUT",true);
- }
+
+/** Owner dashboard transport. The caller supplies a challenge signature; this client never signs. */
+export class IntentGuardOwner {
+  #client: OwnerClient;
+  constructor(options: OwnerClientOptions) { this.#client = new OwnerClient(options); }
+  capabilities(options?: CallOptions) { return this.#client.capabilities(options) as Promise<PublicConfiguration>; }
+  challenge(address: string, options?: CallOptions) { return this.#client.challenge(address, options); }
+  login(address: string, signature: string, options?: CallOptions) { return this.#client.login(address, signature, options); }
+  session(options?: CallOptions) { return this.#client.session(options); }
+  logout(options?: CallOptions) { return this.#client.logout(options); }
+  clearSession() { this.#client.clearSession(); }
+  listCards(options?: CallOptions) { return this.#client.listCards(options) as Promise<{cards: CardView[]}>; }
+  createDraft(input: DraftInput, options?: CallOptions) { return this.#client.createDraft(input, options) as Promise<{id: string; status: RequestStatus}>; }
+  getDraft(id: string, options?: CallOptions) { return this.#client.getDraft(id, options) as Promise<DraftView>; }
+  activateCard(input: {draftId: string; cardAddress: string; activationTx: string}, options?: CallOptions) { return this.#client.activateCard(input, options) as Promise<{card: CardView}>; }
+  getReplacement(id: string, options?: CallOptions) { return this.#client.getReplacement(id, options) as Promise<ReplacementView>; }
+  createReplacement(id: string, input: ReplacementInput, options?: CallOptions) { return this.#client.createReplacement(id, input, options) as Promise<ReplacementResult>; }
+  retryReviewer(id: string, options?: CallOptions) { return this.#client.retryReviewer(id, options) as Promise<{card: CardView}>; }
+  issueKey(id: string, options?: CallOptions) { return this.#client.issueKey(id, options); }
+  revokeKeys(id: string, options?: CallOptions) { return this.#client.revokeKeys(id, options); }
+  listRequests(options?: CallOptions) { return this.#client.listRequests(options) as Promise<{requests: RequestView[]}>; }
+  getRequest(id: string, options?: CallOptions) { return this.#client.getRequest(id, options) as Promise<RequestView>; }
 }

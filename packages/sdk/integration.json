@@ -1,0 +1,464 @@
+{
+  "format": "intentguard-integration",
+  "version": 4,
+  "protocolVersion": "0.4.0",
+  "status": "IMPLEMENTATION_PREPARATION_LIVE_ACCEPTANCE_REQUIRED",
+  "client": {
+    "constructor": "new IntentGuard(options)",
+    "requiredOptions": [
+      "baseUrl",
+      "paymentEnvironment"
+    ],
+    "optionalOptions": [
+      "apiKey",
+      "frontendOrigin",
+      "sourceChainId",
+      "expectedReleaseId",
+      "expectedSourceCommit",
+      "expectedCardId",
+      "requestTimeoutMs",
+      "fetchImpl"
+    ],
+    "anonymousPreflight": "/api/v1/config",
+    "authenticatedPreflight": "/api/v1/me",
+    "configIdentityFields": [
+      "mode",
+      "paymentEnvironment",
+      "chainId",
+      "apiOrigin",
+      "frontendOrigin",
+      "applicationUrl",
+      "ownerSessionTransport",
+      "reviewEnvironment",
+      "reviewNetwork",
+      "reviewChainId",
+      "reviewInfrastructure",
+      "releaseId",
+      "sourceCommit",
+      "settlementVersion",
+      "configured",
+      "readinessReasons",
+      "assets",
+      "spendingNetworks"
+    ],
+    "noDefaultOrigin": true,
+    "noDefaultPaymentEnvironment": true,
+    "freshPreflightBeforeSubmission": true,
+    "redirectPolicy": "error",
+    "agentAndPublicCookiePolicy": "omit"
+  },
+  "paymentEnvironments": {
+    "testnet": {
+      "sourceChainId": 1952,
+      "agentKeyPrefix": "ig_",
+      "excludedAgentKeyPrefix": "ig_mainnet_",
+      "legacyUSDCChainIds": [
+        1952,
+        84532,
+        421614
+      ],
+      "usdt0Available": false
+    },
+    "mainnet": {
+      "sourceChainId": 196,
+      "agentKeyPrefix": "ig_mainnet_",
+      "requiredSettlementVersion": 2,
+      "requiredReviewerVersion": 4,
+      "releaseAndSourcePinsRequired": true,
+      "deploymentEvidence": "PENDING"
+    },
+    "local": {
+      "sourceChainIdDefault": 31337,
+      "sourceChainIdOverride": "explicit positive integer",
+      "agentKeyPrefix": "ig_"
+    }
+  },
+  "review": {
+    "environment": "testnet",
+    "network": "studionet",
+    "chainId": 61999,
+    "infrastructure": "studionet-simulator",
+    "versionForSettlementV2": 4,
+    "consensusAddress": "0xb7278a61aa25c888815afc32ad3cc52ff24fe575",
+    "genesisHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "identityPinsAreNotEVMCodeProof": true
+  },
+  "settlement": {
+    "v2RequiredFields": [
+      "version",
+      "paymentEnvironment",
+      "asset",
+      "destinationChainIds"
+    ],
+    "assets": [
+      "USDC",
+      "USDT0"
+    ],
+    "destinationsAreImmutable": true,
+    "destinationsAreEVMChainIds": true,
+    "chainIdsAreNotCCTPDomains": true,
+    "usdt0Rule": {
+      "paymentEnvironment": "mainnet",
+      "destinationChainIds": [
+        196
+      ]
+    },
+    "candidateRegistryDoesNotEnableRoutes": true,
+    "legacyCommitmentsRemainUnchanged": true
+  },
+  "authorization": {
+    "public": {
+      "authorizationHeader": null,
+      "paths": [
+        "/config",
+        "/health",
+        "/explorer/agents",
+        "/explorer/transactions",
+        "/explorer/transactions/{id}",
+        "/explorer/transactions/{id}/proof",
+        "/explorer/agents/{id}/card",
+        "/explorer/agents/{id}/card.svg",
+        "/demo/invoices/{id}"
+      ]
+    },
+    "agent": {
+      "authorizationScheme": "Bearer",
+      "paths": [
+        "/me",
+        "/requests",
+        "/requests/{id}"
+      ],
+      "scope": "one immutable card in one payment environment",
+      "cannotSignWithdrawOrChangePolicy": true
+    },
+    "owner": {
+      "sameOrigin": "ig_session HttpOnly cookie",
+      "crossOrigin": "Authorization: Owner <memory-only session>",
+      "crossOriginExpirySeconds": 600,
+      "browserEnvironmentHeader": "X-IntentGuard-Environment",
+      "apiAndFrontendOriginBound": true
+    },
+    "merchant": {
+      "path": "/demo/invoices",
+      "authorizationScheme": "Bearer",
+      "scope": "separate testnet merchant administration",
+      "agentKeysCannotIssueInvoices": true
+    }
+  },
+  "mcp": {
+    "entryPoint": "node packages/mcp/src/cli.mjs",
+    "requiredEnvironmentVariables": [
+      "INTENTGUARD_BASE_URL",
+      "INTENTGUARD_PAYMENT_ENV"
+    ],
+    "credentialEnvironmentVariable": "INTENTGUARD_API_KEY",
+    "optionalEnvironmentVariables": [
+      "INTENTGUARD_FRONTEND_ORIGIN",
+      "INTENTGUARD_SOURCE_CHAIN_ID",
+      "INTENTGUARD_EXPECTED_RELEASE_ID",
+      "INTENTGUARD_EXPECTED_SOURCE_COMMIT",
+      "INTENTGUARD_EXPECTED_CARD_ID"
+    ],
+    "tools": [
+      "get_config",
+      "get_health",
+      "get_my_agent",
+      "submit_payment",
+      "get_payment",
+      "wait_for_payment",
+      "list_agents",
+      "list_transactions",
+      "get_transaction",
+      "get_agent_card",
+      "get_bridge_proof"
+    ],
+    "resources": [
+      "intentguard://protocol",
+      "intentguard://openapi",
+      "intentguard://integration"
+    ],
+    "ownerAuthority": false,
+    "merchantAuthority": false,
+    "maximumWaitMs": 45000
+  },
+  "requests": {
+    "paymentAmountType": "exact decimal string",
+    "maximumAtomicAmount": "18446744073709551615",
+    "decimalPlaces": 6,
+    "idempotencyKeyMaximumCharacters": 128,
+    "paymentMaximumBytes": 14000,
+    "http202Means": "admission",
+    "paidMeans": "verified recipient delivery",
+    "pendingStates": [
+      "QUEUED",
+      "RESERVED",
+      "REVIEWING",
+      "AWAITING_FINALITY",
+      "APPROVED",
+      "RETRYING",
+      "BRIDGING",
+      "AWAITING_ATTESTATION",
+      "MINTING"
+    ],
+    "terminalStates": [
+      "PAID",
+      "BLOCKED",
+      "REJECTED",
+      "NEEDS_EVIDENCE",
+      "EXPIRED",
+      "CANCELLED"
+    ],
+    "timeoutNeverResubmits": true,
+    "sourceBurnCannotBeCancelled": true
+  },
+  "httpErrors": {
+    "400": "malformed JSON",
+    "401": "authentication",
+    "403": "authorization or origin",
+    "404": "missing resource",
+    "409": "conflict or environment mismatch",
+    "422": "invalid policy or input",
+    "429": "rate limit",
+    "503": "unavailable dependency",
+    "405": "wrong method",
+    "413": "oversized body",
+    "415": "unsupported media type"
+  },
+  "firstUse": {
+    "targetSeconds": 60,
+    "requiresWallet": false,
+    "timedNoviceEvidence": "PENDING",
+    "publicApplication": "https://intentguard-tapeout.vercel.app",
+    "publicRecordEvidence": "docs/audits/cctp-independent.json",
+    "records": [
+      {
+        "name": "xlayer",
+        "requestId": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+        "status": "PAID",
+        "sourceChainId": 1952,
+        "destinationChainId": 1952
+      },
+      {
+        "name": "base",
+        "requestId": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+        "status": "PAID",
+        "sourceChainId": 1952,
+        "destinationChainId": 84532
+      },
+      {
+        "name": "limit",
+        "requestId": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+        "status": "BLOCKED",
+        "sourceChainId": 1952,
+        "destinationChainId": 84532
+      },
+      {
+        "name": "prohibited",
+        "requestId": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+        "status": "REJECTED",
+        "sourceChainId": 1952,
+        "destinationChainId": 1952
+      },
+      {
+        "name": "evidence",
+        "requestId": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+        "status": "NEEDS_EVIDENCE",
+        "sourceChainId": 1952,
+        "destinationChainId": 84532
+      }
+    ],
+    "resumeKeys": [
+      "apiOrigin",
+      "paymentEnvironment",
+      "chainId",
+      "owner",
+      "draftId",
+      "activationTx",
+      "cardId",
+      "requestId",
+      "idempotencyKey",
+      "exactPaymentInput"
+    ],
+    "neverPersist": [
+      "ownerSession",
+      "walletSignature",
+      "agentApiKey"
+    ]
+  },
+  "externalEvidence": {
+    "mainnetCanaries": "PENDING",
+    "independentHostedAcceptance": "PENDING",
+    "interviews": "NOT_CONDUCTED",
+    "pilots": "NOT_STARTED",
+    "willingnessToPay": "NOT_MEASURED",
+    "repeatUseRetention": "NOT_MEASURED",
+    "submissionVideo": "NOT_RECORDED"
+  },
+  "commercial": {
+    "status": "PREPARATION_NOT_CUSTOMER_VALIDATED",
+    "measurements": {
+      "source": "docs/audits/cctp-live-results.json",
+      "sourceSha256": "9f35b2a60a330d8887cf12e9b63b1696df7bda36ce622db0c1e62250f2657133",
+      "mode": "HISTORICAL_TESTNET_SUCCESSFUL_OR_TERMINAL_RECORDS",
+      "latencyDefinition": "saved result.updatedAt - result.createdAt; includes runner/finality/bridge recovery; excludes earlier failed attempts",
+      "records": [
+        {
+          "name": "xlayer",
+          "requestId": "0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff",
+          "status": "PAID",
+          "createdAt": 1792981273742,
+          "updatedAt": 1792981374906,
+          "elapsedMs": 101164,
+          "sourceChainId": 1952,
+          "destinationChainId": 1952,
+          "amount": "0.1",
+          "failedAttemptCount": 1
+        },
+        {
+          "name": "base",
+          "requestId": "0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951",
+          "status": "PAID",
+          "createdAt": 1792981383260,
+          "updatedAt": 1792982599162,
+          "elapsedMs": 1215902,
+          "sourceChainId": 1952,
+          "destinationChainId": 84532,
+          "amount": "0.1",
+          "failedAttemptCount": 0
+        },
+        {
+          "name": "arbitrum",
+          "requestId": "0x2e0c9451aab0ceb7a52e02f370b24bdbec5f70bc2f262583b1fd4b218a0dd420",
+          "status": "PAID",
+          "createdAt": 1792982255655,
+          "updatedAt": 1792983770233,
+          "elapsedMs": 1514578,
+          "sourceChainId": 1952,
+          "destinationChainId": 421614,
+          "amount": "0.1",
+          "failedAttemptCount": 0
+        },
+        {
+          "name": "limit",
+          "requestId": "0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163",
+          "status": "BLOCKED",
+          "createdAt": 1792982256936,
+          "updatedAt": 1792982294950,
+          "elapsedMs": 38014,
+          "sourceChainId": 1952,
+          "destinationChainId": 84532,
+          "amount": "1.000001",
+          "failedAttemptCount": 0
+        },
+        {
+          "name": "prohibited",
+          "requestId": "0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef",
+          "status": "REJECTED",
+          "createdAt": 1792982258061,
+          "updatedAt": 1792982494081,
+          "elapsedMs": 236020,
+          "sourceChainId": 1952,
+          "destinationChainId": 1952,
+          "amount": "0.1",
+          "failedAttemptCount": 0
+        },
+        {
+          "name": "evidence",
+          "requestId": "0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886",
+          "status": "NEEDS_EVIDENCE",
+          "createdAt": 1792982259560,
+          "updatedAt": 1792982346677,
+          "elapsedMs": 87117,
+          "sourceChainId": 1952,
+          "destinationChainId": 84532,
+          "amount": "0.1",
+          "failedAttemptCount": 0
+        }
+      ],
+      "independentAudit": "docs/audits/cctp-independent.json",
+      "independentAuditSha256": "9b8c304c3081056ba88b3cfa9eaf773ffd5ebc8feccccda00799607ba609d1e8",
+      "independentCases": 8,
+      "verifiedIndependentCases": 8,
+      "deliveredPayments": 3,
+      "currentServiceFeeCharged": "0",
+      "testnetAssetsHaveMonetaryValue": false
+    },
+    "pricingHypothesis": {
+      "currency": "USD",
+      "monthlyTeamPlan": 49,
+      "monthlyIncludedPayments": 500,
+      "hypotheticalAdditionalSettlementFeeBps": 10,
+      "feeImplemented": false,
+      "assumedCostPerPaymentGas": 0.01,
+      "assumedCostPerPaymentReview": 0.03,
+      "assumedMonthlyInfrastructure": 10,
+      "assumedMonthlySupport": 5,
+      "costInputsAreMeasured": false,
+      "payer": "illustrative service-borne scenario; fee/gas allocation requires customer agreement"
+    },
+    "customerStudy": {
+      "status": "NOT_STARTED",
+      "targetInterviews": 8,
+      "targetPilots": 2,
+      "pilotDays": 14,
+      "minimumRepeatedPurchaseDays": 3,
+      "willingnessToPayMeasured": false,
+      "retentionMeasured": false,
+      "outreachSent": false
+    }
+  },
+  "demo": {
+    "status": "NOT_RECORDED",
+    "mode": "VERIFIED_HISTORICAL_TESTNET_RECORD_WALKTHROUGH",
+    "durationSeconds": 170,
+    "segments": [
+      {
+        "startSeconds": 0,
+        "endSeconds": 20,
+        "purpose": "agent purchase problem and testnet disclosure"
+      },
+      {
+        "startSeconds": 20,
+        "endSeconds": 45,
+        "purpose": "public mandate and immutable spending scope"
+      },
+      {
+        "startSeconds": 45,
+        "endSeconds": 80,
+        "purpose": "paid source and Base delivery with actual receipts",
+        "recordNames": [
+          "xlayer",
+          "base"
+        ]
+      },
+      {
+        "startSeconds": 80,
+        "endSeconds": 110,
+        "purpose": "budget block semantic rejection and missing evidence",
+        "recordNames": [
+          "limit",
+          "prohibited",
+          "evidence"
+        ]
+      },
+      {
+        "startSeconds": 110,
+        "endSeconds": 135,
+        "purpose": "owner controls SDK integration and honest latency"
+      },
+      {
+        "startSeconds": 135,
+        "endSeconds": 155,
+        "purpose": "target customer pricing hypothesis and unstarted pilots"
+      },
+      {
+        "startSeconds": 155,
+        "endSeconds": 170,
+        "purpose": "TapeOut GenLayer trust boundaries and release limits"
+      }
+    ],
+    "freshPaymentsShown": false,
+    "mainnetClaims": false,
+    "interviewsClaimed": false
+  }
+}

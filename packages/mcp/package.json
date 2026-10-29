@@ -1,6 +1,6 @@
 {
   "name": "@intentguard/mcp",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "IntentGuard protocol MCP server: constrained agent payments and public proofs",
   "type": "module",
   "private": true,
@@ -13,7 +13,7 @@
     "sync-resources": "node scripts/sync-resources.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24 <25"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",

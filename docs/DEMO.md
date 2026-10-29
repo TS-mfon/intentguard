@@ -1,19 +1,39 @@
-# Three-minute demo and product case
+# Three-minute verified-record demo
 
-Target users: teams running research, trading-support, operations and procurement agents that need to buy data, API access or other digital services with stablecoins. Start with agent framework builders and crypto research teams; distribute a TypeScript SDK and integrations through their developer communities.
+Status: **NOT_RECORDED**. This is a170-second recording script and shot list. No exported submission film is present, and R25 remains unmet. The film uses actual historical **testnet** records and receipt links; a recording must show the current hosted UI after independent verification. Never substitute synthetic PAID states or present mainnet preparation as a deployed release.
 
-Revenue model: a monthly plan per team or active agent plus a modest settled-payment fee once real usage exists. The MVP does not deduct a service fee. Teams pay for enforceable spending boundaries, less manual approval work, merchant evidence review and a complete audit trail. Recurring agent purchases create repeat use.
+## Recording material
 
-0:00–0:25 — Show the problem: an agent needs to buy a $12 research dataset, but giving it unrestricted wallet access is excessive and manually approving every purchase stops automation.
+Use the [public application](https://intentguard-tapeout.vercel.app), [public explorer](https://intentguard-tapeout.vercel.app/explorer), [independent testnet audit](audits/cctp-independent.json) and [testnet release evidence](deployments/cctp-release.json). No wallet or credential is needed for public records. Confirm current API/environment identity, page availability and actual onchain receipts before recording. The historical testnet record walk-through is separate from required new mainnet acceptance.
 
-0:25–0:55 — Create the agent card. Describe the mission, define a $100 lifetime budget, $20 per-purchase cap, approved merchant and criteria. Show GenLayer proposing the exact permission and the owner authorizing it on X Layer.
+| Purpose | Actual request ID / link |
+|---|---|
+| Direct USDC delivery | [xlayer](https://intentguard-tapeout.vercel.app/transaction?id=0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff) |
+| Base destination delivery | [base](https://intentguard-tapeout.vercel.app/transaction?id=0xb765f5811f1aa4ace283cb2aca2bb88f125e134f570d3cccf35f529c1b6db951) |
+| Numerical budget block | [limit](https://intentguard-tapeout.vercel.app/transaction?id=0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163) |
+| Semantic rejection | [prohibited](https://intentguard-tapeout.vercel.app/transaction?id=0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef) |
+| Missing or mismatched evidence | [evidence](https://intentguard-tapeout.vercel.app/transaction?id=0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886) |
 
-0:55–1:25 — Fund the card and issue the agent API key. Submit a matching current merchant invoice with the SDK. Show TapeOut reserving funds, GenLayer independently reviewing evidence, and the merchant receiving the payment after finality. Display real transaction links only when the deployment is live.
+## 170-second script
 
-1:25–1:55 — Request $50. Show the budget gate blocking it before GenLayer review. Request a permitted amount with a contradictory invoice or unrelated product. Show rejection and freed reservation.
+| Time | Screen and narration |
+|---|---|
+| 0:00–0:20 | Open a real public record. “An agent needs to buy data. Its owner wants a bounded budget, approved merchants and evidence that the purchase fits the task. These are real testnet records; testnet tokens have no monetary value.” |
+| 0:20–0:45 | Show the actual public agent card/mandate, recipients, exact lifetime/per-payment/period terms and permitted routes. “The owner approves immutable terms, then funds that vault and issues a card-bound key. GenLayer proposes readable permission; TapeOut enforces the numerical limits.” |
+| 0:45–1:20 | Open xlayer and base paid records. Show exact USDC amount, source/destination, finalized reasoning and actual receipt links. “HTTP202 admits an operation. PAID requires verified delivery. For CCTP, source burn, destination mint and source acknowledgement are separate evidence.” |
+| 1:20–1:50 | Open limit, prohibited and evidence records. Show actual guard/review stage and reason. “An excessive amount is blocked before review. A prohibited purchase is rejected; missing proof stops the operation. Failure records are attempts, not funds moved.” |
+| 1:50–2:15 | Show current owner-control/documentation screens and SDK example. Narrate funding/withdrawal/pause/revocation and key separation only as behavior actually verified for the release being shown. “One stable Idempotency-Key preserves one purchase across retries. Historical direct settlement took about101seconds; successful bridges took about20 and25minutes. This film inspects completed records, not an instant live transfer.” |
+| 2:15–2:35 | Show target customer and explicitly labelled pricing hypothesis. “Start with research and operations teams buying API access repeatedly. USD49/team/month plus a possible10-basis-point fee is an unvalidated hypothesis. No fee is implemented; interviews and pilots have not started.” |
+| 2:35–2:50 | Show TapeOut circuit artifact/processor evidence and Studionet review identity. “The existing X Layer testnet adapter runs unchanged TapeOut NetlistVM. Official mainnet TapeOut/DeWEB release remains separate. Review runs on Studionet testnet; X Layer trusts configured review and receipt attestors rather than a foreign-chain light client.” |
 
-1:55–2:25 — Open the ledger. Show both gates, policy/request/evidence commitments and finalized decision criteria. Retry the same idempotency key and confirm one payment. Revoke the agent key.
+## Owner setup and new purchase recording
 
-2:25–2:55 — Explain the market and pricing. TapeOut enforces deterministic spending logic; GenLayer interprets intent and checks merchant evidence; X Layer settles USDT. Disclose that the signed relay attests GenLayer finality across chains.
+If recording a fresh setup or funded purchase, obtain a dedicated authorized owner/card and actual current merchant invoice first. Keep secrets and signatures out of the footage. Record successful finalized proposal, explicit owner activation, correct source-token funding, reviewer readiness, key issuance, same-operation request and actual settlement finality. Do not replace these waits with fake application states. Cuts or time-lapse must be labelled with actual elapsed time.
 
-Prepare stable public invoice fixtures and a funded dedicated demonstration wallet before recording. Allow actual GenLayer finality rather than substituting a fake 'paid' state. The built-in sample preview is useful for UI exploration; label it when shown.
+Do not reuse historical expired invoices as current purchase authorization. Mainnet owner setup/payments require the separate quote/cap and live release gates. If owner controls, current receipts or finalized reasoning cannot be independently verified at recording time, omit that action or label it unavailable; do not narrate it as completed behavior.
+
+## Export and acceptance checklist
+
+Capture at a legible desktop/mobile size with readable amounts and transaction links. Keep a persistent testnet disclosure and reduced-motion-friendly framing; do not flash wallet secrets or private instructions. Export one playable video no longer than180seconds with intelligible audio and verified timestamps/source references. Check the actual exported duration, audio, receipt links and every financial claim.
+
+A final video needs its file path/hash, measured duration and independent review against the exact hosted release. The machine [integration guide](../packages/sdk/integration.json) binds the170-second shot list and actual record IDs, and records submissionVideo as NOT_RECORDED. Planned interview/pilot and pricing content is [commercial preparation](COMMERCIAL.md), not proof of demand. The full remediation contract remains required.
