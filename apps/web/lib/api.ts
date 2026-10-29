@@ -135,7 +135,7 @@ export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=(
 }
 export async function requestView(store:Store,p:Payment):Promise<RequestView>{const card=await store.get<Card>("cards",p.cardId);return {id:p._id,cardId:p.cardId,cardName:card?.policy.name??"Agent",status:p.status,request:p.input,requestHash:p.requestHash??"",evidenceHash:p.evidenceHash??"",guard:p.guard,review:p.review,reviewStage:reviewStage(p),errorCode:p.errorCode as string|undefined,genLayerTxHash:p.genLayerTxHash,paymentTxHash:p.paymentTxHash,bridge:p.bridge,paymentSymbol:card?cardSymbol(card):undefined,paymentEnvironment:card?.paymentEnvironment??configuration().paymentEnvironment,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,reviewerVersion:card?.reviewerVersion,error:p.error,createdAt:p.createdAt,updatedAt:p.updatedAt};}
 async function routeInternal(req:Request,scheduleWake?:(task:()=>Promise<unknown>)=>void){
- const pathname=new URL(req.url).pathname,path=pathname.replace(/^\/api\/v1/,""),headers:Record<string,string>={};
+ const correlation=randomUUID(),pathname=new URL(req.url).pathname,path=pathname.replace(/^\/api\/v1/,""),headers:Record<string,string>={};
  try{
   const methods=endpointMethods(path);Object.assign(headers,browserCors(req,methods??[]));
   if(req.method==="OPTIONS")return responseHeaders(new Response(null,{status:204}),randomUUID(),headers);
@@ -145,7 +145,7 @@ async function routeInternal(req:Request,scheduleWake?:(task:()=>Promise<unknown
   if(path==="/auth/session"&&!req.headers.get("authorization")?.startsWith("Owner "))return responseHeaders(json({address:process.env.SESSION_SECRET?await requestOwnerSession(undefined,req):null}),randomUUID(),headers);
   if(path==="/auth/logout"&&!req.headers.get("authorization")?.startsWith("Owner ")){await logoutOwnerSession(undefined,req);return responseHeaders(new Response(null,{status:204,headers:{"Set-Cookie":"ig_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"}}),randomUUID(),headers);}
   const store=await database();return await createApi(store,new Evm(store),scheduleWake?{wake:()=>scheduleWake(()=>wakeWorker(store))}:undefined)(req,path);
- }catch(e){return responseHeaders(responseError(e),randomUUID(),headers);}
+ }catch(e){return responseHeaders(responseError(e,correlation),correlation,headers);}
 }
 
 function quotaHeaders(quota:{limit:number;remaining:number;reset:number}){return {"RateLimit-Limit":String(quota.limit),"RateLimit-Remaining":String(quota.remaining),"RateLimit-Reset":String(quota.reset),"RateLimit-Policy":quota.limit+";w=60"}}

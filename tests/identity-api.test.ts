@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {createApi} from "../apps/web/lib/api";
+import {createApi,route} from "../apps/web/lib/api";
 import {createExplorer} from "../apps/web/lib/explorer";
 import {MemoryStore} from "../apps/web/lib/store";
 import {reviewStage} from "../apps/web/lib/review-stage";
@@ -38,6 +38,16 @@ test("API returns actionable HTTP statuses, method Allow and correlation without
  const r=await api(request("/requests","POST",{...auth,"Content-Type":type},body),"/requests"),data=await r.json();assert.equal(r.status,status);assert.equal(data.error.code,code);assert.equal(data.error.requestId,r.headers.get("X-Request-Id"));assert.equal(data.error.retryable,false);assert.ok(!JSON.stringify(data).includes(key));if(status===422){assert.equal(data.error.details[0].field,"amount");assert.match(data.error.message,/6 decimal/)}
  }
  const wrong=await api(request("/config","POST"),"/config");assert.equal(wrong.status,405);assert.equal(wrong.headers.get("Allow"),"GET");assert.equal((await api(request("/does-not-exist"),"/does-not-exist")).status,404);
+});
+test("production route errors retain one correlation identifier through every response wrapper",async()=>{
+ const ids=new Set<string>();
+ for(const [path,method,status,code]of [["/config","PUT",405,"METHOD_NOT_ALLOWED"],["/missing","GET",404,"NOT_FOUND"],["/config","OPTIONS",403,"ORIGIN_DENIED"]] as const){
+  const response=await route(request(path,method)),body=await response.json(),id=response.headers.get("X-Request-Id");
+  assert.equal(response.status,status);assert.equal(body.error.code,code);assert.equal(body.error.requestId,id);assert.ok(id&&!ids.has(id));ids.add(id);
+  assert.equal(response.headers.get("Cache-Control"),"no-store");assert.equal(response.headers.get("X-Content-Type-Options"),"nosniff");
+  if(status===405)assert.equal(response.headers.get("Allow"),"GET");
+ }
+ const response=await route(request("/config"));assert.equal(response.status,200);assert.ok(response.headers.get("X-Request-Id"));assert.equal((await response.json()).error,undefined);
 });
 test("agent quota reports actual remaining slots and rate-limit retry timing",async()=>{
  const {api,key}=await setup();for(let i=0;i<60;i++){const r=await api(request("/me","GET",{Authorization:"Bearer "+key}),"/me");assert.equal(r.status,200);assert.equal(r.headers.get("RateLimit-Remaining"),String(59-i))}
