@@ -69,3 +69,16 @@ The first setup attempt returned finalized clarification; its draft and receipt 
 `scripts/sandbox-hosted.ts --execute` admits four genuine anonymous scenarios once, saves their actual IDs, checks a fresh mobile browser's numerical denial within60seconds, and waits for real outcomes. `--verify` rechecks the saved public records and finalized reasoning without admitting a request. A PAID result additionally requires an independently decoded one-unit native-USDC Transfer from this exact vault on chain1952. These four educational scenarios do not replace either full live semantic/reliability audit.
 
 The first live mobile check reached [actual BLOCKED request0535b484…](https://intentguard-tapeout.vercel.app/explorer/transactions/0x0535b4841501818020cba8ff8d0d91785eec7d4497d3743bc8a937bbd5cf3c9e) in17.268seconds at published source `e1e6fb90776cd684e9bf66be71167c02b3a1ffa0`, without a wallet, cookies or a persisted visitor token. SDK session creation then exposed a933-millisecond host/client clock difference: its strict upper expiry check rejected an otherwise valid one-hour session before admitting any SDK payment. The SDK now accepts at most five seconds of positive skew and clamps local retention to one hour; expired or excessively long sessions still fail. `--resume` preserves the original browser request and is allowed only before any SDK payment admission or uncertain operation. Subsequent retries retain the original operation key; uncertain admission must be reconciled rather than replaced.
+
+## Verified hosted outcomes
+
+[sandbox-acceptance.json](sandbox-acceptance.json) records four genuine outcomes at published source `c46e5d156b509115ecc919647538b781f4e9f53f`. Two separate read-only verification runs checked the public records, finalized approval/rejection and actual payment receipt. No requests were replaced.
+
+| Scenario | Actual result | Public record |
+|---|---|---|
+| Over budget | BLOCKED; numerical denial, review skipped | [0535b484…](https://intentguard-tapeout.vercel.app/explorer/transactions/0x0535b4841501818020cba8ff8d0d91785eec7d4497d3743bc8a937bbd5cf3c9e) |
+| Allowed service | PAID; finalized approval and exact0.000001USDC vault transfer | [7d67a05c…](https://intentguard-tapeout.vercel.app/explorer/transactions/0x7d67a05c725fb6ebaa758d41d307e691a3ad851e9a427ac938db75f242e4be2f) |
+| Prohibited purchase | REJECTED; finalized semantic rejection, no payment | [f6493003…](https://intentguard-tapeout.vercel.app/explorer/transactions/0xf6493003ef41035a1b5ae253258e6717a381ec4b30fb5865f88b113294f142c0) |
+| Wrong invoice buyer | NEEDS_EVIDENCE; buyer mismatch before review, no payment | [6749ace8…](https://intentguard-tapeout.vercel.app/explorer/transactions/0x6749ace861f841fcd37b5579348f67b7e07d0e34aca9fda0d8eb79dc65fbb1fb) |
+
+After these four admissions,26 of the30 preparations remained available, the vault held0.000999testnetUSDC, spent was0.000001 and reservations were zero. Permitted/prohibited same-key retries returned their original IDs. The wrong-buyer replay hit429 after admission; that process cleared its memory-only capability and did not independently repeat the replay. The acceptance tool now honors Retry-After for both admission and replay. These observations do not certify full audit reliability, mainnet delivery or customer demand.

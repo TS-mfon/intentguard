@@ -137,6 +137,47 @@ try{
   await page.goto(origin+"/explorer?agentId="+agentId);await page.locator(".selected-agent-identity .atm-card").waitFor({timeout:45000});await fits(page);
   await page.screenshot({path:folder+"/explorer.png",fullPage:true,animations:"disabled"});
   await page.goto(origin+"/agent-setup");await page.getByRole("heading",{name:"Create an agent"}).waitFor();await fits(page);
+  let proposalPosts=0;page.on("request",r=>{if(r.method()==="POST"&&new URL(r.url()).pathname==="/api/v1/owner/drafts")proposalPosts++;});
+  for(const name of ["Research assistant","API access","Protocol test"]){
+   await page.getByRole("radio",{name:new RegExp("^"+name)}).check();assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),name);
+  }
+  await page.getByRole("radio",{name:/^Research assistant/}).check();
+  await page.getByLabel("Agent name",{exact:true}).fill("Hosted editable research template");
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  assert.equal(await page.getByLabel("Recipient address",{exact:true}).inputValue(),"","Template must not invent a merchant recipient");
+  await page.getByLabel("Merchant name",{exact:true}).fill("Reviewed protocol test merchant");
+  await page.getByLabel("Recipient address",{exact:true}).fill("0x1111111111111111111111111111111111111111");
+  await page.getByLabel("Merchant HTTPS origins",{exact:true}).fill(base);
+  await page.getByLabel("Approved evidence origins",{exact:true}).fill(base);
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await page.getByText("Enter the verified merchant recipient, not a repeated-digit placeholder.",{exact:true}).waitFor();
+  await page.getByLabel("Recipient address",{exact:true}).fill(process.env.DEMO_MERCHANT_RECIPIENT!);
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await page.getByLabel("Lifetime budget · USDC",{exact:true}).fill("0.999999");
+  await page.getByLabel("Per-payment limit · USDC",{exact:true}).fill("0.000001");
+  await page.reload();await page.getByLabel("Lifetime budget · USDC",{exact:true}).waitFor();
+  assert.equal(await page.getByLabel("Lifetime budget · USDC",{exact:true}).inputValue(),"0.999999");
+  assert.equal(await page.getByLabel("Per-payment limit · USDC",{exact:true}).inputValue(),"0.000001");
+  assert.equal(proposalPosts,0,"Hosted template inspection must not propose or activate a new card");
+  await page.screenshot({path:folder+"/hosted-template.png",fullPage:true,animations:"disabled"});await fits(page);
+  // The supplied drafts belong to the human owner, not this release operator.
+  // Verify isolation, then exercise recovery on the operator's archived sandbox clarification.
+  for(const foreignId of ["0xcde48ddfbf7517292e5834eaa017966960e9dfd8711cdff879763489fbf0281d","0xfc98632ddf79702bec15eac006c0c0a2441eafea7b83c2b690cced3d7b301a48"]){
+   const denied:APIResponse=await context.request.get(origin+"/api/v1/owner/drafts/"+foreignId);assert.equal(denied.status(),404);assert.equal((await denied.json()).input,undefined);
+  }
+  const clarificationId="0x86487226f47e9ed323eaef9f9e7eecd610d845730af002ef613705cac83b33b6";
+  const clarifiedResponse:APIResponse=await context.request.get(origin+"/api/v1/owner/drafts/"+clarificationId);assert.equal(clarifiedResponse.status(),200);
+  const clarified=await clarifiedResponse.json();assert.equal(clarified.state,"FINALIZED");assert.equal(clarified.status,"NEEDS_CLARIFICATION");assert.equal(clarified.policy,null);assert.ok(clarified.questions.length>0);assert.equal(clarified.activation,undefined);
+  await page.goto(origin+"/agent-setup?draftId="+clarificationId);
+  await page.getByRole("button",{name:"Edit instructions",exact:true}).waitFor();
+  for(const question of clarified.questions)await page.getByText(question,{exact:true}).waitFor();
+  assert.equal(await page.getByRole("button",{name:"Activate agent",exact:true}).count(),0);
+  await page.screenshot({path:folder+"/hosted-clarification.png",fullPage:true,animations:"disabled"});
+  await page.getByRole("button",{name:"Edit instructions",exact:true}).click();
+  assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),clarified.input.guidance.name);
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  assert.equal(await page.getByLabel("Recipient address",{exact:true}).first().inputValue(),clarified.input.guidance.merchants[0].recipient);
+  await page.screenshot({path:folder+"/hosted-draft-recovery.png",fullPage:true,animations:"disabled"});assert.equal(proposalPosts,0);
  }
  origins.push({origin,loginSignatures:signatures,privateOwnerIsolationVerified:true,ownedAgentCount:owned.length,ownerOwnsAuditAgent:card.agent.owner.toLowerCase()===account.address.toLowerCase(),publicAuditCardVerified:origin===base});await context.close();
  }
@@ -144,6 +185,6 @@ try{
  const page=await reduced.newPage();await page.goto(base);await page.locator(".hero-title").waitFor();
  await page.waitForTimeout(1000);assert.equal(await page.locator("video").evaluate((v:HTMLVideoElement)=>v.paused),true);await fits(page);await reduced.close();
  assert.deepEqual(errors,[]);
- const report={mode:"LIVE_HOSTED_IDENTITY_RELEASE_NO_PAYMENT_POSTS",sourceCommit:config.sourceCommit,verifiedAt:new Date().toISOString(),base,origins,actualLatestIds:latest.map((p:any)=>p.id),agentId,usage:card.usage,independentRequestCount:all.length,independentFundsMoved:formatAmount(sum),docsSectionCount:docsSections.length,viewports:[320,390,768,1440,1920],png:{width:1200,height:760},errorCodes:errorCases.map(c=>({status:c.status,code:c.code})),paymentAdmissions:0,pageErrors:errors,rawApiLogs:logs};
+ const report={mode:"LIVE_HOSTED_IDENTITY_RELEASE_NO_PAYMENT_POSTS",sourceCommit:config.sourceCommit,verifiedAt:new Date().toISOString(),base,origins,actualLatestIds:latest.map((p:any)=>p.id),agentId,usage:card.usage,independentRequestCount:all.length,independentFundsMoved:formatAmount(sum),docsSectionCount:docsSections.length,hostedTemplates:{selectable:3,editable:true,exactAmountsPreservedOnReload:true,placeholderRecipientRejected:true,proposalPosts:0},hostedSetupRecovery:{foreignHumanDraftsDenied:true,ownedArchivedClarificationPreserved:true,originalOwnedInputsRestored:true,finalizedClarification:true,activationOffered:false},viewports:[320,390,768,1440,1920],png:{width:1200,height:760},errorCodes:errorCases.map(c=>({status:c.status,code:c.code})),paymentAdmissions:0,pageErrors:errors,rawApiLogs:logs};
  await writeFile(folder+"/report.json",JSON.stringify(report,null,2)+"\n");console.log("HOSTED_IDENTITY_RELEASE_VERIFIED",JSON.stringify({requests:all.length,fundsMoved:formatAmount(sum),docsSections:docsSections.length,origins:origins.length}));
 }finally{await browser.close();}

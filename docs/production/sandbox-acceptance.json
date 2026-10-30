@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "kind": "LIVE_TESTNET_SANDBOX_ACCEPTANCE",
+  "acceptanceSourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+  "browserSourceCommit": "e1e6fb90776cd684e9bf66be71167c02b3a1ffa0",
+  "verifiedAt": "2026-10-30T11:49:01.731Z",
+  "origin": "https://intentguard-tapeout.vercel.app",
+  "card": {
+    "id": "0xe199f50dcce9437b3431fd161759c6cce6563c5f070135c04e03445b8c4b4366",
+    "address": "0x3c652bca51252dc72bf4ee32205cd10aee97d5c5"
+  },
+  "paymentEnvironment": "testnet",
+  "paymentChainId": 1952,
+  "reviewEnvironment": "testnet",
+  "reviewChainId": 61999,
+  "firstBlockedMs": 17268,
+  "browser": {
+    "walletConnected": false,
+    "cookies": 0,
+    "pageErrors": []
+  },
+  "results": [
+    {
+      "id": "0x0535b4841501818020cba8ff8d0d91785eec7d4497d3743bc8a937bbd5cf3c9e",
+      "scenario": "blocked",
+      "status": "BLOCKED",
+      "amount": "0.010001",
+      "genLayerTxHash": null,
+      "paymentTxHash": null,
+      "publicUrl": "https://intentguard-tapeout.vercel.app/explorer/transactions/0x0535b4841501818020cba8ff8d0d91785eec7d4497d3743bc8a937bbd5cf3c9e"
+    },
+    {
+      "id": "0x7d67a05c725fb6ebaa758d41d307e691a3ad851e9a427ac938db75f242e4be2f",
+      "scenario": "permitted",
+      "status": "PAID",
+      "amount": "0.000001",
+      "genLayerTxHash": "0xf88e3dbb7f0ad890564d0192dc2a204160debb75b1fe18ae5ac8fb295bf10072",
+      "paymentTxHash": "0x0fe03eb9459fe23d7abf2dcf8d5c3ce1f887579f6239b5a4d44dc69746d1d4f3",
+      "publicUrl": "https://intentguard-tapeout.vercel.app/explorer/transactions/0x7d67a05c725fb6ebaa758d41d307e691a3ad851e9a427ac938db75f242e4be2f"
+    },
+    {
+      "id": "0xf6493003ef41035a1b5ae253258e6717a381ec4b30fb5865f88b113294f142c0",
+      "scenario": "prohibited",
+      "status": "REJECTED",
+      "amount": "0.000001",
+      "genLayerTxHash": "0x13937be2f07b57e9e98c3f3723a0e80e4f2b4c44f79065bbe7772fcc8c6e09ef",
+      "paymentTxHash": null,
+      "publicUrl": "https://intentguard-tapeout.vercel.app/explorer/transactions/0xf6493003ef41035a1b5ae253258e6717a381ec4b30fb5865f88b113294f142c0"
+    },
+    {
+      "id": "0x6749ace861f841fcd37b5579348f67b7e07d0e34aca9fda0d8eb79dc65fbb1fb",
+      "scenario": "wrong-buyer",
+      "status": "NEEDS_EVIDENCE",
+      "amount": "0.000001",
+      "genLayerTxHash": null,
+      "paymentTxHash": null,
+      "publicUrl": "https://intentguard-tapeout.vercel.app/explorer/transactions/0x6749ace861f841fcd37b5579348f67b7e07d0e34aca9fda0d8eb79dc65fbb1fb"
+    }
+  ],
+  "postAcceptanceBalances": {
+    "funded": "0.000999",
+    "spent": "0.000001",
+    "reserved": "0",
+    "available": "0.000999",
+    "periodSpent": "0.000001",
+    "periodReserved": "0"
+  },
+  "remainingAdmissions": 26,
+  "verifiedPayment": {
+    "token": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
+    "amountAtomic": "1",
+    "amount": "0.000001",
+    "receiptStatus": "success",
+    "verification": "Independent X Layer chain1952 receipt and decoded exact vault-to-request-recipient Transfer"
+  },
+  "scope": "Four educational scenarios and anonymous first use; original10/12 and both qualifying full audit rounds remain unresolved",
+  "replayScope": "Permitted and prohibited same-key retries recovered the original ID; wrong-buyer replay hit429 after admission and was not independently retried in that expired process. No replacement requests were created."
+}

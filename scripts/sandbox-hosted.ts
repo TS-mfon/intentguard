@@ -61,8 +61,8 @@ if(mode!=="--verify"){
  try{
   await client.startSession();for(const scenario of ["permitted","prohibited","wrong-buyer"] as const){
    const key="hosted-"+randomUUID();report.pendingAdmission={scenario,key,startedAt:new Date().toISOString()};await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});
-   let admitted;for(let attempt=0;attempt<3;attempt++){try{admitted=await client.request(scenario,key);break;}catch(error){if(!(error as {retryable?:boolean}).retryable||attempt===2)throw error;await new Promise(r=>setTimeout(r,5000));}}
-   assert.ok(admitted);report.requests.push({id:admitted.id,scenario,sourceCommit:report.sourceCommit});delete report.pendingAdmission;await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});assert.equal((await client.request(scenario,key)).id,admitted.id,"Same-key retry must recover the original request");
+   const request=async()=>{for(let attempt=0;attempt<5;attempt++){try{return await client.request(scenario,key);}catch(error){const e=error as {retryable?:boolean;retryAfterSeconds?:number;code?:string};if(!e.retryable||attempt===4)throw error;const waitMs=Math.min(60000,Math.max(1000,(e.retryAfterSeconds??5)*1000+1000));console.log(JSON.stringify({stage:"same-key-retry",scenario,code:e.code,waitMs}));await new Promise(r=>setTimeout(r,waitMs));}}throw Error("Same-key retries exhausted");};
+   const admitted=await request(),row={id:admitted.id,scenario,key,sourceCommit:report.sourceCommit,replayVerified:false};report.requests.push(row);delete report.pendingAdmission;await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});assert.equal((await request()).id,admitted.id,"Same-key retry must recover the original request");row.replayVerified=true;await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});
   }
  }finally{client.clearSession();}
  assert.equal(new Set(report.requests.map((r:any)=>r.id)).size,4);

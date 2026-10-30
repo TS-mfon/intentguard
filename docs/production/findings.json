@@ -162,7 +162,13 @@
           "line": 918
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/REMEDIATION-PLAN.md",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Canonical and legacy origins point to the READY updated Vercel deployment. Hosted testnet routes pass; three independent environments and mainnet availability remain open."
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Partial: canonical URL reachable in this session; three independent current availability checks outstanding."
@@ -295,6 +301,12 @@
           "check": "node tools/production/verify-frontend.mjs",
           "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "artifact": "docs/production/sandbox-acceptance.json",
+          "check": "node --import tsx scripts/sandbox-hosted.ts --verify",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Four actual anonymous testnet outcomes, finalized reasoning and independently decoded exact one-unit native-USDC vault transfer; mobile first denial17.268seconds. Original10/12 and both full live rounds remain open."
         }
       ],
       "fixCommits": [
@@ -422,6 +434,12 @@
           "artifact": "docs/production/STUDIONET-SETUP-INCIDENT.md",
           "check": "node node_modules/tsx/dist/cli.mjs scripts/studionet-setup-inspect.ts --clarification",
           "scope": "Fresh supplied V2 transaction7e811a75 finalized MAJORITY_AGREE/FINISHED_WITH_RETURN with NEEDS_CLARIFICATION and policy:null. Exact calldata/input hash and accepted receipt match finalized storage. Two preceding invalid guided-result rotations remain reliability evidence. Browser clarification, preserved original inputs and duplicate budget prose checks passed; original10/12 and required fresh audits remain open."
+        },
+        {
+          "artifact": "docs/production/sandbox-acceptance.json",
+          "check": "node --import tsx scripts/sandbox-hosted.ts --verify",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Four actual anonymous testnet outcomes, finalized reasoning and independently decoded exact one-unit native-USDC vault transfer; mobile first denial17.268seconds. Original10/12 and both full live rounds remain open."
         }
       ],
       "fixCommits": [
@@ -518,7 +536,14 @@
           "line": 1083
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/sandbox-acceptance.json",
+          "check": "node --import tsx scripts/sandbox-hosted.ts --verify",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Four actual anonymous testnet outcomes, finalized reasoning and independently decoded exact one-unit native-USDC vault transfer; mobile first denial17.268seconds. Original10/12 and both full live rounds remain open."
+        }
+      ],
       "fixCommits": [],
       "retestCommits": [],
       "baselineClassification": "Partial: durable recovery exists; absolute deadlines, stalled-stage diagnosis and comprehensive outage/race proof outstanding."
@@ -613,6 +638,12 @@
           "check": "node tools/production/verify-frontend.mjs",
           "scope": "Independent production HTTPS static profile browsers passed both environments; synthetic wallet/store fixtures are isolated. Actual hosted/mainnet acceptance remains required. Existing legacy testnet records are preserved.",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "artifact": "docs/production/sandbox-acceptance.json",
+          "check": "node --import tsx scripts/sandbox-hosted.ts --verify",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Four actual anonymous testnet outcomes, finalized reasoning and independently decoded exact one-unit native-USDC vault transfer; mobile first denial17.268seconds. Original10/12 and both full live rounds remain open."
         }
       ],
       "fixCommits": [],
@@ -729,6 +760,11 @@
           "artifact": "tests/explorer.test.ts",
           "check": "node node_modules/tsx/dist/cli.mjs --test tests/explorer.test.ts",
           "scope": "Ten tests preserve early destination identity, canonical/bridge precedence, safe unsupported routes and unchanged historical request data."
+        },
+        {
+          "artifact": "scripts/identity-hosted.ts",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Both hosted testnet origins: owner-domain login/isolation,actual rows,downloads,22docs sections; three selectable editable templates,exact amounts preserved on reload and rejected sample recipients. Mainnet/DeWEB acceptance remains deferred."
         }
       ],
       "fixCommits": [
@@ -770,6 +806,11 @@
           "artifact": "docs/production/SANDBOX.md",
           "check": "node tools/production/verify-product.mjs",
           "scope": "Visitor capabilities, templates and owner original-input recovery synchronized in SDK/OpenAPI/MCP/product/skill resources;18SDK tests,3MCP stdio tests and6product checks passed."
+        },
+        {
+          "artifact": "tools/production/verify-product.mjs",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Independent product verification:19 SDK tests including real observed host/client skew regression,3 MCP stdio tests and6 schema/standalone/vendoring checks."
         }
       ],
       "fixCommits": [],
@@ -783,7 +824,7 @@
       "acceptance": "A visitor reaches a real paid or blocked record within 60 seconds without connecting a wallet; setup remains resumable.",
       "ownerLeaf": "3.2",
       "observingGate": "leaf-3.2:R22",
-      "status": "PARTIAL",
+      "status": "VERIFIED",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -807,6 +848,12 @@
           "artifact": "docs/DEMO.md",
           "scope": "Actual historical public testnet records are linked for wallet-free first use; current hosted timed acceptance remains required.",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "artifact": "docs/production/sandbox-acceptance.json",
+          "check": "node --import tsx scripts/sandbox-hosted.ts --verify",
+          "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+          "scope": "Four actual anonymous testnet outcomes, finalized reasoning and independently decoded exact one-unit native-USDC vault transfer; mobile first denial17.268seconds. Original10/12 and both full live rounds remain open."
         }
       ],
       "fixCommits": [],
@@ -964,6 +1011,10 @@
           "artifact": "docs/production/MAINNET-DEPLOYMENT.md",
           "check": "node tools/production/verify-mainnet-deploy.mjs",
           "scope": "78 preparation regressions verify quote/cap/signer/receipt recovery, Studionet genesis, ERC6551 token tuple and CPU registry mining races; no signed or broadcast deployment."
+        },
+        {
+          "artifact": "docs/production/REMEDIATION-PLAN.md",
+          "scope": "User deferred funding/deployment until November2026. Selected deployer has zeroOKB; no executable quote,cap,signature or broadcast. Obtain fresh quotes and cap when resumed."
         }
       ],
       "fixCommits": [
@@ -1032,7 +1083,7 @@
       "genlayerTests": 206,
       "apiWorkerTests": 191,
       "circuitTests": 6,
-      "mainnetToolingTests": 78,
+      "mainnetToolingTests": 79,
       "typecheck": true,
       "identityBrowser": true,
       "storyBrowser": true,
@@ -1041,7 +1092,8 @@
         "testnet"
       ],
       "dockerWebAndWorker": true,
-      "scope": "Local implementation and preparation only; current hosted publication, mainnet receipts and exported film require independent evidence."
+      "scope": "Local implementation and preparation only; current hosted publication, mainnet receipts and exported film require independent evidence.",
+      "sdkTests": 19
     },
     "publicationRepairs": {
       "apiDestinationFixCommit": "649760f",
@@ -1050,25 +1102,41 @@
       "packagingFailure": "MongoDB 8.0.32 fixture refuses newer CI Linux kernels; supported pinned disposable 7.0.45 fixture prepared",
       "finalArtifactReport": ".local/completion/FINAL-REPORT.md",
       "finalPublicationAndFilmRequireIndependentVerification": true
+    },
+    "mainnetDeferral": {
+      "requestedAt": "2026-10-30",
+      "until": "2026-11",
+      "instruction": "leave for now will deploy later next month",
+      "fundingDeferred": true,
+      "spendingCap": null,
+      "freshQuoteRequiredOnResume": true
+    },
+    "testnetVisitorAcceptance": {
+      "sourceCommit": "c46e5d156b509115ecc919647538b781f4e9f53f",
+      "ci": "https://github.com/TS-mfon/intentguard/actions/runs/41049029369",
+      "sandboxEvidence": "docs/production/sandbox-acceptance.json",
+      "fourActualOutcomes": true,
+      "firstBlockedMs": 17268,
+      "fullReleaseAcceptance": false
     }
   },
   "amendments": [
     {
       "id": "U09",
       "title": "Editable agent templates",
-      "status": "IMPLEMENTED_PENDING_HOSTED",
+      "status": "HOSTED_VERIFIED",
       "evidence": "tests/agent-templates.test.ts; scripts/production-browser.ts"
     },
     {
       "id": "U10",
       "title": "Dedicated anonymous testnet sandbox",
-      "status": "IMPLEMENTED_PENDING_HOSTED",
-      "evidence": "docs/production/SANDBOX.md; tests/sandbox.test.ts"
+      "status": "HOSTED_VERIFIED",
+      "evidence": "docs/production/sandbox-acceptance.json; scripts/sandbox-hosted.ts; tests/sandbox.test.ts"
     },
     {
       "id": "U11",
       "title": "Receipt-grounded Studionet setup repair",
-      "status": "V2_DEPLOYED_PENDING_HOSTED",
+      "status": "REPAIR_VERIFIED_OWNER_REVISION_REQUIRED",
       "evidence": "docs/production/STUDIONET-SETUP-INCIDENT.md; docs/production/interpreter-v2-deployment.json"
     }
   ]
