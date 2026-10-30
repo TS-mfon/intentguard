@@ -49,3 +49,21 @@ Binding reads and verifies the current dedicated policy, actual EVM activation a
 Pause the dedicated card or revoke its key to stop new submissions; existing visitor-scoped records remain readable without requiring a live RPC. Rotating the configured key invalidates old visitor capabilities, but public record links remain. Changing mainnet environment, merchant, token, destination, numerical limits or permission fields fails closed. Filling the allowance displays an unavailable state; it must not be reset automatically or silently bypassed.
 
 Local tests use isolated stores and chain/reviewer fixtures to verify the real admission/worker paths, with positive and negative controls. They are **implementation evidence**. Live bootstrap, hosted anonymous admission, finalized review and independently verified payment receipts are separate release evidence owned by the driver. No live sandbox card, user or payment is claimed by this document alone.
+
+## Dedicated testnet deployment, 2026-10-30
+
+The dedicated card has completed finalized permission proposal, activation, reviewer deployment, private credential binding and a 0.001 native-testnet-USDC deposit. Hosted scenario acceptance is a separate check.
+
+| Identity | Verified value |
+|---|---|
+| Card ID | `0xe199f50dcce9437b3431fd161759c6cce6563c5f070135c04e03445b8c4b4366` |
+| Vault, X Layer testnet1952 | `0x3C652BCa51252dc72BF4eE32205cD10AEE97D5c5` |
+| Policy hash | `0x02fa136bb2c7f6b46acf2c4e21b9c146a75371559dd9e320b0de0dd3aa7bcdea` |
+| Finalized PROPOSED transaction | `0xfb25f39ef1dd678708743785569abb687792577f0969b215ccc38197f4a59df6` |
+| Activation transaction | `0x12de7f99a696fa679767709bfe239ff086ccbfc539f78d1b12a220f4f65981c7` |
+| READY Studionet reviewer | `0x2c2a05325f2B0Fe0774532aF9D12180A64647E00` |
+| Funding transaction | `0xc667e00041aa6c2f8f6b169f96e73bae25389fea1cdf68146f8bb5bbb6a145a6` |
+
+The first setup attempt returned finalized clarification; its draft and receipt remain archived. The revised reusable permission explicitly supplies invoice amount, invoice ID and buyer vault at purchase time. The private key remains server-only; no credential appears in this deployment record.
+
+`scripts/sandbox-hosted.ts --execute` admits four genuine anonymous scenarios once, saves their actual IDs, checks a fresh mobile browser's numerical denial within60seconds, and waits for real outcomes. `--verify` rechecks the saved public records and finalized reasoning without admitting a request. A PAID result additionally requires an independently decoded one-unit native-USDC Transfer from this exact vault on chain1952. These four educational scenarios do not replace either full live semantic/reliability audit.

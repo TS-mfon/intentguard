@@ -4,7 +4,7 @@ import {execFileSync} from "node:child_process";
 import {parseEnv} from "node:util";
 const root=new URL("../",import.meta.url);
 const candidates=new Set();
-for(const path of [new URL(".local/testnet-secrets.env",root),new URL(".local/hosting.env",root),new URL(".local/worker-wake.env",root),new URL(".local/audit-agent.env",root),new URL("file:///home/sudodave/.env.build")]){
+for(const path of [new URL(".local/testnet-secrets.env",root),new URL(".local/hosting.env",root),new URL(".local/worker-wake.env",root),new URL(".local/audit-agent.env",root),new URL(".local/sandbox-agent.env",root),new URL("file:///home/sudodave/.env.build")]){
  let body;try{body=await readFile(path,"utf8")}catch(error){if(error.code==="ENOENT")continue;throw error}
  for(const [name,value]of Object.entries(parseEnv(body))){
   if(!/PRIVATE_KEY|PASSWORD|SESSION_SECRET|API_KEY|ADMIN_KEY|VERCEL_TOKEN|GH_TOKEN|GITHUB_TOKEN|GITHUB_WORKER_TOKEN|MONGODB_URI/i.test(name)||value.length<8)continue;
