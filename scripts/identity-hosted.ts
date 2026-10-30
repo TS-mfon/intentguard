@@ -67,10 +67,14 @@ try{
   if(args.method==="personal_sign"){
    const [raw,address]=args.params??[];assert.equal(String(address).toLowerCase(),account.address.toLowerCase());
    const message=hexToString(String(raw) as Hex),lines=message.split("\n");
-   assert.equal(lines[0],"IntentGuard owner login");assert.equal(lines[1],new URL(origin).host);
-   assert.equal(lines[2],account.address.toLowerCase());assert.equal(lines[3],"Chain ID: 1952");
-   assert.match(lines[4],/^Nonce: [a-f0-9]{48}$/);assert.equal(lines[6],"This signature authorizes a dashboard session only.");
-   assert.ok(Date.parse(lines[5].replace("Expires: ",""))>Date.now());signatures++;return account.signMessage({message});
+   assert.equal(lines.length,10);assert.equal(lines[0],"IntentGuard owner login");assert.equal(lines[1],new URL(origin).host);
+   assert.equal(lines[2],account.address.toLowerCase());assert.equal(lines[3],"URI: "+origin);
+   assert.equal(lines[4],"API: "+config.apiOrigin);assert.equal(lines[5],"Payment environment: testnet");
+   assert.equal(lines[6],"Chain ID: 1952");assert.match(lines[7],/^Nonce: [a-f0-9]{48}$/);
+   assert.equal(lines[9],"This signature authorizes a dashboard session only.");
+   assert.match(lines[8],/^Expires: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+   assert.ok(Date.parse(lines[8].replace("Expires: ",""))>Date.now());
+   signatures++;return account.signMessage({message});
   }
   throw Error("Release verification allows domain-bound login signatures only");
  });
@@ -140,6 +144,6 @@ try{
  const page=await reduced.newPage();await page.goto(base);await page.locator(".hero-title").waitFor();
  await page.waitForTimeout(1000);assert.equal(await page.locator("video").evaluate((v:HTMLVideoElement)=>v.paused),true);await fits(page);await reduced.close();
  assert.deepEqual(errors,[]);
- const report={mode:"LIVE_HOSTED_IDENTITY_RELEASE_NO_PAYMENT_POSTS",verifiedAt:new Date().toISOString(),base,origins,actualLatestIds:latest.map((p:any)=>p.id),agentId,usage:card.usage,independentRequestCount:all.length,independentFundsMoved:formatAmount(sum),docsSectionCount:docsSections.length,viewports:[320,390,768,1440,1920],png:{width:1200,height:760},errorCodes:errorCases.map(c=>({status:c.status,code:c.code})),paymentAdmissions:0,pageErrors:errors,rawApiLogs:logs};
+ const report={mode:"LIVE_HOSTED_IDENTITY_RELEASE_NO_PAYMENT_POSTS",sourceCommit:config.sourceCommit,verifiedAt:new Date().toISOString(),base,origins,actualLatestIds:latest.map((p:any)=>p.id),agentId,usage:card.usage,independentRequestCount:all.length,independentFundsMoved:formatAmount(sum),docsSectionCount:docsSections.length,viewports:[320,390,768,1440,1920],png:{width:1200,height:760},errorCodes:errorCases.map(c=>({status:c.status,code:c.code})),paymentAdmissions:0,pageErrors:errors,rawApiLogs:logs};
  await writeFile(folder+"/report.json",JSON.stringify(report,null,2)+"\n");console.log("HOSTED_IDENTITY_RELEASE_VERIFIED",JSON.stringify({requests:all.length,fundsMoved:formatAmount(sum),docsSections:docsSections.length,origins:origins.length}));
 }finally{await browser.close();}
