@@ -32,6 +32,10 @@ test("Malformed guided drafts produce actionable errors before rendering",()=>{
 test("Guidance identifies a duplicate budget period and placeholder recipients",()=>{
  assert.equal(budgetProseWarnings({mission:"Buy reports for 250 USDC/day",taskContext:"",criteria:[]}).length,1);
  assert.equal(budgetProseWarnings({mission:"Buy approved reports",taskContext:"",criteria:[{id:"budget",description:"Spend 500 USDC per week"}]}).length,1);
+ assert.equal(budgetProseWarnings({mission:"Buy approved reports",taskContext:"",criteria:[{id:"budget",description:"Apply a daily aggregate spending limit of $250.00 USDC."}]}).length,1);
+ assert.equal(budgetProseWarnings({mission:"Buy approved reports",taskContext:"",criteria:[{id:"budget",description:"Maximum 250 USDC per 24 hours."}]}).length,1);
+ assert.equal(budgetProseWarnings({mission:"Buy approved reports",taskContext:"",criteria:[{id:"budget",description:"The total amount requested does not exceed $50.00 USDC for a single transaction or $250.00 USDC in daily aggregate spending."}]}).length,1);
+ assert.equal(budgetProseWarnings({mission:"Buy approved daily research reports",taskContext:"",criteria:[{id:"invoice",description:"Match the exact invoice amount to the requested amount."}]}).length,0);
  assert.equal(budgetProseWarnings({mission:"Buy approved reports",taskContext:"",criteria:[]}).length,0);
  assert.equal(placeholderRecipient("0x"+"1".repeat(40)),true);assert.equal(placeholderRecipient("0x1234567890123456789012345678901234567890"),false);
 });

@@ -4,13 +4,14 @@ import {mkdir,writeFile} from "node:fs/promises";
 import {pathToFileURL} from "node:url";
 import {createClient} from "genlayer-js";
 import {studionet} from "genlayer-js/chains";
-import type {GenLayerTransaction,Hash} from "genlayer-js/types";
+import {TransactionHashVariant,type GenLayerTransaction,type Hash} from "genlayer-js/types";
 import {assertFinalized,GenLayerTerminalError,normalizeStudioTransaction,normalizedCalldata,studioExecutionDiagnostic} from "../apps/web/lib/genlayer";
 import {digest,policySchema} from "../packages/shared";
 import {parseStrictJson} from "../packages/shared/strict-json";
 
 export const setupIncidentTransactions=["0xe543a899fb2d5b66e0bc6c009c49fa264ec8775ae1da3c4203a8ff292ef40406","0x86071c7486457360cfd24204e7412fd8dc3da76f77e140109926dab6a2d2946f","0x81de235b84ae254676f281e39f886cb7ae653815fc11bd520b4bf01b6f0bb13b"] as const;
 export const suppliedSetupDraft="0xcde48ddfbf7517292e5834eaa017966960e9dfd8711cdff879763489fbf0281d";
+export const suppliedClarificationTransaction="0x7e811a75d010ddb5385cec8eac9fda5a3dd76ef7ae15808e3ed03d0e4dc42f17";
 const knownErrors=new Set(["Exact decimal amount required","Invalid draft result fields","Draft changed explicit structured guidance"]);
 const array=(value:unknown):Record<string,any>[]=>Array.isArray(value)?value:value?[value as Record<string,any>]:[];
 function receiptSummary(receipt:Record<string,any>){
@@ -40,6 +41,25 @@ export function inspectSetupTransaction(raw:GenLayerTransaction,expectedHash:str
 async function main(){
  const client=createClient({chain:studionet,endpoint:"https://studio.genlayer.com/api"});
  assert.equal(await client.getChainId(),61999,"Unexpected Studionet chain");
+ if(process.argv[2]==="--clarification"){
+  const raw=await client.getTransaction({hash:suppliedClarificationTransaction}),tx=normalizeStudioTransaction(raw,suppliedClarificationTransaction);
+  assert.equal(tx.hash.toLowerCase(),suppliedClarificationTransaction);assert.ok(tx.txDataDecoded?.type==="call");
+  const call=normalizedCalldata(tx.txDataDecoded.callData) as {method:string;args:string[]};
+  assert.equal(call.args.length,2);assert.equal(call.args[0],"0xfc98632ddf79702bec15eac006c0c0a2441eafea7b83c2b690cced3d7b301a48");
+  const target="0x4a96E2dFCa2cae0f77cC7Dcc1B5e50a865F0437f";
+  assertFinalized(tx,{target,method:"propose",args:call.args,sender:"0xEd9EDd8586b20524CafA4F568413C504C9B03172"});
+  const input=parseStrictJson(call.args[1]);policySchema.parse((input as {guidance:unknown}).guidance);
+  const read=(functionName:string)=>client.readContract({address:target,functionName,args:[call.args[0]],jsonSafeReturn:true,transactionHashVariant:TransactionHashVariant.LATEST_FINAL});
+  assert.equal(await read("get_draft_input_hash"),digest(input));
+  const result=parseStrictJson(String(await read("get_draft"))) as {status:string;policy:unknown;questions:string[];interpretation:string};
+  assert.equal(result.status,"NEEDS_CLARIFICATION");assert.equal(result.policy,null);assert.ok(result.questions.length>0&&result.questions.every(q=>typeof q==="string"));
+  const leaders=array((raw as any).consensus_data?.leader_receipt).filter(r=>r.mode==="leader"),payload=leaders.at(-1)?.result?.payload;
+  assert.deepEqual(parseStrictJson(parseStrictJson(payload.readable) as string),result,"Finalized storage differs from the accepted receipt");
+  const report={kind:"VERIFIED_STUDIONET_CLARIFICATION",verifiedAt:new Date().toISOString(),chainId:61999,hash:tx.hash,status:tx.statusName,result:tx.resultName,execution:tx.txExecutionResultName,interpreter:target,draftId:call.args[0],inputHash:digest(input),clarification:result,signatures:0,broadcasts:0};
+  await mkdir(".local/studionet-setup",{recursive:true});await writeFile(".local/studionet-setup/clarification.json",JSON.stringify(report,null,2)+"\n");
+  console.log(JSON.stringify(report,null,2));console.log("STUDIONET_CLARIFICATION_VERIFIED");return;
+ }
+ assert.equal(process.argv[2],undefined,"Use only --clarification or the original incident inspection");
  const transactions=[];
  for(const hash of setupIncidentTransactions)transactions.push(inspectSetupTransaction(await client.getTransaction({hash:hash as Hash}),hash));
  const report={version:1,kind:"READ_ONLY_STUDIONET_SETUP_INCIDENT",inspectedAt:new Date().toISOString(),rpc:"https://studio.genlayer.com/api",chainId:61999,suppliedSetupDraft,transactions,draftLinkage:transactions.some(t=>t.call.draftId===suppliedSetupDraft)?"MATCHED_PUBLIC_CALL":"SUPPLIED_DRAFT_DIFFERS_FROM_INSPECTED_CALLS; requires an owner-authorized draft read",signatures:0,broadcasts:0};

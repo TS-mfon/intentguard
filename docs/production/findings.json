@@ -417,6 +417,11 @@
           "artifact": "docs/production/STUDIONET-SETUP-INCIDENT.md",
           "check": "scripts/studionet-setup-inspect.ts; tests/studionet-setup.test.ts; tools/production/verify-reviewer.mjs",
           "scope": "Three finalized failed legacy proposals independently refetched. V2 preserves complete structured policy, retains substantive validators and is source/operator/version verified on61999. Fresh guided proposal and payment reliability remain separate live gates."
+        },
+        {
+          "artifact": "docs/production/STUDIONET-SETUP-INCIDENT.md",
+          "check": "node node_modules/tsx/dist/cli.mjs scripts/studionet-setup-inspect.ts --clarification",
+          "scope": "Fresh supplied V2 transaction7e811a75 finalized MAJORITY_AGREE/FINISHED_WITH_RETURN with NEEDS_CLARIFICATION and policy:null. Exact calldata/input hash and accepted receipt match finalized storage. Two preceding invalid guided-result rotations remain reliability evidence. Browser clarification, preserved original inputs and duplicate budget prose checks passed; original10/12 and required fresh audits remain open."
         }
       ],
       "fixCommits": [

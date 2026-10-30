@@ -18,7 +18,11 @@ import artifacts from "../contracts/evm/abi.json";
 for(const file of [".local/testnet-secrets.env",".local/hosting.env"])loadEnvFile(file);
 const action=process.argv[2];assert.ok(["backfill","deploy-interpreter","verify-interpreter","prepare-sandbox","activate-sandbox","fund-sandbox","status"].includes(action),"Choose an explicit testnet visitor stage");
 const cfg=configuration();assert.equal(cfg.mode,"testnet");assert.equal(cfg.chainId,1952);assert.notEqual(cfg.databaseName,"intentguard_mainnet");
-const store=await database(),gl=new GenLayer(store),evm=new Evm(store),owner=privateKeyToAccount(process.env.XLAYER_OPERATOR_PRIVATE_KEY as Hex);
+// Operator startup has intermittent TCP timeouts from this environment. Retry
+// only the idempotent connection/index preflight, before any release stage runs.
+// Each failed client is closed by database(); runtime pool limits stay intact.
+async function connectStore(){for(let attempt=1;attempt<=3;attempt++){try{return await database();}catch(error){if(attempt===3)throw error;console.log(JSON.stringify({stage:"database-startup",retry:attempt}));}}throw Error("Database startup failed");}
+const store=await connectStore(),gl=new GenLayer(store),evm=new Evm(store),owner=privateKeyToAccount(process.env.XLAYER_OPERATOR_PRIVATE_KEY as Hex);
 assert.equal(owner.address.toLowerCase(),cfg.gateway?.toLowerCase());
 const statePath=".local/visitor-release/state.json",reportPath=".local/visitor-release/report.json";
 await mkdir(".local/visitor-release",{recursive:true,mode:0o700});
@@ -32,7 +36,12 @@ async function api(path:string,method="GET",body?:unknown){
 async function authenticate(){
  if(state.cookie){const session=await api("/auth/session").catch(()=>null);if(session?.value.address===state.owner)return;}
  delete state.cookie;const {value:challenge}=await api("/auth/challenge","POST",{address:owner.address});
- assert.ok(challenge.message.includes("Chain ID: 1952"));assert.ok(challenge.message.includes(new URL(cfg.origin).host));assert.ok(challenge.message.includes(owner.address));
+ const lines=challenge.message.split("\n");assert.equal(lines.length,10);
+ assert.deepEqual(lines.slice(0,7),["IntentGuard owner login",new URL(cfg.origin).host,owner.address.toLowerCase(),"URI: "+cfg.origin,"API: "+cfg.origin,"Payment environment: testnet","Chain ID: 1952"]);
+ // The hosted clock can lead the operator by a few seconds. The server still
+ // enforces its five-minute challenge; tolerate only five seconds of skew here.
+ assert.match(lines[7],/^Nonce: [a-f0-9]{48}$/);const expires=Date.parse(lines[8].replace(/^Expires: /,""));assert.ok(expires>Date.now()&&expires<=Date.now()+305000);
+ assert.equal(lines[9],"This signature authorizes a dashboard session only.");
  const signature=await owner.signMessage({message:challenge.message});const {response,value}=await api("/auth/login","POST",{address:owner.address,signature});assert.equal(value.address,state.owner);
  state.cookie=response.headers.get("set-cookie")?.split(";")[0];assert.ok(state.cookie?.startsWith("ig_session="));await save();
 }

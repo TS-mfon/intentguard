@@ -44,6 +44,7 @@ export const placeholderRecipient=(value:string)=>/^0x([0-9a-f])\1{39}$/i.test(v
 /** Flag explicit duplicate budget prose; money belongs in the financial controls. */
 export function budgetProseWarnings(form:Pick<SetupFormValues,"mission"|"taskContext"|"criteria">):string[]{
  const text=[form.mission,form.taskContext,...form.criteria.map(item=>item.description)].join("\n");
- return /\b\d+(?:\.\d+)?\s*(?:USDC|USDT0|USDT|dollars?|USD)\s*(?:\/\s*(?:day|week|month)|per\s+(?:day|week|month)|a\s+(?:day|week|month)|daily|weekly|monthly)\b/i.test(text)
+ return /\b\d+(?:\.\d+)?\s*(?:USDC|USDT0|USDT|dollars?|USD)\s*(?:\/\s*(?:day|week|month)|per\s+(?:\d+\s+)?(?:days?|weeks?|months?|hours?)|a\s+(?:day|week|month)|(?:in\s+)?(?:daily|weekly|monthly))\b/i.test(text)
+  ||/\b(?:daily|weekly|monthly)\b[^\n]{0,100}\b(?:budget|cap|limit|spending)\b[^\n]{0,60}\$?\s*\d+(?:\.\d+)?\s*(?:USDC|USDT0|USDT|dollars?|USD)\b/i.test(text)
   ?["A mission or criterion repeats a spending amount and period. Put every budget in Money & validity and remove the duplicate amount from the prose; conflicting limits can prevent validator agreement."]:[];
 }

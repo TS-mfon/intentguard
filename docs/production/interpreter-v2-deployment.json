@@ -12,11 +12,13 @@
   "sourceFile": "contracts/genlayer/versions/permission_interpreter_v2.py",
   "sourceSha256": "61483b2fee8a48a0821cd23a137dc64e280914a764032f0d037d9e82d6544995",
   "verifiedAt": "2026-10-30T06:47:33.716Z",
-  "runtimeConfigured": false,
+  "runtimeConfigured": true,
   "legacyDraftsPinned": true,
   "legacyBackfill": {
     "interpreterAddress": "0x0922B814Cd91a9f2fF36F95D321A74eA22CEa9d3",
     "drafts": 9,
     "verifiedAt": "2026-10-30T06:25:23.801Z"
-  }
+  },
+  "runtimeEvidenceTransaction": "0x7e811a75d010ddb5385cec8eac9fda5a3dd76ef7ae15808e3ed03d0e4dc42f17",
+  "runtimeVerifiedAt": "2026-10-30T10:01:18.050Z"
 }
