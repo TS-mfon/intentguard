@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
 import {loadEnvFile} from "node:process";
 import {readFile,writeFile,mkdir,rename,chmod} from "node:fs/promises";
-import {randomBytes} from "node:crypto";
+import {randomBytes,createHash} from "node:crypto";
 import {createPublicClient,createWalletClient,defineChain,http,parseAbi,encodeFunctionData,decodeEventLog,keccak256,parseTransaction,type Abi,type Address,type Hex} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import type {Hash as GLHash} from "genlayer-js/types";
 import {canonical,digest,parseAmount,policySchema,validateDecision,type Policy,type PaymentInput,type RequestView,type CardView,type DraftResult,type CanonicalRequest,type Snapshot} from "../packages/shared";
 import {GenLayer,assertFinalized,normalizedCalldata} from "../apps/web/lib/genlayer";
-import {MemoryStore} from "../apps/web/lib/store";
+import {MemoryStore,database} from "../apps/web/lib/store";
 import {Evm} from "../apps/web/lib/evm";
 import type {Card,Draft,Payment} from "../apps/web/lib/models";
 import exported from "../contracts/evm/abi.json";
@@ -192,13 +192,19 @@ async function checkProtocol(){
  const config=await api<{mode:string;chainId:number;token:string;factoryAddress:string;configured:boolean}>("/config");
  assert.equal(config.mode,"testnet");assert.equal(config.chainId,1952);assert.equal(config.configured,true,"Hosted service is unconfigured");
  assert.equal(config.token.toLowerCase(),token.toLowerCase());assert.equal(config.factoryAddress.toLowerCase(),factory.toLowerCase());
- const manifest=JSON.parse(await readFile(new URL(".local/testnet-deployment.json",root),"utf8"));
+ const legacy=JSON.parse(await readFile(new URL("docs/deployments/testnet.json",root),"utf8"));
+ const replacement=JSON.parse(await readFile(new URL("docs/production/interpreter-v2-deployment.json",root),"utf8"));
+ const v2=process.env.GENLAYER_INTERPRETER_ADDRESS!.toLowerCase()===replacement.interpreterAddress.toLowerCase();
+ const manifest=v2?{interpreterTx:replacement.deploymentTransaction,interpreter:replacement.interpreterAddress}:legacy;
+ const source=await readFile(new URL(v2?replacement.sourceFile:"contracts/genlayer/permission_interpreter.py",root),"utf8");
+ if(v2){assert.equal(replacement.reviewChainId,61999);assert.equal(replacement.paymentChainId,1952);assert.equal(createHash("sha256").update(source).digest("hex"),replacement.sourceSha256);}
  const gl=new GenLayer(new MemoryStore());assert.equal(await gl.client.getChainId(),61999);
  const tx=await gl.client.getTransaction({hash:manifest.interpreterTx});assertFinalized(tx);
  const decoded=tx.txDataDecoded;assert.ok(decoded&&decoded.type==="deploy"&&"contractAddress"in decoded);
- assert.equal(decoded.code,await readFile(new URL("contracts/genlayer/permission_interpreter.py",root),"utf8"));
+ assert.equal(decoded.code,source);
  const args=normalizedCalldata(decoded.constructorArgs) as {args?:unknown[]};assert.equal(canonical(args.args),canonical([owner.address.toLowerCase()]));
  assert.equal(decoded.contractAddress?.toLowerCase(),process.env.GENLAYER_INTERPRETER_ADDRESS!.toLowerCase());
+ if(v2)assert.equal(Number(await gl.read(manifest.interpreter,"get_version")),2);
 }
 function makeGuidance():Policy{
  const now=Math.floor(Date.now()/1000);
@@ -216,8 +222,12 @@ async function draftAndCard(){
  const proposed=await poll("draft",()=>api<{id:string;state:string;status:string;policy:Policy|null;questions:string[];interpretation:string;genLayerTxHash?:string;activation?:{factoryAddress:string;config:Record<string,unknown>}}>("/owner/drafts/"+state.draftId,{ownerSession:true}),value=>value.state==="FINALIZED",value=>value.state+"/"+value.status);
  if(proposed.status!=="PROPOSED"||!proposed.policy||!proposed.activation)throw new Failure("DRAFT_NEEDS_CLARIFICATION");
  const input={description,guidance:state.guidance};
- const draft:Draft={_id:state.draftId!,owner:owner.address.toLowerCase(),input,inputHash:digest(input),state:"FINALIZED",genLayerTxHash:proposed.genLayerTxHash,createdAt:0,updatedAt:0};
- const gl=new GenLayer(new MemoryStore()),verified=await gl.draft(draft);
+ const persisted=await database(),draft=await persisted.get<Draft>("drafts",state.draftId!);
+ assert.ok(draft,"Hosted draft must exist in the verified testnet database");
+ assert.equal(draft.owner,owner.address.toLowerCase());assert.equal(draft.inputHash,digest(input));
+ assert.equal(canonical(draft.input),canonical(input));assert.equal(draft.genLayerTxHash,proposed.genLayerTxHash);
+ assert.equal(draft.state,"FINALIZED");
+ const gl=new GenLayer(persisted),verified=await gl.draft(draft);
  assert.equal(canonical(verified.policy),canonical(proposed.policy),"Hosted proposed policy differs from finalized consensus");
  for(const key of ["totalBudget","perPaymentLimit","periodBudget"] as const)assert.equal(parseAmount(proposed.policy.financial[key]),parseAmount(state.guidance.financial[key]),"Proposal changed financial permissions: "+key);
  for(const key of ["periodSeconds","validFrom","validUntil"] as const)assert.equal(proposed.policy.financial[key],state.guidance.financial[key],"Proposal changed financial permissions: "+key);

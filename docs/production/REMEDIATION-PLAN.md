@@ -274,3 +274,17 @@ Completion requires both deployments to have current release evidence, isolated 
 ## User amendment:2026-10-26
 
 The user explicitly selected Studionet for semantic review because GenLayer has no mainnet. X Layer196 payments and MongoDB mainnet financial records remain mainnet. The earlier proposed Bradbury migration is removed by this instruction. Live reviewer/source/receipt verification remains mandatory on Studionet.
+
+## User amendment:2026-10-30
+
+The user reaffirmed all R01–R27 and added three required product outcomes. These extend acceptance without replacing the original audit, mainnet or commercial gates.
+
+| Added outcome | Relevant findings | Acceptance |
+|---|---|---|
+| Selectable agent templates | R20–R22 | Research assistant, API access, testnet protocol test and custom templates remain editable; exact money fields, merchant guidance and owner-scoped refresh/recovery pass browser checks. |
+| Anonymous visitor sandbox | R08, R14, R17, R22 | A new dedicated native-USDC testnet card and server-held key admit bounded real requests without a visitor wallet. Genuine numerical denial appears within60seconds; semantic/payment results remain actual asynchronous records. Credentials, arbitrary destinations and other cards cannot escape the capability. |
+| Studionet setup incident repair | R11, R14, R20 | Both supplied transactions and draft cde48ddf have receipt-grounded diagnoses; original owner inputs are recoverable. New proposals use verified interpreter V2; original drafts retain their verified interpreter authority. |
+
+[STUDIONET-SETUP-INCIDENT.md](STUDIONET-SETUP-INCIDENT.md) records generated decimal/schema/fidelity failures and the distinct daily/weekly-budget ambiguity. The submitted decimals were valid. [interpreter-v2-deployment.json](interpreter-v2-deployment.json) records the successful new Studionet deployment; runtime publication and a fresh finalized guided proposal require separate verification. [SANDBOX.md](SANDBOX.md) defines the isolated public gateway, private key binding, admission limits and actual-outcome requirements. Local browser/security checks alone cannot certify a hosted sandbox payment.
+
+The verified170.005-second [submission film](SUBMISSION-VIDEO.md) completes R25 using five actual historical testnet records from source eccef51. It excludes the subsequently added visitor features and does not close the original10/12 audit, mainnet/DeWEB acceptance or customer evidence. Mainnet spending still requires a fresh executable quote, an explicit cap and funding; no cap has been authorized. Outreach remains held until the owner tests three agents and five requests.

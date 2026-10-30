@@ -1,8 +1,8 @@
-import {ProtocolClient, OwnerClient} from "./client.mjs";
-import type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions} from "./client.mjs";
-import type {CardView, PaymentInput, RequestView, RequestStatus, PublicConfiguration, HealthView, PageOptions, PublicAgentPage, PublicTransactionPage, PublicTransactionDetail, AgentCardSnapshot, BridgeProofView, DraftInput, DraftView, ReplacementView, ReplacementInput, ReplacementResult} from "./types";
+import {ProtocolClient, OwnerClient, SandboxClient} from "./client.mjs";
+import type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions, SandboxClientOptions} from "./client.mjs";
+import type {CardView, PaymentInput, RequestView, RequestStatus, PublicConfiguration, HealthView, PageOptions, PublicAgentPage, PublicTransactionPage, PublicTransactionDetail, AgentCardSnapshot, BridgeProofView, DraftInput, DraftView, ReplacementView, ReplacementInput, ReplacementResult, SandboxConfiguration, SandboxScenario, SandboxAdmission, SandboxRequestView} from "./types";
 export {IntentGuardError, canonicalJson, commitment, normalizeSettlement, validatePayment} from "./client.mjs";
-export type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions};
+export type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions, SandboxClientOptions};
 export type * from "./types";
 export type ProtocolErrorDetail = {field?: string; code?: string; message?: string};
 
@@ -44,4 +44,15 @@ export class IntentGuardOwner {
   revokeKeys(id: string, options?: CallOptions) { return this.#client.revokeKeys(id, options); }
   listRequests(options?: CallOptions) { return this.#client.listRequests(options) as Promise<{requests: RequestView[]}>; }
   getRequest(id: string, options?: CallOptions) { return this.#client.getRequest(id, options) as Promise<RequestView>; }
+}
+
+/** No wallet or agent key. A private, expiring visitor capability is held in memory. */
+export class IntentGuardSandbox {
+  #client: SandboxClient;
+  constructor(options: SandboxClientOptions) { this.#client = new SandboxClient(options); }
+  capabilities(options?: CallOptions) { return this.#client.capabilities(options) as Promise<SandboxConfiguration>; }
+  startSession(options?: CallOptions) { return this.#client.startSession(options); }
+  clearSession() { this.#client.clearSession(); }
+  request(scenario: SandboxScenario, idempotencyKey: string, options?: CallOptions) { return this.#client.request(scenario, idempotencyKey, options) as Promise<SandboxAdmission>; }
+  get(id: string, options?: CallOptions) { return this.#client.get(id, options) as Promise<SandboxRequestView>; }
 }

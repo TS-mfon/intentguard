@@ -14,6 +14,8 @@ Open the paid or blocked record above. The public page/API needs no wallet, owne
 
 The first-use target is60 seconds to a real paid/blocked record. A timed novice study and independent release acceptance are still pending; this target is not a measured conversion claim. The records are cross-checked in [the independent audit](docs/audits/cctp-independent.json) and [the testnet release evidence](docs/deployments/cctp-release.json).
 
+The visitor flow is `/sandbox`: choose an allowed service, an over-budget request, a prohibited purchase or a wrong-buyer invoice, then inspect the **actual** normal-pipeline request and receipts. It needs no wallet or agent key. A dedicated native-USDC testnet card/key stays server-side; its gateway fixes the merchant, local chain1952 and amount, with five requests per visitor session and a durable card ceiling. An actual live numerical denial can immediately record BLOCKED/review SKIPPED after durable admission; a failed or permitting preview never invents that outcome. Semantic review remains asynchronous. Testnet tokens have no monetary value, and expected scenario labels are not guaranteed results. Check current `/api/v1/config` and `/api/v1/sandbox` identity/readiness before use; an implemented flow does not establish a deployed or timed live success. [Sandbox operations](docs/production/SANDBOX.md) and the [portable visitor API/SDK guide](docs/PROTOCOL.md#visitor-sandbox) explain configuration, limits and recovery.
+
 ## How payment permission works
 
 ```mermaid
@@ -90,9 +92,15 @@ flowchart LR
 
 Same-origin owner login uses an HttpOnly cookie. Cross-origin owner login uses `Authorization: Owner <session>` held in memory, expiring after ten minutes and bound to API/frontend/payment identity. `Authorization: Bearer <agent-key>` is a separate card-only permission. Mainnet/testnet databases, credentials, session secrets, worker/signing identities and release manifests must remain isolated.
 
+Create agent includes editable **Research assistant**, **API access** and **Protocol test** templates; protocol testing is restricted to testnet1952. Enter your actual merchant recipient/origins and project before proposing. Put exact numerical amounts and the single aggregate budget period in **Money & validity**; keep repeated limits out of mission/context/criteria. `"250"` and `"0.000001"` are valid strings; commas, currency symbols, exponent syntax and floating-point JSON amounts are not. One policy cannot simultaneously encode two aggregate periods such as250/day and500/week.
+
+The supplied failed Studionet proposals showed generated-output faults, including altered guided fields and invalid generated decimals, rather than proved invalid user decimal input. A versioned interpreter repair preserves complete guided terms and keeps validator checks. Failed owner drafts return their original authenticated input for editing and resubmission; preserve old transactions and activate only reviewed FINALIZED/PROPOSED terms. See [the receipt-grounded incident report](docs/production/STUDIONET-SETUP-INCIDENT.md).
+
 ## Integrate with the source SDK
 
 Node24 and pnpm11.9.0 are the locked toolchain. The SDK is unpublished source in this checkout; it needs no wallet, MongoDB or server dependency. Import `packages/sdk/index.ts` with your TypeScript tooling, or use the browser-safe `ProtocolClient` from `packages/sdk/client.mjs`. Vendoring the entire `packages/sdk` directory retains its types, identity pins and guide.
+
+Visitor integrations use the separate `IntentGuardSandbox`/`SandboxClient`: explicitly choose testnet, inspect capabilities, startSession, submit one fixed scenario with a stable visitor key, and poll get for the actual status. The one-hour `Sandbox` capability stays in private memory; startSession returns expiry/allowance only. Visitor calls omit cookies and never accept `ig_` credentials, owner sessions or wallet signatures. The existing SDK and MCP agent transports keep their own scoped authority.
 
 ```ts
 import {IntentGuard, IntentGuardError} from "./packages/sdk/index";

@@ -36,9 +36,21 @@ export type AgentCardSnapshot = {agent: PublicAgent; usage: AgentUsage; shareUrl
 export type PublicAgentPage = {agents: PublicAgent[]; nextCursor: string | null};
 export type PublicTransactionPage = {transactions: PublicTransaction[]; nextCursor: string | null};
 export type DraftInput = {description: string; guidance?: Record<string, unknown>; settlement?: Settlement};
-export type DraftView = {id: string; state: string; status: "PENDING" | "PROPOSED" | "NEEDS_CLARIFICATION"; policy: Policy | null; questions: string[]; interpretation: string; genLayerTxHash?: string; error?: string; settlement?: Settlement; activation?: {factoryAddress: string; config: Record<string, unknown>; kind?: "CCTP_V2" | "CCTP_V4" | "USDT0_LOCAL"; destinationDomains?: number[]; settlement?: Settlement}};
+export type DraftView = {id: string; state: string; status: "PENDING" | "PROPOSED" | "NEEDS_CLARIFICATION"; policy: Policy | null; questions: string[]; interpretation: string; input?: {description: string; guidance?: Record<string, unknown>}; genLayerTxHash?: string; error?: string; settlement?: Settlement; activation?: {factoryAddress: string; config: Record<string, unknown>; kind?: "CCTP_V2" | "CCTP_V4" | "USDT0_LOCAL"; destinationDomains?: number[]; settlement?: Settlement}};
 export type ReplacementInput = {settlement: SettlementV2; acknowledgeAccountingReset: true};
 export type ReplacementResult = {id: string; state: "FINALIZED"; replacesCardId: string; sourceEnvironment: PaymentEnvironment; accountingReset: true; warnings: string[]};
 export type ReplacementView = {sourceCardId: string; sourceAddress: string; sourceEnvironment: PaymentEnvironment; sourceChainId: number; reviewEnvironment: "testnet"; reviewNetwork: "studionet"; sourceReviewerVersion: number; sourceReviewerAddress?: string; policy: Policy; policyHash: string; settlement: Settlement | null; balances: Balances; keyStatus: string; pendingCount: number; pendingRequestIds: string[]; accountingReset: true; warnings: string[]; steps: string[]};
 /** Worker-captured bridge data must be independently compared with public receipts. */
 export type BridgeProofView = {id: string; proof: {version: 1; requestId: string; paymentEnvironment: PaymentEnvironment; sourceChainId: number; destinationChainId: number; sourceReceipt: Record<string, unknown>; originalMessage: string; trustBoundary: string; [key: string]: unknown}; proofHash: string; verification: string};
+export type SandboxScenario = "permitted" | "blocked" | "prohibited" | "wrong-buyer";
+export type SandboxScenarioView = {id: SandboxScenario; label: string; expected: "PAID" | "BLOCKED" | "REJECTED" | "NEEDS_EVIDENCE"; description: string};
+export type SandboxConfiguration = {enabled: false; reasonCode: string; message: string; scenarios: SandboxScenarioView[]; paymentEnvironment: "testnet"; paymentChainId: 1952} | {
+  enabled: true; card: {id: string; name: string; address: string; policy: Policy; balances: Balances}; scenarios: SandboxScenarioView[];
+  limits: {requestsPerVisitor: 5; sessionSeconds: 3600; maxAdmissions: number; admissionsRemaining: number; requestsPerMinute: 6; normalAmount: "0.000001"; blockedAmount: "0.010001"; maximumAdmittedTransferAmount: string};
+  paymentEnvironment: "testnet"; paymentChainId: 1952; reviewEnvironment: "testnet"; reviewChainId: 61999; disclosure: string; credentialHandling: string;
+};
+export type SandboxAdmission = {id: string; status: RequestStatus; scenario: SandboxScenario; createdAt: number; publicUrl: string; paymentEnvironment: "testnet"; paymentChainId: 1952; reviewEnvironment: "testnet"; reviewChainId: 61999};
+export type SandboxRequestView = Omit<RequestView, "paymentEnvironment" | "request" | "bridge" | "reviewEnvironment" | "reviewNetwork" | "reviewChainId"> & {
+  paymentEnvironment: "testnet"; reviewEnvironment: "testnet"; reviewNetwork: "studionet"; reviewChainId: 61999;
+  request: PaymentInput & {destinationChainId: 1952}; bridge?: never; scenario: SandboxScenario; publicUrl: string;
+};

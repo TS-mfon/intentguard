@@ -69,6 +69,7 @@ jobs:
       - name: GenLayer contract and independent validator checks
         run: |
           uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/permission_interpreter.py
+          uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/versions/permission_interpreter_v2.py
           uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/purchase_reviewer.py
           uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/versions/purchase_reviewer_v3.py
           uvx --from genvm-linter==0.11.0 genvm-lint check contracts/genlayer/versions/purchase_reviewer_v4.py

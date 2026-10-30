@@ -32,6 +32,13 @@ test("a permanently failed reviewer is marked failed and cannot initialize indef
  const w=new Worker(s,new FakeEvm(),gl);await w.tick();const c=await s.get("cards",card._id);assert.equal(c?.state,"FAILED");assert.match(String(c?.error),/Retry initialization/);
  assert.equal(await w.tick(),false);
 });
+test("terminal generated-proposal diagnostics preserve exact owner input without rebroadcast",async()=>{
+ const s=new MemoryStore(),gl=new FakeGenLayer(),id=requestId(),original={description:"Buy protocol research data",guidance:card.policy};
+ await s.create("drafts",{_id:id,owner,input:original,inputHash:digest(original),genLayerTxHash:"0x"+"ab".repeat(32),state:"AWAITING_FINALITY",createdAt:1,updatedAt:1});
+ gl.draft=async()=>{throw new GenLayerTerminalError("Private provider output",{code:"DRAFT_GENERATION_CHANGED_GUIDANCE",message:"The generated proposal changed explicit owner terms. No policy was authorized; review the saved terms and submit a new proposal."})};
+ const worker=new Worker(s,new FakeEvm(),gl);await worker.tick();const result=await s.get("drafts",id);
+ assert.equal(result?.state,"FAILED");assert.equal(result?.errorCode,"DRAFT_GENERATION_CHANGED_GUIDANCE");assert.deepEqual(result?.input,original);assert.match(String(result?.error),/changed explicit owner terms/);assert.equal(String(result?.error).includes("Private provider output"),false);assert.equal(await worker.tick(),false);
+});
 test("terminal payment review failure persists cancellation and never settles",async()=>{
  const t=await setup();await t.step();await t.step();await t.step();t.gl.error=new GenLayerTerminalError("Finalized VM error");
  await t.worker.tick();let p=await t.s.get<Payment>("requests",t.p._id);assert.equal(p?.status,"RETRYING");assert.equal(p?.cancelTarget,"CANCELLED");assert.ok(p?.genLayerTxHash);assert.equal(t.evm.settlements,0);

@@ -117,10 +117,10 @@ class Transport {
     if (typeof this.#fetch !== "function") throw invalid("A Fetch implementation is required.");
   }
   setSecrets(secrets) { this.#secrets = secrets; }
-  async call(path, {method = "GET", body, authorization, idempotencyKey, signal, owner = false, allowDegraded = false, extraSecrets = []} = {}) {
+  async call(path, {method = "GET", body, authorization, idempotencyKey, signal, owner = false, sendOrigin = false, allowDegraded = false, extraSecrets = []} = {}) {
     const headers = {Accept: "application/json", "X-IntentGuard-Environment": this.profile.paymentEnvironment};
     if (authorization) headers.Authorization = authorization;
-    if (owner) headers.Origin = this.profile.frontendOrigin;
+    if (owner || sendOrigin) headers.Origin = this.profile.frontendOrigin;
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
     const bounded = AbortSignal.timeout(this.profile.requestTimeoutMs), requestSignal = signal ? AbortSignal.any([signal, bounded]) : bounded;
@@ -192,6 +192,103 @@ class Transport {
     const h = await this.call("/health", {signal: options?.signal, allowDegraded: true});
     if (h.paymentEnvironment !== this.profile.paymentEnvironment || h.paymentChainId !== this.profile.sourceChainId || h.reviewEnvironment !== "testnet" || h.reviewNetwork !== "studionet" || h.reviewChainId !== 61999 || !["ready", "degraded"].includes(h.status)) throw error("INVALID_RESPONSE", "Health returned a mismatched deployment identity.", 502);
     return h;
+  }
+}
+
+export const SANDBOX_SCENARIO_IDS = Object.freeze(["permitted", "blocked", "prohibited", "wrong-buyer"]);
+/** Visitor-only testnet transport. The dedicated card key never enters this client. */
+export class SandboxClient extends Transport {
+  #token = ""; #expiresAt = 0; #generation = 0; #cardId; #cardAddress;
+  constructor(options) {
+    const allowed = ["baseUrl", "paymentEnvironment", "frontendOrigin", "sourceChainId", "expectedReleaseId", "expectedSourceCommit", "expectedCardId", "requestTimeoutMs", "fetchImpl"];
+    if (!record(options) || options.paymentEnvironment !== "testnet" || Object.keys(options).some(k => !allowed.includes(k)))
+      throw invalid("Sandbox transport requires testnet and accepts no agent key, owner session or signing authority.");
+    super(options);
+  }
+  clearSession() { this.#token = ""; this.#expiresAt = 0; this.#generation++; this.setSecrets([]); }
+  assertFrontend() {
+    if (globalThis.location?.origin && globalThis.location.origin !== this.profile.frontendOrigin)
+      throw error("FRONTEND_IDENTITY_MISMATCH", "Use the sandbox from its configured frontend.");
+  }
+  assertGeneration(generation) {
+    if (generation !== this.#generation) throw error("SANDBOX_SESSION_CHANGED", "The visitor session changed. Inspect the original request before starting another.", 401);
+  }
+  sessionToken() {
+    if (!this.#token) throw error("SANDBOX_SESSION_REQUIRED", "Start a sandbox session first.", 401);
+    if (this.#expiresAt <= Date.now()) throw error("SANDBOX_SESSION_EXPIRED", "Start a fresh sandbox session; existing public records remain inspectable.", 401);
+    return this.#token;
+  }
+  async protect(action) {
+    const generation = this.#generation;
+    try { return await action(generation); }
+    catch (e) {
+      if (generation === this.#generation && e instanceof IntentGuardError && ([401, 403].includes(e.status) || e.code.endsWith("IDENTITY_MISMATCH") || e.code === "PAYMENT_ENVIRONMENT_MISMATCH")) this.clearSession();
+      throw e;
+    }
+  }
+  async verifyDeployment(options) { this.assertFrontend(); return super.capabilities(options); }
+  async readSandbox(options) {
+    await this.verifyDeployment(options);
+    const result = await this.call("/sandbox", {signal: options?.signal, sendOrigin: true});
+    if (typeof result.enabled !== "boolean" || result.paymentEnvironment !== "testnet" || result.paymentChainId !== 1952 ||
+      !Array.isArray(result.scenarios) || result.scenarios.length !== 4 || new Set(result.scenarios.map(s => s?.id)).size !== 4 || result.scenarios.some(s => !record(s) || !SANDBOX_SCENARIO_IDS.includes(s.id)))
+      throw error("SANDBOX_IDENTITY_MISMATCH", "The visitor gateway does not match the fixed testnet sandbox.");
+    if (!result.enabled && (typeof result.reasonCode !== "string" || !result.reasonCode || typeof result.message !== "string" || !result.message))
+      throw error("INVALID_RESPONSE", "The unavailable sandbox response is missing its readiness reason.", 502);
+    if (result.enabled) {
+      const card = result.card, limits = result.limits;
+      if (result.reviewEnvironment !== "testnet" || result.reviewChainId !== 61999 || !record(card) || !hash.test(card.id ?? "") || !nonzeroAddress(card.address) ||
+        (this.profile.expectedCardId !== undefined && card.id !== this.profile.expectedCardId) || (this.#cardId !== undefined && (card.id !== this.#cardId || card.address.toLowerCase() !== this.#cardAddress)) ||
+        !record(card.policy) || !record(card.balances) || !record(limits) || limits.requestsPerVisitor !== 5 || limits.sessionSeconds !== 3600 || limits.requestsPerMinute !== 6 || limits.normalAmount !== "0.000001" || limits.blockedAmount !== "0.010001" ||
+        !Number.isSafeInteger(limits.maxAdmissions) || limits.maxAdmissions < 1 || limits.maxAdmissions > 100 || !Number.isSafeInteger(limits.admissionsRemaining) || limits.admissionsRemaining < 0 || limits.admissionsRemaining > limits.maxAdmissions)
+        throw error("SANDBOX_IDENTITY_MISMATCH", "The sandbox card, review identity or bounded allowance changed.");
+      this.#cardId = card.id; this.#cardAddress = card.address.toLowerCase();
+    }
+    return result;
+  }
+  capabilities(options) { return this.protect(() => this.readSandbox(options)); }
+  async requireSandbox(options, allowExhaustedRetry = false) {
+    const result = await this.readSandbox(options);
+    // An exhausted public allowance still permits the server to resolve an original
+    // idempotent operation. A genuinely new key remains rejected by durable admission.
+    if (!result.enabled && !(allowExhaustedRetry && result.reasonCode === "SANDBOX_LIMIT_REACHED")) throw error("SANDBOX_UNAVAILABLE", "The dedicated visitor sandbox cannot admit requests now; inspect its readiness reason.", 503, true, {reasonCode: result.reasonCode});
+    return result;
+  }
+  async startSession(options) {
+    this.clearSession();
+    return this.protect(async generation => {
+      await this.requireSandbox(options); this.assertGeneration(generation);
+      const result = await this.call("/sandbox/session", {signal: options?.signal, method: "POST", body: {}, sendOrigin: true});
+      this.assertGeneration(generation);
+      if (typeof result.visitorToken !== "string" || result.visitorToken.length > 2048 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(result.visitorToken) ||
+        !Number.isSafeInteger(result.expiresAt) || result.expiresAt <= Date.now() || result.expiresAt > Date.now() + 3600000 || result.requestsRemaining !== 5)
+        throw error("INVALID_RESPONSE", "The sandbox returned an invalid or expired visitor capability.", 502);
+      this.#token = result.visitorToken; this.#expiresAt = result.expiresAt; this.setSecrets([this.#token]);
+      return {expiresAt: this.#expiresAt, requestsRemaining: result.requestsRemaining};
+    });
+  }
+  request(scenario, idempotencyKey, options) {
+    return this.protect(async generation => {
+      if (!SANDBOX_SCENARIO_IDS.includes(scenario)) throw invalid("Choose permitted, blocked, prohibited or wrong-buyer; arbitrary payment input is refused.");
+      if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(idempotencyKey)) throw error("IDEMPOTENCY_REQUIRED", "Use a stable visitor Idempotency-Key of 1–64 letters, digits, underscores or hyphens.", 422);
+      this.sessionToken(); await this.requireSandbox(options, true); this.assertGeneration(generation);
+      const result = await this.call("/sandbox/requests", {signal: options?.signal, method: "POST", body: {scenario}, idempotencyKey, sendOrigin: true, authorization: "Sandbox " + this.sessionToken()});
+      this.assertGeneration(generation);
+      if (!hash.test(result.id ?? "") || !REQUEST_STATES.includes(result.status) || result.scenario !== scenario || result.paymentEnvironment !== "testnet" || result.paymentChainId !== 1952 || result.reviewEnvironment !== "testnet" || result.reviewChainId !== 61999)
+        throw error("SANDBOX_IDENTITY_MISMATCH", "Sandbox admission returned a different scenario or deployment; reconcile the original operation key.");
+      return result;
+    });
+  }
+  get(id, options) {
+    return this.protect(async generation => {
+      assertId(id); this.sessionToken(); await this.verifyDeployment(options); this.assertGeneration(generation);
+      const result = await this.call("/sandbox/requests/" + encodeURIComponent(id), {signal: options?.signal, sendOrigin: true, authorization: "Sandbox " + this.sessionToken()});
+      this.assertGeneration(generation);
+      if (result.id !== id || result.cardId !== this.#cardId || result.paymentEnvironment !== "testnet" || result.reviewEnvironment !== "testnet" || result.reviewNetwork !== "studionet" || result.reviewChainId !== 61999 ||
+        !REQUEST_STATES.includes(result.status) || !SANDBOX_SCENARIO_IDS.includes(result.scenario) || result.request?.destinationChainId !== 1952 || result.bridge)
+        throw error("SANDBOX_IDENTITY_MISMATCH", "The sandbox result belongs to another card, scenario or deployment.");
+      return result;
+    });
   }
 }
 

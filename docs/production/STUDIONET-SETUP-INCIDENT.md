@@ -1,0 +1,38 @@
+# Studionet setup proposal failures
+
+Read-only inspection on 2026-10-30 fetched both supplied transactions and the transaction committed to the supplied setup draft from `https://studio.genlayer.com/api` through the pinned `genlayer-js` SDK and verified chain 61999. All three are permission-interpreter `propose` calls to `0x0922B814Cd91a9f2fF36F95D321A74eA22CEa9d3`, sent by `0xEd9EDd8586b20524CafA4F568413C504C9B03172`. All three remain **FINALIZED / MAJORITY_DISAGREE / FINISHED_WITH_ERROR**. Finalized describes the terminal consensus state; it does not authorize a policy or vault.
+
+| Transaction | Committed draft | Four leader rounds, in order |
+|---|---|---|
+| [e543a899…](https://explorer-studio.genlayer.com/tx/0xe543a899fb2d5b66e0bc6c009c49fa264ec8775ae1da3c4203a8ff292ef40406) | `0xae29e91700c1a702ad42e56e897704bb7e2a7c0b6e57275281db3ba35b6bd60c` | Error: `Exact decimal amount required`; error: `Invalid draft result fields`; error: same; error: `Draft changed explicit structured guidance`. |
+| [86071c74…](https://explorer-studio.genlayer.com/tx/0x86071c7486457360cfd24204e7412fd8dc3da76f77e140109926dab6a2d2946f) | `0x121f0f326a05f5a9ae66973ce698248de159726b2c6ce87003a409220919684f` | Successful leader return with validator disagreement; successful leader return with validator disagreement; error: `Invalid draft result fields`; error: same. |
+| [81de235b…](https://explorer-studio.genlayer.com/tx/0x81de235b84ae254676f281e39f886cb7ae653815fc11bd520b4bf01b6f0bb13b) | `0xcde48ddfbf7517292e5834eaa017966960e9dfd8711cdff879763489fbf0281d` (supplied setup link) | Error: `Invalid draft result fields`; error: same; error: `Draft changed explicit structured guidance`; error: same. |
+
+All three calls commit the same input hash, `0xa24a47d2390ace3fe253ec2aa5b4375bee53e390b0cf00dab0bde1ecd7802c07`, over 2,786 UTF-8 bytes. The submitted complete structured policy passes the application schema. Its amounts are the exact strings `2000`, `50`, and `500`; the `Exact decimal amount required` failure came from generated output, not the owner's submitted decimal format. Rewriting complete guidance through a generative policy response caused avoidable shape and fidelity failures. None of these final receipts reports an RPC submission failure or a provider outage. Idle validators record `CONSENSUS_VALIDATOR_QUORUM_REACHED` after quorum; those cancellations are secondary and do not replace the final leader outcome.
+
+The numeric policy sets a lifetime budget of 2,000 USDC, 50 per payment, and **500 per 604,800 seconds (week)**. A separate criterion describes **250 per day**. These two caps can coexist mathematically, but this version's financial schema/circuit represents only one aggregate period. The second period is not a second numerical guard. The owner must choose the intended enforced period or clarify the extra criterion. This is an observed ambiguity; the public receipts do not expose each independent validator's substantive model evaluation, so it is not presented as the proven sole cause of disagreement.
+
+The merchant list also contains `0x1111111111111111111111111111111111111111` for a named service. A correctly shaped address does not establish that the service owns it or accepts token payments. Setup instructions must require a merchant-supplied, verified recipient for the selected network and asset, and warn against sample or guessed addresses. No merchant affiliation is established by this incident.
+
+The supplied setup link contains draft `0xcde48ddfbf7517292e5834eaa017966960e9dfd8711cdff879763489fbf0281d`, which differs from the first two committed draft IDs. The third transaction, submitted at 05:17:40 UTC, publicly commits that exact draft ID and the same original input hash. It independently establishes the link to another failed proposal without requiring public access to the owner's saved database draft. The owner endpoint remains authenticated and must not disclose draft inputs to anonymous visitors.
+
+## Repair and recovery
+
+Interpreter V2 was actually deployed on Studionet61999 at `0x4a96E2dFCa2cae0f77cC7Dcc1B5e50a865F0437f` in [transaction6e9faee8…](https://explorer-studio.genlayer.com/tx/0x6e9faee869a4fd33952939e03412a07ca4b63027afb9ec0301849862651e4513), finalized with majority agreement. The parent independently checked committed source SHA-256 `61483b2fee8a48a0821cd23a137dc64e280914a764032f0d037d9e82d6544995`, constructor/operator and version2. [interpreter-v2-deployment.json](interpreter-v2-deployment.json) records that identity. All nine existing database drafts were checked against the original source/operator and committed proposal calldata before retaining their old interpreter pins. Runtime configuration rotation and a new finalized guided proposal remain separate release checks; the owner's failed proposal is preserved.
+
+Runtime finality continues to reject failed VM execution and majority disagreement. Known final-leader rollback errors now carry safe diagnostic codes (`DRAFT_GENERATION_INVALID_AMOUNT`, `DRAFT_GENERATION_INVALID_SCHEMA`, `DRAFT_GENERATION_CHANGED_GUIDANCE`). Arbitrary generated text, provider configuration, superseded leader errors and idle validator errors are excluded from these diagnostics.
+
+The versioned `permission_interpreter_v2.py` repair validates complete structured owner policies before a model call and constructs the proposed policy from those exact fields. The model returns only semantic status, questions and interpretation; money, recipients, time limits, restrictions and criterion text remain owner-controlled. Independent validators still compare purpose, restrictions, numerical fidelity and whether clarification is appropriate. Ambiguous intent must return clarification with no policy. Partial/no-guidance interpretation retains strict generation validation. A repaired interpreter requires a new deployment; the original deployed source, failed drafts and transactions remain historical evidence. Source repair and direct tests alone do not establish live deployment success.
+
+Runtime draft handling pins the configured interpreter address when each new draft is admitted. Proposal submission and finalized reads verify that persisted authority and the exact stored input and transaction commitments. Changing the global interpreter configuration cannot redirect an existing draft to another contract. Historical drafts without a pin require an explicitly verified backfill; runtime never infers their authority from an arbitrary receipt recipient.
+
+Owner recovery must restore the original saved input, explain the observed failure, and submit a new draft only on the owner's explicit action. The failed transaction must never be reused as policy authorization. A fresh proposal remains subject to final consensus, exact input commitment and owner review before activation.
+
+Reproduce the public inspection without a wallet or credentials:
+
+```sh
+node node_modules/tsx/dist/cli.mjs scripts/studionet-setup-inspect.ts
+node node_modules/tsx/dist/cli.mjs --test --test-reporter=tap tests/studionet-setup.test.ts tests/genlayer-journal-security.test.ts
+```
+
+The inspector verifies all three transactions' committed calldata and actual terminal failure, calculates the input hashes independently, emits the sanitized leader sequences and confirms the supplied draft link in `.local/studionet-setup/report.json`. It signs and broadcasts nothing. A mismatched hash, different method, duplicate JSON key or successful control fails the incident oracle. Focused runtime regressions also verify that a global configuration change, changed persisted input, changed transaction, missing historical interpreter pin or substituted successful target cannot authorize the draft.

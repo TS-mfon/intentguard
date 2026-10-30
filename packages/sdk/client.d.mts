@@ -32,6 +32,16 @@ export class ProtocolClient {
   getBridgeProof(id: string, options?: CallOptions): Promise<any>;
 }
 export type OwnerClientOptions = Omit<ClientOptions, "apiKey" | "expectedCardId">;
+export type SandboxClientOptions = Omit<ClientOptions, "apiKey" | "paymentEnvironment"> & {paymentEnvironment: "testnet"};
+export const SANDBOX_SCENARIO_IDS: readonly import("./types").SandboxScenario[];
+export class SandboxClient {
+  constructor(options: SandboxClientOptions);
+  capabilities(options?: CallOptions): Promise<import("./types").SandboxConfiguration>;
+  startSession(options?: CallOptions): Promise<{expiresAt: number; requestsRemaining: number}>;
+  clearSession(): void;
+  request(scenario: import("./types").SandboxScenario, idempotencyKey: string, options?: CallOptions): Promise<import("./types").SandboxAdmission>;
+  get(id: string, options?: CallOptions): Promise<import("./types").SandboxRequestView>;
+}
 export class OwnerClient {
   constructor(options: OwnerClientOptions);
   capabilities(options?: CallOptions): Promise<any>;

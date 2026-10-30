@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "contractRevision": 4,
+  "contractRevision": 5,
   "baselineCommit": "63ecc771b3313419f6df7f483e1b2964024570a6",
   "originalFeedbackSha256": "e66b5383ad6aa6a56500e1ea9710e01da9a4ffc4d9949e9494e47bfa727856bf",
   "status": "IMPLEMENTING",
@@ -110,7 +110,7 @@
       "id": "R03",
       "priority": "P0",
       "title": "Establish one release identity per environment.",
-      "acceptance": "Immutable source tag \u2192 lock/toolchain hashes \u2192 build \u2192 circuit/vendor/reviewer hashes \u2192 contracts \u2192 deployment \u2192 audits.",
+      "acceptance": "Immutable source tag → lock/toolchain hashes → build → circuit/vendor/reviewer hashes → contracts → deployment → audits.",
       "ownerLeaf": "4.1",
       "observingGate": "leaf-4.1:R03",
       "status": "PARTIAL",
@@ -412,6 +412,11 @@
           "artifact": "docs/production/RUNTIME-ISOLATION.md",
           "check": "node tools/production/verify-runtime.mjs",
           "scope": "88 runtime integration tests and 127 application tests; live deployments and client/frontend acceptance pending"
+        },
+        {
+          "artifact": "docs/production/STUDIONET-SETUP-INCIDENT.md",
+          "check": "scripts/studionet-setup-inspect.ts; tests/studionet-setup.test.ts; tools/production/verify-reviewer.mjs",
+          "scope": "Three finalized failed legacy proposals independently refetched. V2 preserves complete structured policy, retains substantive validators and is source/operator/version verified on61999. Fresh guided proposal and payment reliability remain separate live gates."
         }
       ],
       "fixCommits": [
@@ -755,6 +760,11 @@
           "check": "node tools/production/verify-product.mjs",
           "scope": "Independent parent execution passed SDK11, real MCP stdio3, standalone types/vendoring, synchronized OpenAPI and observed API/schema checks; protocol0.4 settlementV2/reviewerV4.",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "artifact": "docs/production/SANDBOX.md",
+          "check": "node tools/production/verify-product.mjs",
+          "scope": "Visitor capabilities, templates and owner original-input recovery synchronized in SDK/OpenAPI/MCP/product/skill resources;18SDK tests,3MCP stdio tests and6product checks passed."
         }
       ],
       "fixCommits": [],
@@ -874,10 +884,10 @@
       "id": "R25",
       "priority": "P1",
       "title": "Produce the submission demo from verified records.",
-      "acceptance": "Video \u22643 minutes; every displayed payment, block, rejection, evidence failure, and replay maps to public release evidence.",
+      "acceptance": "Video ≤3 minutes; every displayed payment, block, rejection, evidence failure, and replay maps to public release evidence.",
       "ownerLeaf": "3.2",
       "observingGate": "leaf-3.2:R25",
-      "status": "OPEN",
+      "status": "VERIFIED",
       "sourceReferences": [
         {
           "archive": "docs/reviews/2026-10-26-original-feedback.md",
@@ -896,9 +906,20 @@
           "line": 1227
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "artifact": "docs/production/SUBMISSION-VIDEO.md",
+          "check": "node tools/production/verify-demo.mjs",
+          "sourceCommit": "eccef5173f15ab7b8361f1fa84a408e9114bb060",
+          "artifactSha256": "d8b8fa33b82667df83f2590e876ddece6f12c3b37c4f5fcac2c1a883d7e6b5c1",
+          "durationSeconds": 170.005,
+          "scope": "Five actual historical testnet records; all ten decoded scene frames independently reviewed. New visitor features and mainnet acceptance are excluded."
+        }
+      ],
       "fixCommits": [],
-      "retestCommits": [],
+      "retestCommits": [
+        "eccef5173f15ab7b8361f1fa84a408e9114bb060"
+      ],
       "baselineClassification": "Submission demo unverified; story animation is not evidence of live authorization reliability."
     },
     {
@@ -1025,5 +1046,25 @@
       "finalArtifactReport": ".local/completion/FINAL-REPORT.md",
       "finalPublicationAndFilmRequireIndependentVerification": true
     }
-  }
+  },
+  "amendments": [
+    {
+      "id": "U09",
+      "title": "Editable agent templates",
+      "status": "IMPLEMENTED_PENDING_HOSTED",
+      "evidence": "tests/agent-templates.test.ts; scripts/production-browser.ts"
+    },
+    {
+      "id": "U10",
+      "title": "Dedicated anonymous testnet sandbox",
+      "status": "IMPLEMENTED_PENDING_HOSTED",
+      "evidence": "docs/production/SANDBOX.md; tests/sandbox.test.ts"
+    },
+    {
+      "id": "U11",
+      "title": "Receipt-grounded Studionet setup repair",
+      "status": "V2_DEPLOYED_PENDING_HOSTED",
+      "evidence": "docs/production/STUDIONET-SETUP-INCIDENT.md; docs/production/interpreter-v2-deployment.json"
+    }
+  ]
 }

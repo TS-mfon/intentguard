@@ -50,10 +50,11 @@ export class Worker{
   // A finalized burn cannot be cancelled/refunded by an API status or timeout.
   const attempts=Number(job.attempts??0)+1;await this.store.complete(table,job._id,job.leaseToken!,{status:["BRIDGING","AWAITING_ATTESTATION","MINTING"].includes(String(job.status))?job.status:"BRIDGING",error:e instanceof BridgePending||e instanceof BridgeFailure?e.message:"Bridge processing is delayed. The existing source burn remains in reconciliation.",errorCode:e instanceof BridgePending||e instanceof BridgeFailure?e.code:"BRIDGE_PROCESSING_DELAYED",attempts,nextAt:Date.now()+60000,updatedAt:Date.now()});
  }else if(e instanceof GenLayerTerminalError||Date.now()-Number(job.waitStartedAt??Date.now())>30*60*1000||(table==="requests"&&job.processingStartedAt!==undefined&&Date.now()-Number(job.processingStartedAt)>30*60*1000)){
-  const error=table==="drafts"?"GenLayer could not finalize this proposal successfully. Review the instructions and submit a new proposal.":table==="cards"?"GenLayer reviewer initialization failed. Retry initialization in My agents.":"GenLayer review failed. No payment was authorized; its reservation is being cancelled.";
+  const diagnostic=table==="drafts"&&e instanceof GenLayerTerminalError?e.diagnostic:undefined;
+  const error=table==="drafts"?diagnostic?.message??"GenLayer could not finalize this proposal successfully. Review the saved terms and submit a new proposal.":table==="cards"?"GenLayer reviewer initialization failed. Retry initialization in My agents.":"GenLayer review failed. No payment was authorized; its reservation is being cancelled.";
   const timedOut=!(e instanceof GenLayerTerminalError);
   const values=table==="requests"?{status:"RETRYING",cancelTarget:"CANCELLED",reviewFailure:error}:{state:"FAILED"};
-  await this.store.complete(table,job._id,job.leaseToken!,{...values,error,errorCode:timedOut?"PROCESSING_TIMEOUT":"GENLAYER_REVIEW_FAILED",attempts:0,nextAt:0,updatedAt:Date.now()});
+  await this.store.complete(table,job._id,job.leaseToken!,{...values,error,errorCode:timedOut?"PROCESSING_TIMEOUT":diagnostic?.code??"GENLAYER_REVIEW_FAILED",attempts:0,nextAt:0,updatedAt:Date.now()});
   console.error("GenLayer job reached terminal failure",{table,id:job._id});
  }else{
   const pending=e instanceof PendingFinality;const attempts=Number(job.attempts??0)+1;

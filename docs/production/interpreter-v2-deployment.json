@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "VERIFIED_STUDIONET_PERMISSION_INTERPRETER",
+  "paymentEnvironment": "testnet",
+  "paymentChainId": 1952,
+  "reviewEnvironment": "testnet",
+  "reviewChainId": 61999,
+  "interpreterVersion": 2,
+  "interpreterAddress": "0x4a96E2dFCa2cae0f77cC7Dcc1B5e50a865F0437f",
+  "deploymentTransaction": "0x6e9faee869a4fd33952939e03412a07ca4b63027afb9ec0301849862651e4513",
+  "operator": "0xEd9EDd8586b20524CafA4F568413C504C9B03172",
+  "sourceFile": "contracts/genlayer/versions/permission_interpreter_v2.py",
+  "sourceSha256": "61483b2fee8a48a0821cd23a137dc64e280914a764032f0d037d9e82d6544995",
+  "verifiedAt": "2026-10-30T06:47:33.716Z",
+  "runtimeConfigured": false,
+  "legacyDraftsPinned": true,
+  "legacyBackfill": {
+    "interpreterAddress": "0x0922B814Cd91a9f2fF36F95D321A74eA22CEa9d3",
+    "drafts": 9,
+    "verifiedAt": "2026-10-30T06:25:23.801Z"
+  }
+}

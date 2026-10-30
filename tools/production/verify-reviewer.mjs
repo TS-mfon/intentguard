@@ -48,6 +48,12 @@ const lint = run(["genvm-linter==0.11.0", "genvm-lint", "check", source, "--json
 const lintResult = JSON.parse(lint);
 assert.equal(lintResult.ok, true, "V4 lint/validation did not succeed");
 
+const interpreterSource="contracts/genlayer/versions/permission_interpreter_v2.py";
+const interpreterSchema=JSON.parse(readFileSync(new URL("../../contracts/genlayer/versions/permission_interpreter_v2.schema.json",import.meta.url),"utf8"));
+const interpreterExtracted=JSON.parse(run(["genvm-linter==0.11.0","genvm-lint","schema",interpreterSource,"--json"],"V2 interpreter schema"));
+assert.equal(interpreterExtracted.ok,true);assert.deepStrictEqual(interpreterExtracted.schema,interpreterSchema);
+const interpreterLint=JSON.parse(run(["genvm-linter==0.11.0","genvm-lint","check",interpreterSource,"--json"],"V2 interpreter lint"));assert.equal(interpreterLint.ok,true);
+
 // Includes legacy behavior, real SDK pickling and explicitly captured validators.
 // Web/model fixtures are controls, not a live-consensus or deployment claim.
 const testOutput = run(["genlayer-test==0.29.2", "gltest", "contracts/genlayer/tests/direct", "-q"], "Legacy and V4 direct tests");

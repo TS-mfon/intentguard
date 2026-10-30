@@ -2431,7 +2431,7 @@
     "/owner/drafts/{id}": {
       "get": {
         "operationId": "getDraft",
-        "description": "Read the same owner-bound proposal. A finalized PROPOSED policy carries verified activation arguments; the owner wallet separately signs the factory transaction.",
+        "description": "Read the same owner-bound proposal and its original input for recovery. A finalized PROPOSED policy carries verified activation arguments; the owner wallet separately signs the factory transaction. Original input is never exposed on public explorer routes.",
         "security": [
           {
             "OwnerSession": []
@@ -9800,6 +9800,1372 @@
           }
         }
       }
+    },
+    "/sandbox": {
+      "get": {
+        "operationId": "sandboxConfiguration",
+        "description": "Read dedicated testnet visitor sandbox readiness, fixed scenarios and bounded allowance. Never returns an agent key; enabled:false is an honest unavailable state.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-IntentGuard-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "testnet",
+                "mainnet"
+              ]
+            },
+            "description": "SDK/MCP always declare the explicit payment environment. Required for cross-origin browser owner requests. A different declared environment returns409."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact approved frontend origin. Visitor capabilities bind this origin; SDK sends it with credentials:omit, even on the same origin."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfiguration"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or missing JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or revoked/expired credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authorization, origin or preflight denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found or unavailable proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route with wrong method; inspect Allow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Allow": {
+                "description": "Supported methods",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency, state or deployment identity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON body exceeds32 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Use Content-Type: application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input, permission, evidence or activation validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed-minute rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Runtime, release proof, database or dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured machine error; preserve code/retryable/requestId/details and Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sandbox/session": {
+      "post": {
+        "operationId": "sandboxSession",
+        "description": "Start a one-hour origin-bound visitor session without a wallet, owner login or agent key. The dedicated server key remains private. Rate-limited session creation cannot replenish the durable per-card admission ceiling.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-IntentGuard-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "testnet",
+                "mainnet"
+              ]
+            },
+            "description": "SDK/MCP always declare the explicit payment environment. Required for cross-origin browser owner requests. A different declared environment returns409."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact approved frontend origin. Visitor capabilities bind this origin; SDK sends it with credentials:omit, even on the same origin."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxSession"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or missing JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or revoked/expired credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authorization, origin or preflight denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found or unavailable proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route with wrong method; inspect Allow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Allow": {
+                "description": "Supported methods",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency, state or deployment identity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON body exceeds32 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Use Content-Type: application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input, permission, evidence or activation validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed-minute rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Runtime, release proof, database or dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured machine error; preserve code/retryable/requestId/details and Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sandbox/requests": {
+      "post": {
+        "operationId": "sandboxRequest",
+        "description": "Submit one fixed testnet scenario using the visitor capability. Normal admission, guard, evidence review and settlement produce actual results. A claimed live numerical denial for blocked can immediately record BLOCKED/review SKIPPED after admission; permitting/unavailable preview never invents that status. Repeating the same scenario/key returns the original operation; changed scenario conflicts. A concurrent pending admission returns503 SANDBOX_REQUEST_PENDING with Retry-After5.",
+        "security": [
+          {
+            "SandboxVisitor": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-IntentGuard-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "testnet",
+                "mainnet"
+              ]
+            },
+            "description": "SDK/MCP always declare the explicit payment environment. Required for cross-origin browser owner requests. A different declared environment returns409."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact approved frontend origin. Visitor capabilities bind this origin; SDK sends it with credentials:omit, even on the same origin."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "description": "Stable per-visitor operation key. On lost response, retry identical scenario with the same key before expiry."
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxAdmission"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata when applicable",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata when applicable",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata when applicable",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or missing JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or revoked/expired credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authorization, origin or preflight denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found or unavailable proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route with wrong method; inspect Allow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Allow": {
+                "description": "Supported methods",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency, state or deployment identity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON body exceeds32 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Use Content-Type: application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input, permission, evidence or activation validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed-minute rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Runtime, release proof, database or dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured machine error; preserve code/retryable/requestId/details and Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxRequestInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sandbox/requests/{id}": {
+      "get": {
+        "operationId": "sandboxRequestStatus",
+        "description": "Read an actual request belonging to this visitor session. Existing tracking survives card pause/revocation or a balance RPC outage while the capability remains valid. After expiry, inspect the saved public record; a new session cannot retrieve the previous session's private binding.",
+        "security": [
+          {
+            "SandboxVisitor": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-IntentGuard-Environment",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "testnet",
+                "mainnet"
+              ]
+            },
+            "description": "SDK/MCP always declare the explicit payment environment. Required for cross-origin browser owner requests. A different declared environment returns409."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact approved frontend origin. Visitor capabilities bind this origin; SDK sends it with credentials:omit, even on the same origin."
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxRequestView"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Authenticated fixed-minute quota metadata when applicable",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Authenticated fixed-minute quota metadata when applicable",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds to next fixed minute",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "RateLimit-Policy": {
+                "description": "Authenticated fixed-minute quota metadata when applicable",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or missing JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or revoked/expired credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authorization, origin or preflight denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found or unavailable proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Recognized route with wrong method; inspect Allow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Allow": {
+                "description": "Supported methods",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency, state or deployment identity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON body exceeds32 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Use Content-Type: application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input, permission, evidence or activation validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fixed-minute rate limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Runtime, release proof, database or dependency unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured machine error; preserve code/retryable/requestId/details and Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds until an appropriate retry, only when retryable",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9826,6 +11192,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Separate testnet merchant administrator credential; agent keys cannot issue invoices."
+      },
+      "SandboxVisitor": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Sandbox <one-hour visitor capability>, held in memory and bound to the approved frontend origin and dedicated testnet card/key scope. No cookies, owner session or ig_ agent key; no arbitrary payments."
       }
     },
     "schemas": {
@@ -11704,6 +13076,25 @@
         "additionalProperties": false,
         "description": "CCTP_V2 identifies the legacy testnet factory; CCTP_V4 uses V2 USDC settlement; USDT0_LOCAL uses the X Layer mainnet-only factory. Missing kind preserves the legacy configured-token factory."
       },
+      "DraftOriginalInput": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 12000
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "additionalProperties": false,
+        "description": "Original owner-supplied description and guidance; authenticated owner draft retrieval only. Settlement remains a separate field. Preserve it when recovering a failed proposal."
+      },
       "DraftView": {
         "type": "object",
         "properties": {
@@ -11722,6 +13113,9 @@
               "PROPOSED",
               "NEEDS_CLARIFICATION"
             ]
+          },
+          "input": {
+            "$ref": "#/components/schemas/DraftOriginalInput"
           },
           "policy": {
             "anyOf": [
@@ -12856,6 +14250,543 @@
         ],
         "additionalProperties": false,
         "description": "Actual immutable testnet merchant invoice. buyer is the source vault; chainId/token are the delivery asset. A merchant-admin credential issues it; an agent cannot. Historical expired invoices are evidence, not new spend authorization."
+      },
+      "SandboxScenario": {
+        "type": "string",
+        "enum": [
+          "permitted",
+          "blocked",
+          "prohibited",
+          "wrong-buyer"
+        ]
+      },
+      "SandboxScenarioView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/SandboxScenario"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected": {
+            "type": "string",
+            "enum": [
+              "PAID",
+              "BLOCKED",
+              "REJECTED",
+              "NEEDS_EVIDENCE"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "expected",
+          "description"
+        ],
+        "additionalProperties": false,
+        "description": "Educational expected outcome; actual request status is produced by the normal worker and verified receipts, never hardcoded from this field."
+      },
+      "SandboxLimits": {
+        "type": "object",
+        "properties": {
+          "requestsPerVisitor": {
+            "const": 5
+          },
+          "sessionSeconds": {
+            "const": 3600
+          },
+          "maxAdmissions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "admissionsRemaining": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "requestsPerMinute": {
+            "const": 6
+          },
+          "normalAmount": {
+            "const": "0.000001"
+          },
+          "blockedAmount": {
+            "const": "0.010001"
+          },
+          "maximumAdmittedTransferAmount": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$"
+          }
+        },
+        "required": [
+          "requestsPerVisitor",
+          "sessionSeconds",
+          "maxAdmissions",
+          "admissionsRemaining",
+          "requestsPerMinute",
+          "normalAmount",
+          "blockedAmount",
+          "maximumAdmittedTransferAmount"
+        ],
+        "additionalProperties": false,
+        "description": "Five preparations per visitor session, five submit attempts per visitor/minute, six new preparations per card/minute. Durable per-card lifetime ceiling defaults to30 and survives key rotation. At most one native-USDC atomic unit can settle per admitted permitted test."
+      },
+      "SandboxEnabled": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "const": true
+          },
+          "card": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "address": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              },
+              "policy": {
+                "$ref": "#/components/schemas/Policy"
+              },
+              "balances": {
+                "$ref": "#/components/schemas/Balances"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "address",
+              "policy",
+              "balances"
+            ],
+            "additionalProperties": false
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxScenarioView"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "limits": {
+            "$ref": "#/components/schemas/SandboxLimits"
+          },
+          "paymentEnvironment": {
+            "const": "testnet"
+          },
+          "paymentChainId": {
+            "const": 1952
+          },
+          "reviewEnvironment": {
+            "const": "testnet"
+          },
+          "reviewChainId": {
+            "const": 61999
+          },
+          "disclosure": {
+            "type": "string",
+            "minLength": 1
+          },
+          "credentialHandling": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "enabled",
+          "card",
+          "scenarios",
+          "limits",
+          "paymentEnvironment",
+          "paymentChainId",
+          "reviewEnvironment",
+          "reviewChainId",
+          "disclosure",
+          "credentialHandling"
+        ],
+        "additionalProperties": false,
+        "description": "Dedicated native-USDC testnet card, local destination1952 only. Server-held agent key is never public. Actual finality/settlement may be delayed or fail."
+      },
+      "SandboxDisabled": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "const": false
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SandboxScenarioView"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "paymentEnvironment": {
+            "const": "testnet"
+          },
+          "paymentChainId": {
+            "const": 1952
+          }
+        },
+        "required": [
+          "enabled",
+          "reasonCode",
+          "message",
+          "scenarios",
+          "paymentEnvironment",
+          "paymentChainId"
+        ],
+        "additionalProperties": false,
+        "description": "Readiness, pause, exhausted allowance or dependency failure. Existing requests remain inspectable with the same valid visitor capability or through public records."
+      },
+      "SandboxConfiguration": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SandboxEnabled"
+          },
+          {
+            "$ref": "#/components/schemas/SandboxDisabled"
+          }
+        ]
+      },
+      "SandboxSession": {
+        "type": "object",
+        "properties": {
+          "visitorToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "requestsRemaining": {
+            "const": 5
+          }
+        },
+        "required": [
+          "visitorToken",
+          "expiresAt",
+          "requestsRemaining"
+        ],
+        "additionalProperties": false,
+        "description": "One-hour origin-bound visitor capability. expiresAt is Unix epoch milliseconds. Hold in private memory; do not persist/share or use as an agent/owner credential."
+      },
+      "SandboxRequestInput": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "$ref": "#/components/schemas/SandboxScenario"
+          }
+        },
+        "required": [
+          "scenario"
+        ],
+        "additionalProperties": false,
+        "description": "Only a fixed scenario. Arbitrary recipient, amount, evidence, asset, destination, card or owner fields are refused."
+      },
+      "SandboxAdmission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RESERVED",
+              "REVIEWING",
+              "AWAITING_FINALITY",
+              "APPROVED",
+              "PAID",
+              "BLOCKED",
+              "REJECTED",
+              "NEEDS_EVIDENCE",
+              "EXPIRED",
+              "CANCELLED",
+              "RETRYING",
+              "BRIDGING",
+              "AWAITING_ATTESTATION",
+              "MINTING"
+            ]
+          },
+          "scenario": {
+            "$ref": "#/components/schemas/SandboxScenario"
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "publicUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "paymentEnvironment": {
+            "const": "testnet"
+          },
+          "paymentChainId": {
+            "const": 1952
+          },
+          "reviewEnvironment": {
+            "const": "testnet"
+          },
+          "reviewChainId": {
+            "const": 61999
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "scenario",
+          "createdAt",
+          "publicUrl",
+          "paymentEnvironment",
+          "paymentChainId",
+          "reviewEnvironment",
+          "reviewChainId"
+        ],
+        "additionalProperties": false,
+        "description": "202 admits the original visitor operation. Save its ID and Idempotency-Key; expected outcome never replaces actual status."
+      },
+      "SandboxRequestView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "cardId": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "cardName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RESERVED",
+              "REVIEWING",
+              "AWAITING_FINALITY",
+              "APPROVED",
+              "PAID",
+              "BLOCKED",
+              "REJECTED",
+              "NEEDS_EVIDENCE",
+              "EXPIRED",
+              "CANCELLED",
+              "RETRYING",
+              "BRIDGING",
+              "AWAITING_ATTESTATION",
+              "MINTING"
+            ]
+          },
+          "request": {
+            "type": "object",
+            "properties": {
+              "destinationChainId": {
+                "const": 1952
+              },
+              "recipient": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              },
+              "amount": {
+                "type": "string",
+                "pattern": "^(?:(?:0|[1-9][0-9]{0,12}|1[0-7][0-9]{12}|18[0-3][0-9]{11}|184[0-3][0-9]{10}|1844[0-5][0-9]{9}|18446[0-6][0-9]{8}|184467[0-3][0-9]{7}|1844674[0-3][0-9]{6}|184467440[0-6][0-9]{4}|1844674407[0-2][0-9]{3}|18446744073[0-6][0-9]{2}|1844674407370[0-7]|18446744073708)(?:\\.[0-9]{1,6})?|18446744073709(?:\\.(?:(?:[0-4]|5)|(?:[0-4][0-9]{1}|5[0-4]|55)|(?:[0-4][0-9]{2}|5[0-4][0-9]{1}|550|551)|(?:[0-4][0-9]{3}|5[0-4][0-9]{2}|550[0-9]{1}|551[0-5]|5516)|(?:[0-4][0-9]{4}|5[0-4][0-9]{3}|550[0-9]{2}|551[0-5][0-9]{1}|55160|55161)|(?:[0-4][0-9]{5}|5[0-4][0-9]{4}|550[0-9]{3}|551[0-5][0-9]{2}|55160[0-9]{1}|55161[0-4]|551615)))?)$",
+                "not": {
+                  "pattern": "^0(?:\\.0{1,6})?$"
+                },
+                "description": "Positive exact decimal string with up to six fractional digits; maximum 18446744073709.551615 (uint64 atomic units). Never a JSON number."
+              },
+              "purchaseDescription": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 2000
+              },
+              "justification": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 6000
+              },
+              "category": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "invoiceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "maxLength": 2048,
+                      "pattern": "^https://",
+                      "description": "Public HTTPS DNS evidence URL. Credentials, fragments, private/internal addresses and nonstandard ports are rejected; fetching verifies DNS and redirects independently."
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^(0x)?[0-9a-fA-F]{64}$"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 8
+              }
+            },
+            "required": [
+              "recipient",
+              "amount",
+              "purchaseDescription",
+              "justification",
+              "category",
+              "invoiceId",
+              "evidence",
+              "destinationChainId"
+            ],
+            "additionalProperties": false
+          },
+          "requestHash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+              },
+              {
+                "const": ""
+              }
+            ]
+          },
+          "evidenceHash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+              },
+              {
+                "const": ""
+              }
+            ]
+          },
+          "guard": {
+            "$ref": "#/components/schemas/Guard"
+          },
+          "review": {
+            "$ref": "#/components/schemas/Review"
+          },
+          "reviewStage": {
+            "$ref": "#/components/schemas/ReviewStage"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "genLayerTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "paymentTxHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          },
+          "bridge": false,
+          "paymentSymbol": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paymentEnvironment": {
+            "const": "testnet"
+          },
+          "reviewEnvironment": {
+            "const": "testnet"
+          },
+          "reviewNetwork": {
+            "const": "studionet"
+          },
+          "reviewChainId": {
+            "const": 61999
+          },
+          "reviewerVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "scenario": {
+            "$ref": "#/components/schemas/SandboxScenario"
+          },
+          "publicUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "cardId",
+          "cardName",
+          "status",
+          "request",
+          "requestHash",
+          "evidenceHash",
+          "reviewStage",
+          "createdAt",
+          "updatedAt",
+          "paymentEnvironment",
+          "reviewEnvironment",
+          "reviewNetwork",
+          "reviewChainId",
+          "scenario",
+          "publicUrl"
+        ],
+        "additionalProperties": false,
+        "description": "Actual normal-pipeline result scoped to the visitor session and dedicated local testnet card. Tracking does not require an active card or a successful live RPC balance check. Mainnet, another destination and bridge data are refused."
       }
     }
   },

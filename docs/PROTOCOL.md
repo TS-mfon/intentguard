@@ -43,10 +43,49 @@ Mainnet clients require nonempty release identity, a full source commit and sett
 | Owner, same origin | HttpOnly `ig_session` cookie; one-hour maximum age |
 | Owner, separate origin | `Authorization: Owner <session>`; held in memory, expires within ten minutes, bound to API/frontend/payment identity |
 | Merchant administrator | Separate Bearer credential for the testnet invoice endpoint; agent keys cannot issue invoices |
+| Sandbox visitor | `Authorization: Sandbox <visitor capability>`; one-hour, origin-bound access to fixed dedicated testnet scenarios; no cookies |
 
 Owner browser requests declare `X-IntentGuard-Environment` and use the exact approved frontend `Origin`. Wallet login challenges bind owner address, API origin, frontend origin, payment environment and chain, expire within five minutes and are consumed once. The signature authorizes dashboard access only. Separate-origin tokens stay out of localStorage, shared links, downloaded cards and agent configuration; a reload requires login again.
 
 Agent keys cannot sign arbitrary wallet transactions, change immutable policy, choose another card, withdraw, deploy or issue invoices. API, database, session, agent, operator and attestor authority remain isolated by payment environment. The SDK owner client accepts a challenge signature supplied by the caller; it accepts no agent key or signing key.
+
+## Visitor sandbox
+
+The `/sandbox` application uses a **dedicated native-USDC card on X Layer testnet1952**, with local settlement only and Studionet61999 testnet review. Its agent API key stays on the server. Visitors choose a fixed scenario, start a temporary session and inspect the actual operation without a wallet or an agent key. Read the current `/config` and `/sandbox` response to establish deployment identity and availability; source implementation alone is not live acceptance evidence.
+
+| Endpoint | Input and result |
+|---|---|
+| `GET /sandbox` | Anonymous `{enabled,scenarios,...}`; enabled response includes dedicated policy, balances, network disclosures and limits; disabled response includes `reasonCode,message` |
+| `POST /sandbox/session` | Empty JSON `{}` with approved frontend `Origin` →201 `{visitorToken,expiresAt,requestsRemaining}`; expiry is epoch **milliseconds** |
+| `POST /sandbox/requests` | `Authorization: Sandbox <token>`, approved `Origin`, stable 1–64-character alphanumeric/underscore/hyphen `Idempotency-Key`, JSON `{scenario}` →202 `{id,status,scenario,publicUrl,...}` |
+| `GET /sandbox/requests/{id}` | Same visitor capability and origin → actual `RequestView` plus scenario and public URL; other visitor bindings return404 |
+
+Scenarios are `permitted` (expected PAID), `blocked` (expected BLOCKED), `prohibited` (expected REJECTED), and `wrong-buyer` (expected NEEDS_EVIDENCE). Expected labels explain the test; they never replace actual guard, review, failure or payment status. Permitted requests can be delayed, cancelled or rejected. PAID still requires verified delivery.
+
+For `blocked`, normal durable admission is followed by a claimed numerical preview against the live vault. An actual denial can record BLOCKED with review SKIPPED immediately, without a model call or payment signature. A preview that allows the request or is unavailable does not invent a block; the same admitted record continues through the worker. Semantic scenarios retain asynchronous finalized review.
+
+Normal requests use **0.000001 native testnet USDC**. The blocked scenario requests **0.010001** against the immutable **0.01** per-payment limit. Recipient, asset, chain, purpose and invoice are constructed by the gateway; arbitrary payment fields are refused. Each visitor has five preparations per one-hour session and five submit attempts per minute. The card permits six new preparations per minute and a durable lifetime ceiling of30 by default, configurable1–100. Repeating the same scenario/key returns the same operation; changed scenario returns409 IDEMPOTENCY_CONFLICT. Concurrent admission can return503 SANDBOX_REQUEST_PENDING with Retry-After5; retry the same scenario/key. Key rotation does not replenish the per-card ceiling.
+
+Keep the capability in private memory, never localStorage, URLs, prompts or logs. Requests use `credentials: "omit"` even on the same origin. Owner sessions, `ig_` agent keys and wallet signatures never enter the visitor transport. Expiry or session/identity failure discards the SDK capability. Card pause/revocation or a balance RPC outage does not prevent tracking an existing request with a still-valid capability. After expiry or reload, inspect its saved public URL; starting a new session does not recover another session's private binding or authorize repeating an uncertain purchase.
+
+```ts
+import {IntentGuardSandbox} from "./packages/sdk/index";
+const sandbox = new IntentGuardSandbox({
+  baseUrl: "https://<VERIFIED_TESTNET_API_ORIGIN>",
+  paymentEnvironment: "testnet",
+  // frontendOrigin when the approved frontend has a different origin.
+});
+const availability = await sandbox.capabilities();
+if (!availability.enabled) throw new Error(availability.message);
+await sandbox.startSession(); // Returns expiry/allowance; keeps visitorToken private.
+const admitted = await sandbox.request("wrong-buyer", savedVisitorOperationKey);
+// Preserve admitted.id/publicUrl and the same key; poll get about every five seconds.
+const actual = await sandbox.get(admitted.id);
+// Display actual.status and reviewStage; never replace them with the expected label.
+sandbox.clearSession();
+```
+
+Operators configure `INTENTGUARD_SANDBOX_CARD_ID`, `INTENTGUARD_SANDBOX_OWNER`, `INTENTGUARD_SANDBOX_API_KEY`, optional `INTENTGUARD_SANDBOX_MAX_REQUESTS`, and the existing private `SESSION_SECRET`. Never use NEXT_PUBLIC for credentials. The bootstrap `plan` writes a policy/draft input without signing; `bind` independently verifies the dedicated card and stores its one-time key in a private file. The owner separately approves creation/funding. See [sandbox operations](production/SANDBOX.md) for commands and verification gates. No visitor MCP execution tools are installed; the bundled resources document the direct API/SDK flow. The existing MCP remains a separately scoped agent transport.
 
 ## Immutable policy and evidence
 
@@ -66,6 +105,16 @@ Policy version remains 1. Existing canonical policy/request/evidence commitments
 | `criteria` | 1–12 unique IDs matching letters/numbers/underscore/hyphen, up to 40 characters; descriptions 3–1,000 characters |
 
 All amounts are exact decimal strings with at most six fractional digits. The maximum is `18446744073709.551615`, equal to uint64 atomic units `18446744073709551615`. Never round, use exponent syntax or send JSON floating-point money. One USDC/USDT0/legacy TEST-USDT is 1,000,000 atomic units.
+
+### Templates and clear setup input
+
+Create agent offers **Research assistant** (`research`), **API access** (`api-access`) and **Protocol test** (`protocol-test`, testnet1952 only). A template fills editable mission, product and review clauses and conservative example budgets. Enter the actual project, merchant name, recipient, HTTPS origins, evidence and validity before proposing; template defaults are not an activated permission or an approved merchant. The protocol-test template supports testing an agent you own. The public visitor sandbox uses a separate fixed dedicated policy and server key.
+
+Put every numerical limit in **Money & validity**, using strings such as `"250"` or `"0.000001"`, without commas, currency symbols, exponent syntax or more than six fractional digits. Write purpose and deliverables in mission/context/criteria, and remove repeated budget amounts from that prose. The policy supports **one aggregate period**: for example `periodBudget: "500", periodSeconds: 604800` is500 per seven-day period. It cannot simultaneously encode an additional250/day aggregate limit. Choose the intended period and make the prose agree; a per-payment cap is a distinct limit. Use UTC dates and actual EVM merchant recipients; invoice buyer is the vault, not the owner.
+
+The two supplied Studionet setup transactions finalized with MAJORITY_DISAGREE. Observed leader output contained invalid decimal/result fields or changed explicit guided terms; their submitted guided policy was structurally valid. This is not proof that user decimal input caused the failure. The versioned interpreter repair preserves complete guided policy fields instead of regenerating them; independent validators still assess semantic clarity and fidelity. Conflicting prose can obstruct agreement, but receipts do not expose independent validator model reasons. [The incident report](production/STUDIONET-SETUP-INCIDENT.md) preserves both failed transactions and the diagnosis limits.
+
+For a failed proposal, reopen its owner-bound draft URL and sign in with the same owner. `GET /owner/drafts/{id}` includes original `input: {description,guidance?}` to restore editable fields; this input is never a public explorer field. Correct unclear clauses, then submit a new draft. Preserve the old receipt/history and activate only FINALIZED/PROPOSED terms you have reviewed; a failed or pending draft cannot authorize payment.
 
 The owner funds the card's actual immutable token. Deposits do not enlarge spending permission. Physical available funds, lifetime capacity, period capacity and per-payment permission are separate checks. Reservations stay attached to their original period across rollover. At most two reservations may be outstanding.
 
@@ -138,7 +187,7 @@ X Layer trusts the configured receipt attestor for foreign-chain acknowledgement
 | `POST /auth/challenge`, `/auth/login` | Origin/environment/owner-bound message; caller signs it, then supplies `{address,signature}` |
 | `GET /auth/session`, `POST /auth/logout` | Current address/null; revoke session or expire cookie |
 | `POST /owner/drafts` | `{description,guidance?,settlement?}` → 202 `{id,status}`; mission/guidance at most 16 KiB |
-| `GET /owner/drafts/{id}` | Proposal state, policy/questions/interpretation and verified activation arguments when finalized |
+| `GET /owner/drafts/{id}` | Original owner-only input, proposal state, policy/questions/interpretation and verified activation arguments when finalized |
 | `GET /owner/cards`, `POST /owner/cards` | List real owned cards; register exact owner-confirmed `{draftId,cardAddress,activationTx}` receipt |
 | `POST /owner/cards/{id}/reviewer` | Retry only failed initialization, preserving vault/policy/history |
 | `POST /owner/cards/{id}/keys` | Issue/rotate once after active card and reviewer readiness; old keys stop authorizing |
@@ -204,6 +253,8 @@ catch (error) {
 ```
 
 `IntentGuard` offers capabilities, health, me, request, get, wait and public list/detail/card/proof methods. `IntentGuardOwner` offers challenge/login/session/logout, cards/drafts/confirmed registration, reviewer retry, explicit replacement and key issuance/revocation. Owner login returns metadata, keeping the separate-origin token in private memory. `IntentGuardError` retains status, code, retryable, requestId, retryAfterSeconds and redacted details. SDK wait defaults to ten minutes; explicit deadlines and AbortSignal are supported. Timeout preserves the original ID.
+
+`IntentGuardSandbox` offers capabilities, startSession, request, get and clearSession. Its runtime export is `SandboxClient`; options require `paymentEnvironment: "testnet"` and reject agent credentials, external tokens and owner/signing authority. It verifies explicit API/frontend/source/review identity before sending a visitor capability. It never returns that capability from startSession, and never uses cookies. Save public operation metadata for recovery; the visitor session itself stays in memory.
 
 For MCP, install `npm ci --ignore-scripts --prefix packages/mcp`, then run `node packages/mcp/src/cli.mjs` with `INTENTGUARD_BASE_URL` and `INTENTGUARD_PAYMENT_ENV`. Inject `INTENTGUARD_API_KEY` from the owner's secret manager for authenticated tools. Optional pins: INTENTGUARD_FRONTEND_ORIGIN, INTENTGUARD_SOURCE_CHAIN_ID (local), INTENTGUARD_EXPECTED_RELEASE_ID, INTENTGUARD_EXPECTED_SOURCE_COMMIT, INTENTGUARD_EXPECTED_CARD_ID. The private package is not published as `npx @intentguard/mcp`.
 

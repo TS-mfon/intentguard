@@ -118,7 +118,9 @@
         "/explorer/transactions/{id}/proof",
         "/explorer/agents/{id}/card",
         "/explorer/agents/{id}/card.svg",
-        "/demo/invoices/{id}"
+        "/demo/invoices/{id}",
+        "/sandbox",
+        "/sandbox/session"
       ]
     },
     "agent": {
@@ -143,7 +145,79 @@
       "authorizationScheme": "Bearer",
       "scope": "separate testnet merchant administration",
       "agentKeysCannotIssueInvoices": true
+    },
+    "sandboxVisitor": {
+      "authorizationScheme": "Sandbox",
+      "paths": ["/sandbox/requests", "/sandbox/requests/{id}"],
+      "originBound": true,
+      "cookiePolicy": "omit",
+      "acceptsAgentOrOwnerCredentials": false,
+      "scope": "fixed scenarios on one dedicated local native-USDC testnet card"
     }
+  },
+  "visitorSandbox": {
+    "status": "SOURCE_IMPLEMENTED_LIVE_ACCEPTANCE_REQUIRED",
+    "constructor": "new IntentGuardSandbox(options)",
+    "runtimeExport": "SandboxClient",
+    "requiredOptions": ["baseUrl", "paymentEnvironment=testnet"],
+    "optionalIdentityPins": ["frontendOrigin", "expectedReleaseId", "expectedSourceCommit", "expectedCardId"],
+    "methods": ["capabilities", "startSession", "request", "get", "clearSession"],
+    "paymentEnvironment": "testnet",
+    "paymentChainId": 1952,
+    "reviewEnvironment": "testnet",
+    "reviewChainId": 61999,
+    "asset": "native USDC",
+    "destinations": [1952],
+    "scenarios": [
+      {"id": "permitted", "expected": "PAID"},
+      {"id": "blocked", "expected": "BLOCKED"},
+      {"id": "prohibited", "expected": "REJECTED"},
+      {"id": "wrong-buyer", "expected": "NEEDS_EVIDENCE"}
+    ],
+    "expectedLabelsAreNotActualResults": true,
+    "immediateBudgetBlock": "normal durable admission then claimed actual live numerical denial; BLOCKED/review SKIPPED; permitting or unavailable preview never invents a block",
+    "normalAmount": "0.000001",
+    "blockedAmount": "0.010001",
+    "immutablePerPaymentLimit": "0.01",
+    "session": {
+      "creation": "POST /sandbox/session with {} and approved Origin",
+      "expiresAtUnit": "Unix epoch milliseconds",
+      "maximumAgeSeconds": 3600,
+      "storage": "private memory only",
+      "sdkReturnsCapability": false,
+      "clearedOnAuthenticationOrIdentityFailure": true,
+      "neverAccepts": ["agentApiKey", "ownerSession", "walletSignature", "externalVisitorToken"]
+    },
+    "limits": {
+      "preparationsPerVisitorSession": 5,
+      "submitAttemptsPerVisitorMinute": 5,
+      "newPreparationsPerCardMinute": 6,
+      "defaultLifetimePreparationsPerCard": 30,
+      "configurableLifetimeRange": [1, 100],
+      "keyRotationReplenishesCardCeiling": false
+    },
+    "idempotencyKey": {"maximumCharacters": 64, "pattern": "^[A-Za-z0-9_-]{1,64}$", "changedScenarioStatus": 409},
+    "pendingAdmission": {"httpStatus": 503, "code": "SANDBOX_REQUEST_PENDING", "retryAfterSeconds": 5, "retrySameScenarioAndKey": true},
+    "trackingSurvivesPauseOrBalanceRpcOutage": true,
+    "newSessionRecoversPreviousPrivateBinding": false,
+    "saveForRecovery": ["requestId", "publicUrl", "scenario", "idempotencyKey"],
+    "serverOnlyEnvironmentVariables": ["INTENTGUARD_SANDBOX_CARD_ID", "INTENTGUARD_SANDBOX_OWNER", "INTENTGUARD_SANDBOX_API_KEY", "INTENTGUARD_SANDBOX_MAX_REQUESTS", "SESSION_SECRET"],
+    "mcpVisitorToolsInstalled": false,
+    "liveAcceptanceEvidence": "PENDING"
+  },
+  "agentSetup": {
+    "templates": ["research", "api-access", "protocol-test"],
+    "protocolTestRequiresChainId": 1952,
+    "templatesAreEditableDrafts": true,
+    "actualMerchantAndEvidenceRequired": true,
+    "budgetInputSection": "Money & validity",
+    "amountType": "exact decimal string with at most six fractional digits",
+    "aggregateBudgetPeriodsPerPolicy": 1,
+    "removeRepeatedBudgetAmountsFromProse": true,
+    "ownerOnlyOriginalDraftInput": "GET /owner/drafts/{id}.input={description,guidance?}",
+    "failedDraftRecovery": "restore original input; clarify clauses; submit new draft; preserve old receipts",
+    "observedStudionetFailure": "generated invalid decimals/result fields and changed structurally valid guidance; invalid user decimal input not proved",
+    "independentValidatorModelReasonsExposed": false
   },
   "mcp": {
     "entryPoint": "node packages/mcp/src/cli.mjs",

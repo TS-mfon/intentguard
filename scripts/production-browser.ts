@@ -14,6 +14,8 @@ import {STUDIONET_CONSENSUS} from "../apps/web/lib/config";
 import {card,policy,input,FakeEvm} from "../tests/fixtures";
 import {digest,type Settlement} from "../packages/shared";
 import {profileRoutes,sourceToken} from "../packages/shared/payment-profiles";
+import {sandboxPolicy} from "../apps/web/lib/sandbox";
+import {issueKey} from "../apps/web/lib/auth";
 import {buildStatic} from "./static-frontend.mjs";
 import {gatewayResolve} from "../tools/hosting/bundle.mjs";
 
@@ -33,7 +35,7 @@ const sourceCard={...card,owner,chainId,token:sourceToken(environment,"USDC"),pa
 const store=new MemoryStore();await store.create("cards",sourceCard);
 const now=Date.now(),records=Array.from({length:5},(_,i)=>({id:"0x"+String(i+1).padStart(64,"0"),cardId:card._id,agentName:policy.name,status:i===1?"BLOCKED":"PAID",amount:"1.000001",recipient:input.recipient,category:"data",purchaseDescription:"Isolated browser fixture "+(i+1),createdAt:now-i*10000,updatedAt:now,requestHash:hash("bb"),evidenceHash:hash("cc"),chainId,token:sourceCard.token,paymentSymbol:"USDC",guard:{allow:i!==1,failures:i===1?["Payment limit"]:[],txHash:hash("dd")},review:i===1?undefined:{decision:"APPROVE",requestHash:hash("bb"),policyHash:digest(policy),evidenceHash:hash("cc"),reason:"Isolated finalized reasoning fixture.",criteria:[{id:"mission",status:"PASS",reason:"Committed fixture invoice supports the research mandate.",sources:["https://merchant.example/invoice","javascript:alert(1)"]}]},genLayerTxHash:i===1?undefined:hash("ee"),paymentTxHash:i===1?undefined:hash("ff")}));
 const publicAgent={id:card._id,name:policy.name,mission:policy.mission,address:card.address,owner,policyHash:digest(policy),chainId,token:sourceCard.token,paymentSymbol:"USDC",status:"ACTIVE",reviewerAddress:sourceCard.reviewerAddress,createdAt:now,financial:policy.financial,criteria:policy.criteria,balances:{available:"10",spent:"4.000004",reserved:"0"}};
-let apiOrigin="",frontendOrigin="",directory="",paths=new Map<string,{contentType:string}>(),publicMode="populated",configMismatch=false,unverified=false,proofTampered=false,downloadError=false;
+let apiOrigin="",frontendOrigin="",directory="",paths=new Map<string,{contentType:string}>(),publicMode="populated",configMismatch=false,unverified=false,proofTampered=false,downloadError=false,sandboxAvailable=true,sandboxLostResponse=false,lastDraftId="",lastDraftInput:unknown=null;
 let lastReplacement:Record<string,unknown>|null=null;const requests:{path:string;method:string;origin:string|null;authorization:string|null;environment:string|null}[]=[],checks:string[]=[],errors:string[]=[];
 class BrowserEvm extends FakeEvm{
  override async view(value:Parameters<FakeEvm["view"]>[0]){return {...await super.view(value),chainId:value.chainId??chainId,paymentEnvironment:value.paymentEnvironment??environment,reviewerVersion:value.reviewerVersion,settlement:value.settlement,reviewEnvironment:"testnet" as const,reviewNetwork:"studionet" as const,reviewChainId:61999 as const};}
@@ -46,9 +48,13 @@ const apiServer=createServer(tls,async(req,res)=>{
   const method=req.method||"GET",bytes=Buffer.concat(chunks),r=new Request(url,{method,headers,...(!["GET","HEAD"].includes(method)&&bytes.length?{body:bytes}:{} )});
   const path=url.pathname.replace("/api/v1","");requests.push({path,method,origin:r.headers.get("origin"),authorization:r.headers.get("authorization"),environment:r.headers.get("x-intentguard-environment")});
   let result:Response;
-  if(method==="OPTIONS"||path.startsWith("/auth/")||path==="/config"||path.startsWith("/owner/")){
+  if(method==="OPTIONS"||path.startsWith("/auth/")||path==="/config"||path.startsWith("/owner/")||path.startsWith("/sandbox")){
    if(path.endsWith("/replacement")&&method==="POST")lastReplacement=JSON.parse(bytes.toString());
    result=await api(r,path);
+   if(path==="/owner/drafts"&&method==="POST"&&result.ok){const value=await result.clone().json();lastDraftId=value.id;lastDraftInput=JSON.parse(bytes.toString());}
+   if(path==="/owner/drafts/"+lastDraftId&&method==="GET"&&result.ok){const value=await result.json();result=Response.json({...value,state:"FAILED",status:"PENDING",input:lastDraftInput,error:"GenLayer generated a malformed policy proposal. No policy was authorized."},{status:result.status,headers:result.headers});}
+   if(path==="/sandbox"&&!sandboxAvailable)result=Response.json({enabled:false,message:"Sandbox paused for an isolated UI control.",scenarios:[],paymentEnvironment:"testnet",paymentChainId:1952},{headers:result.headers});
+   if(path==="/sandbox/requests"&&method==="POST"&&result.ok&&sandboxLostResponse){sandboxLostResponse=false;result=Response.json({error:{code:"SANDBOX_REQUEST_PENDING",message:"An isolated lost-response control. Retry the same visitor key."}},{status:503,headers:result.headers});}
    if(path==="/config"&&method==="GET"){const config=await result.json();if(configMismatch)config.paymentEnvironment=mainnet?"testnet":"mainnet";if(unverified){config.configured=false;config.assets=[];config.spendingNetworks=[];}result=Response.json(config,{status:result.status,headers:result.headers});}
   }else{
    const cors={"Access-Control-Allow-Origin":frontendOrigin,"Access-Control-Expose-Headers":"X-Request-Id, Retry-After","Cache-Control":"no-store"};
@@ -79,13 +85,22 @@ async function noOverflow(page:Page){assert.equal(await page.evaluate(()=>docume
 try{
  const reusable=process.argv.includes("--reuse")?JSON.parse(await readFile(join(root,".local/static-frontend/manifest.json"),"utf8")):null;
  if(reusable){assert.equal(reusable.paymentEnvironment,environment);assert.equal(reusable.sourceCommit,sourceCommit);for(const[path,expected]of Object.entries(reusable.sourceInputs)){assert.equal(createHash("sha256").update(await readFile(join(root,path))).digest("hex"),expected,"Build input changed: "+path);}}
- apiOrigin="https://127.0.0.1:"+await listen(apiServer,reusable?Number(new URL(reusable.apiOrigin).port):0);frontendOrigin="https://localhost:"+await listen(frontendServer,reusable?Number(new URL(reusable.frontendOrigin).port):0);
+ // A public-shaped DNS origin exercises production policy validation. Chromium
+ // resolves only this isolated fixture host to the local HTTPS API server.
+ const fixturePort=await listen(apiServer);
+ apiOrigin="https://api.intentguard.example";frontendOrigin="https://localhost:"+await listen(frontendServer,reusable?Number(new URL(reusable.frontendOrigin).port):0);
  const genesis=hash("77"),netlist=hash("33"),contracts={factoryAddress:address("55"),cctpFactoryAddress:address("66"),gateway:address("11"),attestor:address("22"),processor:address("88"),beacon:address("99"),expectedImplementation:address("aa"),interpreter:address("44")};
  const manifest={version:1,paymentEnvironment:environment,paymentChainId:chainId,releaseId:"isolated-browser-"+environment,sourceCommit,applicationOrigin:apiOrigin,frontendOrigin,databaseName:mainnet?"intentguard_mainnet":"intentguard",reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewGenesis:genesis,reviewConsensus:STUDIONET_CONSENSUS,contracts,circuitId:"1",netlistHash:netlist,codeHashes:{factoryAddress:netlist,cctpFactoryAddress:netlist,processor:netlist,beacon:netlist,expectedImplementation:netlist},enabledAssets:mainnet?["USDC","USDT0"]:["USDC"],verifiedDestinationChainIds:Object.keys(networks).map(Number),verifiedAt:new Date().toISOString()};
  const manifestBytes=JSON.stringify(manifest),manifestPath=join(temporary,"runtime.json");await writeFile(manifestPath,manifestBytes);
  Object.assign(process.env,{INTENTGUARD_MODE:environment,INTENTGUARD_PAYMENT_ENV:environment,XLAYER_CHAIN_ID:String(chainId),MONGODB_DB:manifest.databaseName,MONGODB_URI:"memory://isolated-browser-fixture",APP_URL:apiOrigin,FRONTEND_URL:frontendOrigin,SESSION_SECRET:"isolated-browser-session-secret-over-32-characters",GENLAYER_NETWORK:"studionet",GENLAYER_CHAIN_ID:"61999",GENLAYER_GENESIS_HASH:genesis,GENLAYER_CONSENSUS_ADDRESS:STUDIONET_CONSENSUS,GENLAYER_INTERPRETER_ADDRESS:contracts.interpreter,CARD_FACTORY_ADDRESS:contracts.factoryAddress,CCTP_CARD_FACTORY_ADDRESS:contracts.cctpFactoryAddress,GATEWAY_ADDRESS:contracts.gateway,ATTESTOR_ADDRESS:contracts.attestor,TAPEOUT_PROCESSOR:contracts.processor,TAPEOUT_CIRCUIT_ID:"1",TAPEOUT_BEACON:contracts.beacon,TAPEOUT_IMPLEMENTATION:contracts.expectedImplementation,TAPEOUT_NETLIST_HASH:netlist,INTENTGUARD_RELEASE_ID:manifest.releaseId,INTENTGUARD_SOURCE_COMMIT:sourceCommit,INTENTGUARD_VERIFIED_MANIFEST:manifestPath,INTENTGUARD_VERIFIED_MANIFEST_SHA256:createHash("sha256").update(manifestBytes).digest("hex"),PAYMENT_TOKEN:mainnet?sourceToken("mainnet","USDT0"):sourceCard.token});
+ if(!mainnet){
+  process.env.DEMO_MERCHANT_RECIPIENT=input.recipient;
+  const sandboxPermission=sandboxPolicy(input.recipient,apiOrigin),sandboxCard={...sourceCard,_id:hash("a1"),draftId:hash("a1"),address:address("a2"),policy:sandboxPermission,policyHash:digest(sandboxPermission),sandbox:true,state:"READY",settlement:{asset:"USDC",destinationChainIds:[1952]}};
+  await store.create("cards",sandboxCard);const sandboxKey=await issueKey(store,sandboxCard._id,owner);
+  Object.assign(process.env,{INTENTGUARD_SANDBOX_CARD_ID:sandboxCard._id,INTENTGUARD_SANDBOX_OWNER:owner,INTENTGUARD_SANDBOX_API_KEY:sandboxKey});
+ }
  const built=reusable?{directory:join(root,".local/static-frontend/out"),manifest:reusable}:await buildStatic({paymentEnvironment:environment,apiOrigin,frontendOrigin,sourceCommit});directory=built.directory;paths=new Map(built.manifest.bundle.files.map((f:{path:string;contentType:string})=>[f.path,{contentType:f.contentType}]));
- browser=await chromium.launch({headless:true});const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
+ browser=await chromium.launch({headless:true,args:["--host-resolver-rules=MAP api.intentguard.example 127.0.0.1:"+fixturePort]});const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
  await context.exposeFunction("signBrowserMessage",(raw:string)=>account.signMessage({message:{raw:raw as `0x${string}`}}));
  await context.addInitScript({content:`window.browserAccounts=[${JSON.stringify(owner)}];window.browserListeners={};window.browserTransactions=[];window.browserMethods=[];Object.defineProperty(window,'ethereum',{value:{on:(e,h)=>window.browserListeners[e]=h,removeListener:e=>delete window.browserListeners[e],request:async({method,params})=>{window.browserMethods.push(method);if(['eth_accounts','eth_requestAccounts'].includes(method))return window.browserAccounts;if(method==='eth_chainId')return ${JSON.stringify("0x"+chainId.toString(16))};if(method==='personal_sign'){if(window.deferBrowserSignature)return new Promise(resolve=>window.resolveBrowserSignature=()=>window.signBrowserMessage(params[0]).then(resolve));return window.signBrowserMessage(params[0]);}if(method==='eth_sendTransaction'){window.browserTransactions.push(params[0]);throw Object.assign(new Error('User rejected wallet request'),{code:4001});}throw new Error('Unexpected wallet method '+method);}}});`});
  const page=await context.newPage();page.on("pageerror",e=>errors.push(e.message));page.setDefaultTimeout(15000);
@@ -113,7 +128,33 @@ try{
   assert.deepEqual(await context.cookies(),[]);assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(k=>/session|token|api.?key/i.test(k))),false);
   await page.reload();await page.getByRole("heading",{name:"Your wallet is the owner."}).waitFor();await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.getByRole("heading",{name:policy.name,exact:true}).first().waitFor();
  });
+ await outcome("editable templates, refresh and receipt-grounded failed draft restoration",async()=>{
+  await page.goto(frontendOrigin+"/agent-setup");await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.getByRole("radio",{name:/Research assistant/}).check();assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),"Research assistant");
+  assert.equal(await page.getByRole("radio",{name:/Protocol test/}).count(),mainnet?0:1);
+  await page.getByLabel("Agent name",{exact:true}).fill("Owner customized research");await page.reload();await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.getByLabel("Agent name",{exact:true}).waitFor();assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),"Owner customized research");
+  await page.getByText("How to write terms validators can agree on",{exact:true}).click();assert.ok((await page.locator(".setup-guidance").innerText()).includes("one aggregate period"));
+  await page.getByRole("button",{name:"Continue",exact:true}).click();await page.getByLabel("Merchant name",{exact:true}).fill("Approved evidence merchant");await page.getByLabel("Recipient address",{exact:true}).fill("0x"+"1".repeat(40));await page.getByLabel("Merchant HTTPS origins").fill("https://merchant.example");await page.getByLabel("Approved evidence origins").fill("https://merchant.example");
+  await page.getByRole("button",{name:"Continue",exact:true}).click();await page.getByText("Enter the verified merchant recipient, not a repeated-digit placeholder.",{exact:true}).waitFor();
+  await page.getByLabel("Recipient address",{exact:true}).fill(owner);await page.getByRole("button",{name:"Continue",exact:true}).click();await page.getByLabel("Budget period",{exact:true}).selectOption("604800");await page.getByRole("button",{name:"Propose policy",exact:true}).click();await page.getByText("Proposal could not be finalized.",{exact:true}).waitFor();assert.equal(await page.getByRole("button",{name:"Activate agent",exact:true}).count(),0);
+  const failedUrl=page.url();await page.evaluate(()=>localStorage.clear());await page.reload();await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.getByText("Proposal could not be finalized.",{exact:true}).waitFor();await page.getByRole("button",{name:"Edit instructions",exact:true}).click();assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),"Owner customized research");assert.ok(failedUrl.includes(lastDraftId));
+  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page);}
+  await page.setViewportSize({width:1440,height:1000});await page.goto(frontendOrigin+"/agents");await page.getByRole("button",{name:"Connect wallet",exact:true}).first().click();await page.getByRole("heading",{name:policy.name,exact:true}).first().waitFor();
+ });
+ await outcome("anonymous sandbox has private visitor capabilities, safe retries and actual status polling",async()=>{
+  const visitor=await browser!.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:900}}),visitorPage=await visitor.newPage();visitorPage.on("pageerror",e=>errors.push(e.message));
+  await visitorPage.goto(frontendOrigin+"/sandbox");await visitorPage.getByRole("heading",{name:"Try a bounded request.",exact:true}).waitFor();
+  if(mainnet){await visitorPage.getByText("The visitor sandbox is available on the testnet deployment.",{exact:false}).waitFor();assert.equal(await visitorPage.getByRole("button",{name:"Submit testnet request",exact:true}).count(),0);}
+  else{
+   await visitorPage.getByRole("radio",{name:/Allowed service/}).waitFor();sandboxLostResponse=true;await visitorPage.getByRole("button",{name:"Submit testnet request",exact:true}).click();await visitorPage.getByRole("alert").filter({hasText:"An isolated lost-response control"}).waitFor();
+   await visitorPage.getByRole("button",{name:"Retry the same request",exact:true}).click();await visitorPage.locator(".sandbox-records li").waitFor();assert.equal(await visitorPage.locator(".sandbox-records li").count(),1);await visitorPage.getByText("4 requests remaining in this session",{exact:false}).waitFor();
+   const sandboxCalls=requests.filter(r=>r.path.startsWith("/sandbox")&&r.method!=="OPTIONS");assert.ok(sandboxCalls.every(r=>!r.authorization||r.authorization.startsWith("Sandbox ")));assert.ok(sandboxCalls.every(r=>r.environment==="testnet"));assert.deepEqual(await visitor.cookies(),[]);assert.equal(await visitorPage.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes("visitorToken")),false);
+   await visitorPage.screenshot({path:join(folder,"testnet-sandbox.png"),fullPage:true});
+   await visitorPage.reload();await visitorPage.getByRole("radio",{name:/Allowed service/}).waitFor();assert.equal(await visitorPage.locator(".sandbox-records li").count(),0);sandboxAvailable=false;await visitorPage.reload();await visitorPage.getByText("Sandbox paused for an isolated UI control.",{exact:true}).waitFor();assert.equal(await visitorPage.getByRole("button",{name:"Submit testnet request",exact:true}).count(),0);sandboxAvailable=true;
+  }
+  for(const width of [320,390,768,1440]){await visitorPage.setViewportSize({width,height:900});await noOverflow(visitorPage);}await visitor.close();
+ });
  await outcome("owner replacement acknowledgement and versioned settlement choices",async()=>{
+  await page.locator(".owner-agent-list button").filter({hasText:policy.name}).click();
   await page.getByRole("tab",{name:"Policy",exact:true}).click();
   await page.getByRole("button",{name:"Prepare owner replacement"}).click();const dialog=page.getByRole("dialog",{name:"Create a replacement vault"});await dialog.waitFor();await dialog.getByLabel(/I understand that the new vault resets/).waitFor();assert.equal(await dialog.getByRole("button",{name:"Create policy-copy draft"}).isDisabled(),true);
   const routes=dialog.locator("#destinationChainIds input");assert.equal(await routes.count(),Object.keys(networks).length);

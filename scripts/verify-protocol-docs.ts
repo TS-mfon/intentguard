@@ -31,6 +31,7 @@ for (const name of Object.keys(schema.components.schemas)) validator(name);
 assert.equal(schema.openapi, "3.1.0"); assert.equal(schema.info.version, guide.protocolVersion); assert.equal(guide.version, 4);
 assert.equal(schema.servers[0].url, "/api/v1"); assert.equal(schema.servers[1].url, guide.firstUse.publicApplication + "/api/v1");
 const methods: Record<string, string[]> = {
+  "/sandbox": ["get"], "/sandbox/session": ["post"], "/sandbox/requests": ["post"], "/sandbox/requests/{id}": ["get"],
   "/config": ["get"], "/health": ["get"], "/auth/challenge": ["post"], "/auth/login": ["post"], "/auth/session": ["get"], "/auth/logout": ["post"],
   "/owner/drafts": ["post"], "/owner/drafts/{id}": ["get"], "/owner/cards": ["get", "post"], "/owner/cards/{id}/keys": ["post", "delete"],
   "/owner/cards/{id}/reviewer": ["post"], "/owner/cards/{id}/replacement": ["get", "post"], "/owner/requests": ["get"], "/owner/requests/{id}": ["get"],
@@ -52,6 +53,12 @@ for (const [path, expected] of Object.entries(methods)) {
 assert.equal(schema.components.securitySchemes.AgentKey.scheme, "bearer");
 assert.equal(schema.components.securitySchemes.OwnerSession.name, "ig_session");
 assert.equal(schema.components.securitySchemes.OwnerBearer.name, "Authorization");
+assert.equal(schema.components.securitySchemes.SandboxVisitor.name,"Authorization");
+assert.deepEqual(schema.paths["/sandbox"].get.security,[]);
+assert.deepEqual(schema.paths["/sandbox/session"].post.security,[]);
+for(const path of ["/sandbox/requests","/sandbox/requests/{id}"])for(const operation of Object.values(schema.paths[path]) as any[])assert.deepEqual(operation.security,[{SandboxVisitor:[]}]);
+for(const scenario of ["permitted","blocked","prohibited","wrong-buyer"])conforms("SandboxRequestInput",{scenario});
+refuses("SandboxRequestInput",{scenario:"permitted",amount:"1"});refuses("SandboxRequestInput",{scenario:"arbitrary"});
 assert.ok(schema.paths["/requests"].post.parameters.some((p: any) => p.name === "Idempotency-Key" && p.required));
 assert.deepEqual(schema.components.schemas.RequestView.properties.status.enum, REQUEST_STATES);
 assert.deepEqual(schema.components.schemas.PublicTransaction.properties.status.enum, REQUEST_STATES);

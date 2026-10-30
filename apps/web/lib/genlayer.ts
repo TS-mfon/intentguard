@@ -11,6 +11,24 @@ import {assertCardEnvironment} from "./settlement";
 import type {Store,Doc} from "./store";
 import type {Card,Draft,Payment} from "./models";
 export const genLayerAddress=(address:string)=>new CalldataAddress(toBytes(address as Hex));
+export type StudioExecutionDiagnostic={code:"DRAFT_GENERATION_INVALID_AMOUNT"|"DRAFT_GENERATION_INVALID_SCHEMA"|"DRAFT_GENERATION_CHANGED_GUIDANCE";message:string};
+function finalStudioLeader(tx:GenLayerTransaction){
+ const leaders=(tx as unknown as {consensus_data?:{leader_receipt?:unknown}}).consensus_data?.leader_receipt;
+ const receipts=(Array.isArray(leaders)?leaders:leaders?[leaders]:[]) as {mode?:unknown;execution_result?:unknown;result?:{status?:unknown;payload?:unknown}}[];
+ const labelled=receipts.some(receipt=>typeof receipt?.mode==="string");
+ return (labelled?receipts.filter(receipt=>receipt?.mode==="leader"):receipts).at(-1);
+}
+// Only expose known contract diagnostics. Never copy arbitrary model output,
+// provider configuration, or another validator's idle error into owner messages.
+export function studioExecutionDiagnostic(tx:GenLayerTransaction):StudioExecutionDiagnostic|undefined{
+ const leader=finalStudioLeader(tx);
+ if(leader?.execution_result!=="ERROR"||leader.result?.status!=="rollback")return;
+ switch(leader.result.payload){
+  case "Exact decimal amount required":return {code:"DRAFT_GENERATION_INVALID_AMOUNT",message:"The generated proposal used an invalid budget format. Your exact submitted amounts were not authorized; review the saved terms and submit a new proposal."};
+  case "Invalid draft result fields":return {code:"DRAFT_GENERATION_INVALID_SCHEMA",message:"GenLayer generated a malformed policy proposal. No policy was authorized; review the saved terms and submit a new proposal."};
+  case "Draft changed explicit structured guidance":return {code:"DRAFT_GENERATION_CHANGED_GUIDANCE",message:"The generated proposal changed explicit owner terms. No policy was authorized; review the saved terms and submit a new proposal."};
+ }
+}
 export function normalizedCalldata(value:unknown):unknown{
  if(typeof value==="bigint"){const number=Number(value);if(!Number.isSafeInteger(number))throw Error("GenLayer integer exceeds exact JSON range");return number;}
  if(value instanceof CalldataAddress)return toHex(value.bytes).toLowerCase();
@@ -29,13 +47,10 @@ export function normalizeStudioTransaction(tx:GenLayerTransaction,expectedHash?:
  const encoded=(raw.tx_data.startsWith("0x")?raw.tx_data:"0x"+raw.tx_data) as Hex;
  if(!/^0x[0-9a-fA-F]+$/.test(encoded))throw Error("Invalid GenLayer committed transaction data");
  const decoded=decodeInputData(encoded,raw.recipient??raw.to_address);
- const leaders=raw.consensus_data?.leader_receipt;
- const receipts=Array.isArray(leaders)?leaders:leaders?[leaders]:[];
  // Studio can append an idle validator receipt to the leader_receipt array.
  // Its execution error is not the leader's VM outcome. Select the final leader
  // in explicitly labelled arrays; legacy unlabelled arrays retain their order.
- const labelled=receipts.some(receipt=>typeof receipt?.mode==="string");
- const latest=(labelled?receipts.filter(receipt=>receipt?.mode==="leader"):receipts).at(-1);
+ const latest=finalStudioLeader(tx);
  const returned=latest?.execution_result==="SUCCESS"&&(!latest.result?.status||latest.result.status==="return");
  return {...tx,
   statusName:raw.status_name??raw.statusName??raw.status,
@@ -46,12 +61,12 @@ export function normalizeStudioTransaction(tx:GenLayerTransaction,expectedHash?:
 }
 
 export class PendingFinality extends Error {}
-export class GenLayerTerminalError extends Error {}
+export class GenLayerTerminalError extends Error {constructor(message:string,readonly diagnostic?:StudioExecutionDiagnostic){super(message);}}
 export function assertFinalized(tx:GenLayerTransaction,expected?:{target:string;method:string;args:unknown[];sender?:string}){
  const status=tx.statusName??transactionsStatusNumberToName[String(tx.status) as keyof typeof transactionsStatusNumberToName]??tx.status;
  if(status!=="FINALIZED"){if(["CANCELED","UNDETERMINED","VALIDATORS_TIMEOUT","LEADER_TIMEOUT"].includes(String(status)))throw new GenLayerTerminalError("GenLayer transaction failed: "+status);throw new PendingFinality("GenLayer consensus is not finalized");}
  const execution=tx.txExecutionResultName??executionResultNumberToName[String(tx.txExecutionResult) as keyof typeof executionResultNumberToName];
- if(execution!=="FINISHED_WITH_RETURN")throw new GenLayerTerminalError("GenLayer VM execution was not successful");
+ if(execution!=="FINISHED_WITH_RETURN"){const diagnostic=studioExecutionDiagnostic(tx);throw new GenLayerTerminalError(diagnostic?.message??"GenLayer VM execution was not successful",diagnostic);}
  const result=tx.resultName??transactionResultNumberToName[String(tx.result) as keyof typeof transactionResultNumberToName];if(!["AGREE","MAJORITY_AGREE","SUCCESS"].includes(String(result)))throw new GenLayerTerminalError("GenLayer consensus did not approve execution");if(tx.txDataDecoded?.leaderOnly!==false)throw Error("GenLayer validator consensus is required");
  if(expected){
  if((tx.recipient??tx.to_address)?.toLowerCase()!==expected.target.toLowerCase())throw Error("GenLayer transaction target mismatch");
@@ -119,10 +134,30 @@ export class GenLayer implements GenLayerPort{
  await this.store.patch("transactions",saved._id,{protocolHash});return protocolHash;
  }
  async read(address:string,functionName:string,args:string[]=[]){await this.identity();return this.client.readContract({address:address as Address,functionName,args,jsonSafeReturn:true,transactionHashVariant:TransactionHashVariant.LATEST_FINAL})}
- async propose(d:Draft){return this.send("draft:"+d._id,c=>c.writeContract({address:this.cfg.interpreter as Address,functionName:"propose",args:[d._id,canonical(d.input)],value:0n}),{table:"drafts",id:d._id,token:d.leaseToken})}
- async draft(d:Draft){if(!d.genLayerTxHash)throw Error("Missing draft transaction");const tx=await this.client.getTransaction({hash:d.genLayerTxHash as GLHash});assertFinalized(tx,{target:this.cfg.interpreter!,method:"propose",args:[d._id,canonical(d.input)],sender:this.account().address});
- if(await this.read(this.cfg.interpreter!,"get_draft_input_hash",[d._id])!==d.inputHash)throw Error("Draft input commitment mismatch");
- const raw=await this.read(this.cfg.interpreter!,"get_draft",[d._id]);const result=JSON.parse(String(raw)) as DraftResult;
+ private async draftInterpreter(d:Draft){
+  const saved=await this.store.get<Draft>("drafts",d._id);
+  if(!saved||saved.owner!==d.owner||saved.inputHash!==d.inputHash||digest(saved.input)!==saved.inputHash||canonical(saved.input)!==canonical(d.input))throw Error("Draft stored input commitment mismatch");
+  const target=saved.interpreterAddress;
+  // New drafts pin the trusted configured interpreter at admission. Legacy
+  // drafts require an explicitly verified backfill; a receipt recipient or the
+  // new global configuration can never supply missing historical authority.
+  if(typeof target!=="string"||!/^0x[0-9a-fA-F]{40}$/.test(target)||/^0x0{40}$/i.test(target))throw Error("Draft interpreter authority is missing or invalid");
+  if(d.interpreterAddress!==undefined&&d.interpreterAddress.toLowerCase()!==target.toLowerCase())throw Error("Draft interpreter authority mismatch");
+  if((saved.genLayerTxHash??null)!==(d.genLayerTxHash??null))throw Error("Draft stored transaction mismatch");
+  return target.toLowerCase();
+ }
+ async propose(d:Draft){
+  await assertSigningLease(this.store,"drafts",d._id,d.leaseToken);
+  const target=await this.draftInterpreter(d);
+  if(d.genLayerTxHash)throw Error("Draft proposal is already submitted");
+  return this.send("draft:"+d._id,async c=>{
+   if(await this.draftInterpreter(d)!==target)throw Error("Draft interpreter authority changed before signing");
+   return c.writeContract({address:target as Address,functionName:"propose",args:[d._id,canonical(d.input)],value:0n});
+  },{table:"drafts",id:d._id,token:d.leaseToken});
+ }
+ async draft(d:Draft){if(!d.genLayerTxHash)throw Error("Missing draft transaction");const target=await this.draftInterpreter(d);const tx=await this.client.getTransaction({hash:d.genLayerTxHash as GLHash});assertFinalized(tx,{target,method:"propose",args:[d._id,canonical(d.input)],sender:this.account().address});
+ if(await this.read(target,"get_draft_input_hash",[d._id])!==d.inputHash)throw Error("Draft input commitment mismatch");
+ const raw=await this.read(target,"get_draft",[d._id]);const result=JSON.parse(String(raw)) as DraftResult;
  if(!["PROPOSED","NEEDS_CLARIFICATION"].includes(result.status)||!Array.isArray(result.questions)||typeof result.interpretation!=="string")throw Error("Invalid draft result");
  if(result.status==="PROPOSED")result.policy=policySchema.parse(result.policy);else if(result.policy!==null)throw Error("Clarification must not authorize policy");return result;}
  reviewerArgs(c:Card){assertCardEnvironment(c);const args=[genLayerAddress(this.account().address),canonical(c.policy),c.policyHash,Number(c.chainId??this.cfg.chainId),String(c.token??this.cfg.token).toLowerCase(),...(c.settlement?[canonical(c.settlement)]:[])];if(c.reviewerVersion===4){if(!c.settlement||!isSettlementV2(c.settlement))throw Error("V4 reviewer requires explicit settlement permissions");args.push(canonical({version:4,paymentEnvironment:c.settlement.paymentEnvironment,reviewEnvironment:"testnet"}));}return args;}
