@@ -42,9 +42,10 @@ async function main(){
  const client=createClient({chain:studionet,endpoint:"https://studio.genlayer.com/api"});
  assert.equal(await client.getChainId(),61999,"Unexpected Studionet chain");
  if(process.argv[2]==="--clarification"){
-  const raw=await client.getTransaction({hash:suppliedClarificationTransaction}),tx=normalizeStudioTransaction(raw,suppliedClarificationTransaction);
-  assert.equal(tx.hash.toLowerCase(),suppliedClarificationTransaction);assert.ok(tx.txDataDecoded?.type==="call");
-  const call=normalizedCalldata(tx.txDataDecoded.callData) as {method:string;args:string[]};
+  const raw=await client.getTransaction({hash:suppliedClarificationTransaction as Hash}),tx=normalizeStudioTransaction(raw,suppliedClarificationTransaction);
+  assert.ok(tx.hash);assert.equal(tx.hash.toLowerCase(),suppliedClarificationTransaction);
+  const data=tx.txDataDecoded;assert.ok(data?.type==="call"&&"callData"in data);
+  const call=normalizedCalldata(data.callData) as {method:string;args:string[]};
   assert.equal(call.args.length,2);assert.equal(call.args[0],"0xfc98632ddf79702bec15eac006c0c0a2441eafea7b83c2b690cced3d7b301a48");
   const target="0x4a96E2dFCa2cae0f77cC7Dcc1B5e50a865F0437f";
   assertFinalized(tx,{target,method:"propose",args:call.args,sender:"0xEd9EDd8586b20524CafA4F568413C504C9B03172"});
