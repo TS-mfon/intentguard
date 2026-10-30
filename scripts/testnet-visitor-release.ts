@@ -16,7 +16,7 @@ import type {Draft,Job,Card} from "../apps/web/lib/models";
 import artifacts from "../contracts/evm/abi.json";
 
 for(const file of [".local/testnet-secrets.env",".local/hosting.env"])loadEnvFile(file);
-const action=process.argv[2];assert.ok(["backfill","deploy-interpreter","verify-interpreter","prepare-sandbox","activate-sandbox","fund-sandbox","status"].includes(action),"Choose an explicit testnet visitor stage");
+const action=process.argv[2];assert.ok(["backfill","deploy-interpreter","verify-interpreter","prepare-sandbox","revise-sandbox","activate-sandbox","fund-sandbox","status"].includes(action),"Choose an explicit testnet visitor stage");
 const cfg=configuration();assert.equal(cfg.mode,"testnet");assert.equal(cfg.chainId,1952);assert.notEqual(cfg.databaseName,"intentguard_mainnet");
 // Operator startup has intermittent TCP timeouts from this environment. Retry
 // only the idempotent connection/index preflight, before any release stage runs.
@@ -60,6 +60,10 @@ try{
   const tx=await gl.client.getTransaction({hash:state.interpreter.transactionHash});console.log(JSON.stringify({stage:action,transactionHash:state.interpreter.transactionHash,status:tx.statusName,result:tx.resultName}));
   assertFinalized(tx);const decoded=tx.txDataDecoded as any;assert.equal(decoded.type,"deploy");assert.equal(decoded.code,source.toString());assert.equal(canonical((normalizedCalldata(decoded.constructorArgs) as any).args),canonical([gl.account().address.toLowerCase()]));assert.equal((tx.sender??tx.from_address)?.toLowerCase(),gl.account().address.toLowerCase());
   const address=decoded.contractAddress??tx.recipient??tx.to_address;assert.ok(address);assert.equal(Number(await gl.read(address,"get_version")),2);assert.equal(String(await gl.read(address,"get_operator")).toLowerCase(),gl.account().address.toLowerCase());state.interpreter={...state.interpreter,address,operator:gl.account().address,verifiedAt:new Date().toISOString()};await save();console.log(JSON.stringify(state.interpreter));
+ }else if(action==="revise-sandbox"){
+  assert.ok(state.sandbox?.draftId);assert.ok(!state.sandbox.cardId&&!state.sandbox.activationTransaction,"Never revise an activated sandbox in place");await authenticate();
+  const {value}=await api("/owner/drafts/"+state.sandbox.draftId);assert.ok(value.state==="FAILED"||(value.state==="FINALIZED"&&value.status==="NEEDS_CLARIFICATION"),"Only a terminal unauthorizing sandbox proposal may be revised");
+  state.sandboxHistory=[...(state.sandboxHistory??[]),{...state.sandbox,terminalState:value.state,terminalStatus:value.status,questions:value.questions??[],archivedAt:new Date().toISOString()}];delete state.sandbox;await save();console.log(JSON.stringify({stage:action,archivedDraft:value.id,signatures:0,broadcasts:0}));
  }else if(action==="prepare-sandbox"){
   assert.equal(cfg.interpreter?.toLowerCase(),state.interpreter?.address?.toLowerCase(),"Configure the verified V2 interpreter first");await authenticate();
   if(!state.sandbox){const guidance=sandboxPolicy(process.env.DEMO_MERCHANT_RECIPIENT!,cfg.origin),input={description:guidance.mission,guidance,settlement:{asset:"USDC",destinationChainIds:[1952]}};state.sandbox={input,policyHash:digest(guidance)};await save();}

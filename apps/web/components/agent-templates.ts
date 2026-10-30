@@ -21,7 +21,7 @@ export function setupFromTemplate(id:AgentTemplateId,chainId:number,now=Date.now
  if(!template)throw Error("Unknown agent template");
  if(id==="protocol-test"&&chainId!==1952)throw Error("The protocol test template requires X Layer testnet.");
  const base=emptySetup(now);
- return {...base,name:template.name,mission:template.mission,taskContext:template.taskContext,categories:template.categories,prohibited:template.prohibited,totalBudget:"1",perPaymentLimit:"0.01",periodBudget:"0.1",destinationChainIds:[chainId],merchants:[{name:"",recipient:"",origins:"",products:template.products}],criteria:[...base.criteria,{id:"product",description:template.criterion}]};
+ return {...base,name:template.name,mission:template.mission,taskContext:template.taskContext+" This reusable policy applies to later payment requests. The vault address is assigned after policy finalization; the exact invoice ID and amount are supplied with each request and verified at purchase review. Positive amounts allowed by all financial controls are permitted only when every purchase criterion passes.",categories:template.categories,prohibited:template.prohibited,totalBudget:"1",perPaymentLimit:"0.01",periodBudget:"0.1",destinationChainIds:[chainId],merchants:[{name:"",recipient:"",origins:"",products:template.products}],criteria:[...base.criteria,{id:"product",description:template.criterion}]};
 }
 
 export function setupFromPolicy(policy:Policy,asset:"USDC"|"USDT0",destinationChainIds:number[]):SetupFormValues{

@@ -4,6 +4,7 @@ export function SetupGuidance(){
   <li>Describe purpose and evidence in the criteria. Avoid adding a second daily or weekly spending limit there; the numerical circuit cannot enforce two aggregate periods on one card.</li>
   <li>Use the merchant’s verified recipient address, not a placeholder such as 0x111…111. Enter an HTTPS origin such as https://merchant.example, without an invoice path or query.</li>
   <li>Only configured merchants may receive payments. If provider names are background context, say so explicitly. Supporting evidence origins, such as a public GitHub repository, do not need merchant recipients unless you intend to pay them.</li>
+  <li>For a reusable policy, explain that the vault is assigned after setup and invoice IDs and exact amounts are supplied with each later request. The reviewer checks those values against that request’s invoice.</li>
   <li>Invoices must identify the buyer vault, exact token, destination, recipient, amount and invoice ID. Keep exceptions consistent with prohibited purchases.</li>
   <li>Review the complete finalized policy before activation. Validator disagreement creates a failed proposal; it does not create a vault or authorize payment. Edit the original terms and submit a new draft.</li>
  </ul></details>;
