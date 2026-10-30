@@ -38,6 +38,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Verify actual production routes and wallet event recovery
         run: pnpm exec tsx scripts/identity-browser.ts
+      - name: Verify glossy card layout and actual transparent exports
+        run: pnpm exec tsx scripts/agent-card-browser.ts
       - name: Verify story playback, audio controls and scroll progression
         run: pnpm exec tsx scripts/story-browser.ts
       - name: Verify static frontend profiles and origin-bound wallet sessions
@@ -48,6 +50,14 @@ jobs:
         with:
           name: story-browser-evidence
           path: .local/story-screenshots
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Preserve agent card browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: agent-card-browser-evidence
+          path: .local/glossy-agent-card
           if-no-files-found: ignore
           retention-days: 7
       - name: Preserve static frontend browser evidence

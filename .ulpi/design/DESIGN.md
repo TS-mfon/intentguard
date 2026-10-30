@@ -49,3 +49,25 @@ Plain, specific, technical. Create agent → agent created. Download card, Share
 
 ## Cinematic story variation (2026-10-25 user amendment)
 Only /why-we-exist uses the immersive luxury/refined presentation specified in why-we-exist-cinematic.md: authored full viewport 3D agent/card, studio shading, native scroll camera choreography and large sparse typography. Existing product screens retain this industrial/signage identity. Same mark, palette, fonts and accessible controls; motion intensity 9 for the story, static with reduced motion. Cinematic pose/camera movement overrides the original small-scroll-reveal limit only inside this route. Active Theory/Cuberto/Lusion references are recorded with actual intake evidence in the per-feature spec; no proprietary assets are copied.
+
+## Glossy agent identity variation (2026-10-30 user amendment)
+
+The user explicitly requests a glossy, transparent, premium shareable agent card. This authorizes a **luxury / refined smoked-glass material on the issued card and its SVG/PNG exports**, specified in glossy-agent-card.md. It deliberately overrides the earlier glass ban for this one physical instrument. Other product surfaces retain their industrial/signage treatment.
+
+Signature: the split-slot mark appears as a large, faint engraving beneath the smoked face, framed by a polished double rim and one broad diagonal studio reflection. Preserve graphite, sage, ivory and IBM Plex typography. No rainbow foil, purple glow, metallic gradient text, decorative status dots, luxury tiers or invented credentials. The actual agent name and settled usage remain the focal point.
+
+Scoped material tokens supplement the existing roles:
+
+| Role | Hex / treatment | Usage |
+|---|---|---|
+| glass body | #192321 at .84–.94 alpha | Translucent smoked face; alpha is retained in exports |
+| glass shadow | #101716 | Undertone and content-area tint |
+| glass secondary | #c7d0c9, OKLCH approximately .84 .013 148 | Legible secondary engraving on translucent material |
+| polished edge | #edf2ec at .18–.75 alpha | Fine top/left rim, a dimmer bottom/right rim |
+| glass reflection | #edf2ec at 0–.12 alpha | One broad studio-light sweep, strongest away from text |
+| glass etching | #b5d7ae at .04–.12 alpha | Large split-slot engraving; purely decorative |
+| chip | #c7d0c9 / #98a89c / #526359 | Existing chip geometry rendered as brushed silver |
+
+Content zones must remain no brighter than #41504a after all layers are composed, including over a white surface. Measured contrast at that limit: ivory7.49:1; glass secondary5.38:1; sage5.38:1. Existing muted #b2beb5 reaches only4.42:1 there, so it is not the card's secondary text color. These constraints apply to export art as well as CSS.
+
+Use the existing radius and spacing scales. The1200×760 export has32px outer radius (the16px instrument radius at2×). Live card radius16px, measured aspect1200/760, padding24–32px desktop and20px on small mobile. Motion uses existing restrained CardTilt; no looping shimmer. Reduced motion is static. Export art uses SVG paths, gradients and embedded local fonts where needed, without external resource requests or raster assets.

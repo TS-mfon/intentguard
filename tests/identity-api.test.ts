@@ -2,6 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {createApi,route} from "../apps/web/lib/api";
 import {createExplorer} from "../apps/web/lib/explorer";
+import {cardSvg,type AgentUsage} from "../apps/web/lib/agent-card";
 import {MemoryStore} from "../apps/web/lib/store";
 import {reviewStage} from "../apps/web/lib/review-stage";
 import {card,FakeEvm,input,invoice,owner,FakeGenLayer} from "./fixtures";
@@ -22,6 +23,21 @@ test("standalone card escapes untrusted agent names and exposes no evidence/cred
  const {store,api}=await setup();await store.patch("cards",card._id,{policy:{...card.policy,name:'<script>alert("name")</script>',mission:"Read & verify"}});
  const path="/explorer/agents/"+card._id+"/card.svg",svg=await (await api(request(path),path)).text();
  assert.ok(!svg.includes("<script>"));assert.match(svg,/&lt;script&gt;/);assert.match(svg,/Read &amp; verify/);assert.ok(!svg.includes("<image"));assert.ok(!svg.includes("ig_"));
+});
+test("standalone glossy export preserves transparency, offline typography and the actual payment environment",async()=>{
+ const {api}=await setup(),path="/explorer/agents/"+card._id+"/card.svg",response=await api(request(path),path);
+ assert.equal(response.headers.get("Content-Security-Policy"),"default-src 'none'; style-src 'unsafe-inline'; font-src data:");
+ const saved=process.env.FRONTEND_URL;process.env.FRONTEND_URL="https://cards.example";
+ try{
+  const usage:AgentUsage={requestCount:999999,paidCount:123456,blockedCount:876543,rejectedCount:0,needsEvidenceCount:0,cancelledCount:0,activeCount:0,fundsMoved:"12345678901234567890.123456",token:card.token!,chainId:1952,asOf:Date.UTC(2026,9,30)};
+  const agent={id:card._id,name:"Research & procurement — 東京",mission:"Read & verify <receipts>",address:card.address!,policyHash:card.policyHash,status:"PAUSED"};
+  const svg=cardSvg(agent,usage,"TEST-USDT");
+  assert.match(svg,/width="1200" height="760"/);assert.match(svg,/stop-opacity="\.92"/);assert.match(svg,/data:font\/woff2;base64,/);
+  assert.match(svg,/TESTNET · NO MONETARY VALUE/);assert.match(svg,/cards\.example/);assert.match(svg,/12345678901234567890\.123456/);assert.match(svg,/999,999/);assert.match(svg,/東京/);assert.match(svg,/&lt;receipts&gt;/);
+  assert.ok(!/<(?:image|script|foreignObject)\b/.test(svg));assert.ok(!/url\(https?:/.test(svg));
+  const mainnet=cardSvg(agent,{...usage,chainId:196},"USDT0");
+  assert.match(mainnet,/MAINNET PAYMENTS · STUDIONET TESTNET REVIEW/);assert.match(mainnet,/X LAYER 196 · MAINNET/);assert.ok(!mainnet.includes("NO MONETARY VALUE"));
+ }finally{if(saved===undefined)delete process.env.FRONTEND_URL;else process.env.FRONTEND_URL=saved}
 });
 test("financially blocked and terminal unreviewed requests are never pending",()=>{
  const base={status:"BLOCKED" as const,guard:{allow:false,failures:["Payment limit"]}};

@@ -1,0 +1,123 @@
+.identity { min-width: 0; }
+
+.stage {
+  position: relative;
+  min-width: 0;
+  container-type: inline-size;
+  isolation: isolate;
+}
+
+.stage .stageMark {
+  position: absolute;
+  width: 52%;
+  height: auto;
+  right: 5%;
+  top: 12%;
+  color: #c7d0c9;
+  opacity: .12;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.identity .card {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 63.333cqi;
+  aspect-ratio: auto;
+  padding: 28px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, .16), 0 4px 12px rgba(0, 0, 0, .1);
+  color: #edf2ec;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.identity .card::before,
+.identity .card::after { content: none; }
+
+.card .material {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.card .heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.card .brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1; }
+.card .brand :global(.brand-mark) { color: #edf2ec; width: 24px; height: 24px; }
+.card .designation { font-family: var(--mono); color: #c7d0c9; font-size: 9px; line-height: 1.6; letter-spacing: .14em; text-align: right; flex: none; }
+.card .designation > span { display: block; font-size: 8px; letter-spacing: .04em; }
+.card .identityRow { display: grid; grid-template-columns: 56px minmax(0, 1fr) 44px; align-items: center; gap: 20px; margin: 0; }
+.card .chip { width: 56px; height: 42px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .16)); }
+.card .agent { min-width: 0; display: block; }
+.card .label { display: block; font-family: var(--mono); color: #c7d0c9; font-size: 9px; line-height: 1.5; letter-spacing: .12em; font-weight: 400; }
+.card .agent h3 { font-family: var(--display); font-size: clamp(28px, 6cqi, 44px); line-height: 1.08; font-weight: 600; letter-spacing: -.02em; margin: 6px 0 0; overflow-wrap: anywhere; text-wrap: pretty; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.card .mission { color: #c7d0c9; font-size: 12px; line-height: 1.5; margin: 8px 0 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.card .seal { color: #c7d0c9; align-self: center; }
+.card .seal :global(.agent-identity) { width: 44px; height: 44px; color: #c7d0c9; --elevated: transparent; --background: #192321; }
+
+.card .usage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, .38fr); align-items: start; gap: 24px; padding: 20px 0; border-top: 1px solid rgba(199, 208, 201, .22); border-bottom: 1px solid rgba(199, 208, 201, .22); }
+.card .usage > div { min-width: 0; }
+.card .usage strong { font-family: var(--mono); font-size: clamp(24px, 5cqi, 38px); font-weight: 400; line-height: 1.2; margin: 8px 0 0; display: block; color: #edf2ec; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.card .usage small { display: block; margin-top: 8px; font-family: var(--mono); color: #c7d0c9; font-size: 9px; line-height: 1.5; letter-spacing: .04em; overflow-wrap: anywhere; }
+.card .requests strong { font-size: clamp(24px, 4.6cqi, 34px); }
+.card .footer { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; margin: 0; }
+.card .footer > div { min-width: 0; }
+.card .footer :global(.mono) { display: block; font-size: 10px; line-height: 1.5; margin-top: 4px; color: #edf2ec; overflow-wrap: anywhere; }
+.card .footer :global(.status) { font-family: var(--mono); color: #c7d0c9; font-size: 10px; padding: 0; border: 0; background: transparent; line-height: 1.5; gap: 6px; }
+.card .footer :global(.status.positive) { color: #b5d7ae; }
+.card .footer :global(.status.negative) { color: #f4a8a3; }
+.card .footer :global(.status.pending) { color: #eed09a; }
+.card .disclosure { font-family: var(--mono); color: #c7d0c9; font-size: 8px; line-height: 1.5; letter-spacing: .04em; margin: 0; overflow-wrap: anywhere; }
+.identity :global(.identity-actions) { flex-wrap: wrap; }
+.identity :global(.identity-actions .button) { min-height: 48px; }
+.identity .loading { aspect-ratio: 1200 / 760; border-radius: 16px; overflow: hidden; }
+.identity .loading :global(.card-skeleton) { height: 100%; min-height: 260px; border-radius: 16px; }
+
+@container (max-width: 519px) {
+  .identity .card { padding: 24px; min-height: 0; gap: 24px; }
+  .card .brand { font-size: 20px; }
+  .card .designation { font-size: 8px; }
+  .card .designation > span { font-size: 8px; }
+  .card .identityRow { grid-template-columns: 44px minmax(0, 1fr) 32px; gap: 16px; }
+  .card .chip { width: 44px; height: 34px; }
+  .card .seal :global(.agent-identity) { width: 32px; height: 32px; }
+  .card .agent h3 { font-size: clamp(28px, 7cqi, 36px); }
+  .card .usage { padding: 16px 0; gap: 20px; }
+  .card .usage strong { font-size: clamp(23px, 5.8cqi, 30px); }
+  .card .requests strong { font-size: clamp(23px, 5.4cqi, 28px); }
+  .card .footer { gap: 16px 20px; }
+  .card .footer .label { font-size: 8px; }
+  .card .footer :global(.mono) { font-size: 9px; }
+}
+
+@container (max-width: 359px) {
+  .identity .card { padding: 20px; }
+  .card .heading { align-items: start; gap: 8px; flex-wrap: wrap; }
+  .card .designation { text-align: left; }
+  .card .designation > span { display: inline; margin-left: 8px; }
+  .card .identityRow { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .card .chip { width: 36px; height: 27px; margin-top: 24px; }
+  .card .seal { display: none; }
+  .card .agent h3 { font-size: 28px; }
+  .card .usage { grid-template-columns: minmax(0, 1fr) minmax(78px, .38fr); gap: 16px; }
+  .card .label { font-size: 8px; letter-spacing: .06em; }
+  .card .usage strong { font-size: 24px; }
+  .card .requests strong { font-size: 22px; }
+  .card .usage small { font-size: 8px; }
+  .card .disclosure { font-size: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage :global(.card-tilt) { transform: none !important; }
+}

@@ -64,7 +64,7 @@ export function createExplorer(store:Store,evm:EvmPort,readReview:PublicReviewRe
  const card=await store.get<Card>("cards",cardMatch[1]);if(!card)throw new ApiError(404,"NOT_FOUND","Agent not found");
  const agent=await publicAgent(card,evm,store),usage=agent.usage!;
  const shareUrl=configuration().frontendOrigin+"/explorer?agentId="+encodeURIComponent(card._id)+"&view=agents";
- if(cardMatch[2])return new Response(cardSvg(agent,usage,cardSymbol(card)),{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":'attachment; filename="intentguard-'+card._id.slice(2,14)+'.svg"',"Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'"}});
+ if(cardMatch[2])return new Response(cardSvg(agent,usage,cardSymbol(card)),{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":'attachment; filename="intentguard-'+card._id.slice(2,14)+'.svg"',"Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; font-src data:"}});
  return {agent,usage,shareUrl};
  }
  const proofMatch=path.match(/^\/explorer\/transactions\/(0x[0-9a-fA-F]{64})\/proof$/);
