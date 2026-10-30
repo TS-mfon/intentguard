@@ -2,7 +2,7 @@ import {readFile} from "node:fs/promises";
 import {createAccount,createClient,decodeInputData} from "genlayer-js";
 import {studionet} from "genlayer-js/chains";
 import {TransactionHashVariant,transactionsStatusNumberToName,executionResultNumberToName,transactionResultNumberToName,CalldataAddress,type CalldataEncodable,type GenLayerTransaction,type Hash as GLHash} from "genlayer-js/types";
-import {createPublicClient,http,decodeEventLog,keccak256,parseTransaction,toBytes,toHex,type Abi,type Hex,type Address} from "viem";
+import {createPublicClient,http,decodeEventLog,keccak256,parseTransaction,toBytes,toHex,getAddress,type Abi,type Hex,type Address} from "viem";
 import {canonical,digest,policySchema,isSettlementV2,type DraftResult,type ReviewDecision} from "../../../packages/shared";
 import {configuration,STUDIONET_CHAIN_ID,STUDIONET_CONSENSUS} from "./config";
 import {assertSigningLease} from "./signing-lease";
@@ -133,7 +133,9 @@ export class GenLayer implements GenLayerPort{
  }
  await this.store.patch("transactions",saved._id,{protocolHash});return protocolHash;
  }
- async read(address:string,functionName:string,args:string[]=[]){await this.identity();return this.client.readContract({address:address as Address,functionName,args,jsonSafeReturn:true,transactionHashVariant:TransactionHashVariant.LATEST_FINAL})}
+ // Studio's simulator stores contract identifiers with EIP-55 casing. Keep
+ // authority comparisons case-insensitive, but canonicalize every RPC read.
+ async read(address:string,functionName:string,args:string[]=[]){const target=getAddress(address);await this.identity();return this.client.readContract({address:target,functionName,args,jsonSafeReturn:true,transactionHashVariant:TransactionHashVariant.LATEST_FINAL})}
  private async draftInterpreter(d:Draft){
   const saved=await this.store.get<Draft>("drafts",d._id);
   if(!saved||saved.owner!==d.owner||saved.inputHash!==d.inputHash||digest(saved.input)!==saved.inputHash||canonical(saved.input)!==canonical(d.input))throw Error("Draft stored input commitment mismatch");

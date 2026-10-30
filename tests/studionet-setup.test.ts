@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {abi} from "genlayer-js";
+import {TransactionHashVariant} from "genlayer-js/types";
 import {toHex,toRlp} from "viem";
 import {assertFinalized,GenLayer,GenLayerTerminalError,normalizeStudioTransaction,studioExecutionDiagnostic} from "../apps/web/lib/genlayer";
 import {MemoryStore} from "../apps/web/lib/store";
@@ -17,6 +18,13 @@ function fixture(receipts:unknown[],changes:Record<string,unknown>={}){
  return {hash,statusName:"FINALIZED",status:7,result_name:"MAJORITY_DISAGREE",sender,recipient:target,created_at:"2026-10-30T05:10:16Z",tx_data:toRlp([toHex(abi.calldata.encode({method:"propose",args})),"0x"]).slice(2),consensus_data:{leader_receipt:receipts},...changes};
 }
 const normalize=(raw:ReturnType<typeof fixture>)=>normalizeStudioTransaction(raw as never,hash);
+
+test("persisted lowercase Studio contract authority can read its canonical finalized identifier",async()=>{
+ const interpreter="0x4a96E2dFCa2cae0f77cC7Dcc1B5e50a865F0437f",gl=new GenLayer(new MemoryStore());gl.identity=async()=>{};
+ let reads=0;gl.client.readContract=async call=>{reads++;assert.equal(call.address,interpreter,"Studio cannot find the lowercase identifier");assert.equal(call.transactionHashVariant,TransactionHashVariant.LATEST_FINAL);assert.equal(call.functionName,"get_draft");assert.deepEqual(call.args,[draftId]);return canonical({status:"NEEDS_CLARIFICATION",policy:null,questions:["Choose one budget period."],interpretation:"Budget clarification required."}) as never;};
+ for(const target of [interpreter,interpreter.toLowerCase()]){const result=JSON.parse(String(await gl.read(target,"get_draft",[draftId])));assert.equal(result.status,"NEEDS_CLARIFICATION");assert.equal(result.policy,null);}
+ await assert.rejects(gl.read("invalid","get_draft",[draftId]));assert.equal(reads,2);
+});
 
 test("actual interpreter error classes produce safe actionable diagnostics while retaining terminal failure",()=>{
  for(const [payload,code]of [["Exact decimal amount required","DRAFT_GENERATION_INVALID_AMOUNT"],["Invalid draft result fields","DRAFT_GENERATION_INVALID_SCHEMA"],["Draft changed explicit structured guidance","DRAFT_GENERATION_CHANGED_GUIDANCE"]]){
