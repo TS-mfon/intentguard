@@ -260,10 +260,13 @@ export class SandboxClient extends Transport {
       await this.requireSandbox(options); this.assertGeneration(generation);
       const result = await this.call("/sandbox/session", {signal: options?.signal, method: "POST", body: {}, sendOrigin: true});
       this.assertGeneration(generation);
+      const now = Date.now();
       if (typeof result.visitorToken !== "string" || result.visitorToken.length > 2048 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(result.visitorToken) ||
-        !Number.isSafeInteger(result.expiresAt) || result.expiresAt <= Date.now() || result.expiresAt > Date.now() + 3600000 || result.requestsRemaining !== 5)
+        !Number.isSafeInteger(result.expiresAt) || result.expiresAt <= now || result.expiresAt > now + 3600000 + 5000 || result.requestsRemaining !== 5)
         throw error("INVALID_RESPONSE", "The sandbox returned an invalid or expired visitor capability.", 502);
-      this.#token = result.visitorToken; this.#expiresAt = result.expiresAt; this.setSecrets([this.#token]);
+      // Hosts and clients can differ by a few seconds. Accept bounded clock skew,
+      // but never retain a visitor capability longer than one hour locally.
+      this.#token = result.visitorToken; this.#expiresAt = Math.min(result.expiresAt, now + 3600000); this.setSecrets([this.#token]);
       return {expiresAt: this.#expiresAt, requestsRemaining: result.requestsRemaining};
     });
   }

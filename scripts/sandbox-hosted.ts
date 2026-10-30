@@ -1,6 +1,7 @@
 /** Real public testnet acceptance. --verify never admits a new request. */
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
+import {execFileSync} from "node:child_process";
 import {mkdir,readFile,writeFile,access} from "node:fs/promises";
 import {chromium} from "@playwright/test";
 import {createPublicClient,http,decodeEventLog,parseAbi} from "viem";
@@ -9,7 +10,8 @@ import {CCTP_TESTNETS} from "../packages/shared/assets";
 
 const origin="https://intentguard-tapeout.vercel.app",file=".local/visitor-release/hosted-sandbox.json";
 const sandboxId="0xe199f50dcce9437b3431fd161759c6cce6563c5f070135c04e03445b8c4b4366",sandboxAddress="0x3C652BCa51252dc72BF4eE32205cD10AEE97D5c5";
-const mode=process.argv[2];assert.ok(["--execute","--verify"].includes(mode),"Choose --execute or read-only --verify");
+const mode=process.argv[2];assert.ok(["--execute","--resume","--verify"].includes(mode),"Choose --execute, blocked-only --resume or read-only --verify");
+const sourceCommit=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
 const expected:Record<string,string>={blocked:"BLOCKED",permitted:"PAID",prohibited:"REJECTED","wrong-buyer":"NEEDS_EVIDENCE"};
 const terminal=new Set(["PAID","BLOCKED","REJECTED","NEEDS_EVIDENCE","CANCELLED","EXPIRED"]);
 const evm=createPublicClient({transport:http("https://testrpc.xlayer.tech",{timeout:30000,retryCount:2})});
@@ -33,8 +35,8 @@ async function verifyRecord(row:any,card:any){
 }
 await mkdir(".local/visitor-release",{recursive:true});
 let report:any;
-if(mode==="--verify")report=JSON.parse(await readFile(file,"utf8"));
-else{
+if(mode!=="--execute")report=JSON.parse(await readFile(file,"utf8"));
+if(mode==="--execute"){
  assert.equal(await access(file).then(()=>true,()=>false),false,"An acceptance run already exists. Use --verify to inspect its actual records; do not create duplicate requests.");
  const config=await json("/config"),sandbox=await json("/sandbox");assert.equal(config.mode,"testnet");assert.equal(config.chainId,1952);assert.equal(sandbox.enabled,true);assert.equal(sandbox.paymentChainId,1952);
  assert.equal(sandbox.card.id,sandboxId);assert.equal(sandbox.card.address.toLowerCase(),sandboxAddress.toLowerCase());
@@ -44,14 +46,24 @@ else{
   const context=await browser.newContext({viewport:{width:390,height:900}}),page=await context.newPage(),errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));const started=Date.now();
   await page.goto(origin+"/sandbox");await page.locator('.sandbox-scenarios input[value="blocked"]').check();await page.getByRole("button",{name:"Submit testnet request",exact:true}).click();
   await page.locator(".sandbox-records code").first().waitFor({timeout:45000});const id=(await page.locator(".sandbox-records code").first().textContent())!.trim();assert.match(id,/^0x[a-f0-9]{64}$/i);
+  report.requests.push({id,scenario:"blocked",sourceCommit:report.sourceCommit});await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});
   assert.equal((await json("/explorer/transactions/"+id)).transaction.status,"BLOCKED");report.firstBlockedMs=Date.now()-started;assert.ok(report.firstBlockedMs<=60000,"Anonymous first use exceeded 60 seconds");
   assert.deepEqual(await context.cookies(),[]);assert.equal(await page.evaluate(()=>Boolean((window as any).ethereum)),false);assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes("visitorToken")),false);assert.deepEqual(errors,[]);
-  await page.screenshot({path:".local/visitor-release/hosted-sandbox-blocked.png",fullPage:true});report.browser={walletConnected:false,cookies:0,pageErrors:errors};report.requests.push({id,scenario:"blocked"});
+  await page.screenshot({path:".local/visitor-release/hosted-sandbox-blocked.png",fullPage:true});report.browser={walletConnected:false,cookies:0,pageErrors:errors};
  }finally{await browser.close();}
  await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});
+}
+if(mode!=="--verify"){
+ if(mode==="--resume")assert.ok(report.requests.length===1&&report.requests[0].scenario==="blocked"&&!report.pendingAdmission,"Resume only the saved numerical check before any SDK payment admission. Reconcile uncertain operations instead of starting replacements.");
+ const config=await json("/config");assert.equal(config.sourceCommit,sourceCommit,"Publish current committed source before live admission");
+ report.browserSourceCommit??=report.sourceCommit;report.sourceCommit=config.sourceCommit;
  const client=new SandboxClient({baseUrl:origin,paymentEnvironment:"testnet",frontendOrigin:origin,sourceChainId:1952,expectedSourceCommit:report.sourceCommit,expectedCardId:report.card.id,requestTimeoutMs:30000});
  try{
-  await client.startSession();for(const scenario of ["permitted","prohibited","wrong-buyer"] as const){const key="hosted-"+randomUUID(),admitted=await client.request(scenario,key);report.requests.push({id:admitted.id,scenario});await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});assert.equal((await client.request(scenario,key)).id,admitted.id,"Same-key retry must recover the original request");}
+  await client.startSession();for(const scenario of ["permitted","prohibited","wrong-buyer"] as const){
+   const key="hosted-"+randomUUID();report.pendingAdmission={scenario,key,startedAt:new Date().toISOString()};await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});
+   let admitted;for(let attempt=0;attempt<3;attempt++){try{admitted=await client.request(scenario,key);break;}catch(error){if(!(error as {retryable?:boolean}).retryable||attempt===2)throw error;await new Promise(r=>setTimeout(r,5000));}}
+   assert.ok(admitted);report.requests.push({id:admitted.id,scenario,sourceCommit:report.sourceCommit});delete report.pendingAdmission;await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});assert.equal((await client.request(scenario,key)).id,admitted.id,"Same-key retry must recover the original request");
+  }
  }finally{client.clearSession();}
  assert.equal(new Set(report.requests.map((r:any)=>r.id)).size,4);
  const deadline=Date.now()+30*60*1000;
@@ -60,7 +72,8 @@ else{
 }
 assert.equal(report.requests.length,4,"All four actual scenarios must be present");
 assert.equal(report.card.id,sandboxId);assert.equal(report.card.address.toLowerCase(),sandboxAddress.toLowerCase());assert.equal(new Set(report.requests.map((r:any)=>r.scenario)).size,4);assert.ok(report.firstBlockedMs<=60000);assert.deepEqual(report.browser,{walletConnected:false,cookies:0,pageErrors:[]});
-assert.equal((await json("/config")).sourceCommit,report.sourceCommit,"Hosted source changed during acceptance");
+report.verificationSourceCommit=(await json("/config")).sourceCommit;assert.equal(report.verificationSourceCommit,sourceCommit,"Hosted identity must match the current committed source");
+if(mode!=="--verify")assert.equal(report.verificationSourceCommit,report.sourceCommit,"Hosted source changed during admission");
 report.results=[];for(const row of report.requests)report.results.push(await verifyRecord(row,report.card));
 report.status="VERIFIED";report.verifiedAt=new Date().toISOString();await writeFile(file,JSON.stringify(report,null,2)+"\n",{mode:0o600});console.log(JSON.stringify({status:report.status,sourceCommit:report.sourceCommit,firstBlockedMs:report.firstBlockedMs,results:report.results}));console.log("HOSTED_SANDBOX_VERIFIED");
 process.exit(0);

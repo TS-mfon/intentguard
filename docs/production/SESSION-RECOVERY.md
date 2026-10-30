@@ -42,6 +42,8 @@ The executable checks are `node tools/production/verify-frontend.mjs`, `node too
 
 ## Remaining release sequence
 
+On October30 the user deferred mainnet deployment/funding until November2026. Steps2–4 below remain preparation or deferred release acceptance; fresh quotes and an explicit spending cap are required when work resumes. Testnet publication, templates, Studio repair and the dedicated visitor sandbox continue now. The170.005-second historical submission film is already verified; actual customer evidence and the original10/12 audit remain open.
+
 1. Commit and push integrated source, pass GitHub validation, update the existing testnet Vercel application and verify its actual hosted routes, public records and review disclosure.
 2. At clean current source, regenerate the release preparation and current mainnet quote. Keep known protocol fees, gas estimates and unresolved dependent costs separate. A quote is preparation evidence and does not authorize spending.
 3. Review a current stage-specific quote and obtain the required spending cap. Deploy and independently verify official TapeOut CPU/circuit, mainnet factories/reviewers and DeWEB container/site; bind database/API/worker identity before enabling execution.

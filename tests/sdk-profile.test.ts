@@ -237,6 +237,27 @@ test("visitor SDK uses actual sandbox admission and status without any cookie, w
   assert.equal(f.seen.length, before);
 }));
 
+test("visitor SDK accepts a slightly ahead host clock without extending its local session lifetime", () => sandboxFixture(async f => {
+  let offset = 1000;
+  const sdk = new IntentGuardSandbox({baseUrl: base, paymentEnvironment: "testnet", fetchImpl: async (url, init) => {
+    if (new URL(String(url)).pathname.endsWith("/sandbox/session")) return Response.json({visitorToken: "controlled.payload", expiresAt: Date.now() + 3600000 + offset, requestsRemaining: 5}, {status: 201});
+    return f.fetchImpl(url, init);
+  }});
+  const accepted = await sdk.startSession();
+  assert.ok(accepted.expiresAt <= Date.now() + 3600000);
+  assert.equal("visitorToken" in accepted, false);
+  const savedNow = Date.now;
+  try {
+    Date.now = () => accepted.expiresAt + 1;
+    await assert.rejects(sdk.request("permitted", "past-local-expiry"), expectedError("SANDBOX_SESSION_EXPIRED", 401));
+  } finally {Date.now = savedNow;}
+  for (offset of [6000, -3600001]) {
+    await assert.rejects(sdk.startSession(), expectedError("INVALID_RESPONSE", 502));
+    await assert.rejects(sdk.request("permitted", "invalid-lifetime"), expectedError("SANDBOX_SESSION_REQUIRED", 401));
+  }
+  assert.equal(f.seen.some(row => row.path === "/api/v1/sandbox/requests"), false);
+}));
+
 test("visitor SDK expires and discards capabilities on authentication/identity failure before further credential use", () => sandboxFixture(async f => {
   await f.sandbox.startSession(); const savedNow = Date.now;
   try {Date.now = () => savedNow() + 3600001; const before = f.seen.length; await assert.rejects(f.sandbox.request("permitted", "expired"), expectedError("SANDBOX_SESSION_EXPIRED", 401)); assert.equal(f.seen.length, before);}
