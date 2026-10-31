@@ -23,6 +23,7 @@ for(const paymentEnvironment of ["mainnet","testnet"]){
  const bundle=await scanBundle(join(root,".local/static-frontend/out"),{apiOrigins:[manifest.apiOrigin]});assert.equal(bundle.directorySha256,manifest.bundle.directorySha256);
  assert.equal(manifest.serverRoutesIncluded,false);assert.equal(manifest.paymentEnvironment,paymentEnvironment);assert.equal(manifest.reviewChainId,61999);
  for(const path of ["apps/web/next.config.ts","packages/shared/index.ts","contracts/evm/abi.json","pnpm-lock.yaml","scripts/static-frontend.mjs","tools/hosting/bundle.mjs","tools/hosting/protocol.mjs","tools/hosting/pins.json"])assert.ok(manifest.sourceInputs[path],"Missing source provenance: "+path);
+ for(const path of ["apps/web/components/agent-card.module.css","apps/web/lib/agent-card-art.ts"])assert.equal(manifest.sourceInputs[path],createHash("sha256").update(await readFile(join(root,path))).digest("hex"),"Card source provenance does not match: "+path);
  assert.equal(createHash("sha256").update(JSON.stringify(manifest.sourceInputs)).digest("hex"),manifest.sourceTreeSha256);
  await writeFile(join(folder,paymentEnvironment+"-static-manifest.json"),JSON.stringify(manifest,null,2));
 }

@@ -5,6 +5,8 @@ import {createHash} from "node:crypto";
 import {pathToFileURL} from "node:url";
 import {scanBundle} from "../tools/hosting/bundle.mjs";
 const root=resolve(import.meta.dirname,".."),stage=join(root,".local","static-frontend-stage"),output=join(root,".local","static-frontend");
+// Stage only client-safe library inputs; API and database modules stay with the server.
+const clientLibraryPaths=["apps/web/lib/agent-card-art.ts"];
 function canonicalOrigin(raw){const value=new URL(raw);if(value.protocol!=="https:"||value.origin!==raw)throw Error("Use a canonical HTTPS origin.");return value.origin;}
 export async function buildStatic({paymentEnvironment,apiOrigin,frontendOrigin,sourceCommit,final=false}){
  if(!["mainnet","testnet"].includes(paymentEnvironment))throw Error("Choose explicit mainnet or testnet payments.");
@@ -13,7 +15,7 @@ export async function buildStatic({paymentEnvironment,apiOrigin,frontendOrigin,s
  if(!/^[a-f0-9]{40}$/.test(sourceCommit))throw Error("Exact source commit required.");
  if(sourceCommit!==execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim())throw Error("The supplied source commit is not the checked-out source.");
  const builderInputs=["scripts/static-frontend.mjs","tools/hosting/bundle.mjs","tools/hosting/protocol.mjs","tools/hosting/pins.json"];
- const sourcePaths=["apps/web/app","apps/web/components","apps/web/public","apps/web/next.config.ts","apps/web/tsconfig.json","apps/web/package.json","packages/shared","contracts/evm/abi.json","tsconfig.json","package.json","pnpm-lock.yaml","pnpm-workspace.yaml",...builderInputs];
+ const sourcePaths=["apps/web/app","apps/web/components","apps/web/public","apps/web/next.config.ts","apps/web/tsconfig.json","apps/web/package.json","packages/shared","contracts/evm/abi.json","tsconfig.json","package.json","pnpm-lock.yaml","pnpm-workspace.yaml",...clientLibraryPaths,...builderInputs];
  const dirty=()=>execFileSync("git",["status","--porcelain","--untracked-files=all","--",...sourcePaths],{cwd:root,encoding:"utf8"}).trim().length>0;
  if(final&&dirty())throw Error("Final static export requires clean source at the checked-out commit.");
  await mkdir(join(root,".local"),{recursive:true});
@@ -30,6 +32,8 @@ export async function buildStatic({paymentEnvironment,apiOrigin,frontendOrigin,s
     return name!=="app"||(!/^api(?:\/|$)/.test(rel)&&!/^explorer\/transactions(?:\/|$)/.test(rel));
    }});
   }
+  await mkdir(join(stage,"apps","web","lib"),{recursive:true});
+  for(const path of clientLibraryPaths)await cp(join(root,path),join(stage,path));
   for(const name of ["next.config.ts","tsconfig.json","package.json"])await cp(join(root,"apps","web",name),join(stage,"apps","web",name));
   for(const name of ["tsconfig.json","package.json","pnpm-lock.yaml","pnpm-workspace.yaml"])await cp(join(root,name),join(stage,name));
   await cp(join(root,"packages","shared"),join(stage,"packages","shared"),{recursive:true});
@@ -45,7 +49,7 @@ export async function buildStatic({paymentEnvironment,apiOrigin,frontendOrigin,s
   async function hashSources(directory){for(const file of (await readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){const path=join(directory,file.name);if(file.isDirectory())await hashSources(path);else if(file.isFile())sourceFiles[relative(stage,path).replaceAll("\\","/")]=createHash("sha256").update(await readFile(path)).digest("hex");}}
   for(const name of ["app","components","public"])await hashSources(join(stage,"apps","web",name));
   await hashSources(join(stage,"packages","shared"));
-  for(const path of ["apps/web/next.config.ts","apps/web/tsconfig.json","apps/web/package.json","contracts/evm/abi.json","tsconfig.json","package.json","pnpm-lock.yaml","pnpm-workspace.yaml"]){sourceFiles[path]=createHash("sha256").update(await readFile(join(stage,path))).digest("hex");}
+  for(const path of ["apps/web/next.config.ts","apps/web/tsconfig.json","apps/web/package.json","contracts/evm/abi.json","tsconfig.json","package.json","pnpm-lock.yaml","pnpm-workspace.yaml",...clientLibraryPaths]){sourceFiles[path]=createHash("sha256").update(await readFile(join(stage,path))).digest("hex");}
   for(const path of builderInputs)sourceFiles[path]=createHash("sha256").update(await readFile(join(root,path))).digest("hex");
   const sourceInputs=Object.fromEntries(Object.entries(sourceFiles).sort(([a],[b])=>a.localeCompare(b)));
   for(const[path,expected]of Object.entries(sourceInputs))if(createHash("sha256").update(await readFile(join(root,path))).digest("hex")!==expected)throw Error("A frontend source input changed during the build: "+path);
