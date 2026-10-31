@@ -1,4 +1,8 @@
 packages:
   - apps/web
+overrides:
+  # The published SDK's runtime does not import this development-only lint plugin.
+  # Removing it also removes the vulnerable minimatch chain (GHSA-g3hv-75wg-m249).
+  'genlayer-js@1.1.8>eslint-plugin-import': '-'
 allowBuilds:
   esbuild: true
