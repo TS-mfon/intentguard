@@ -8,9 +8,12 @@ import type {Store,Doc} from "./store";
 type KeyDoc=Doc&{cardId:string;owner:string;revoked:boolean;createdAt:number;credentialScope?:string};
 function credentialScope(){const c=configuration();return digest({paymentEnvironment:c.paymentEnvironment,paymentChainId:c.chainId});}
 export function secret(){const s=process.env.SESSION_SECRET;if(!s||s.length<32)throw Error("SESSION_SECRET must be at least 32 characters");return s}
-export async function challenge(store:Store,owner:string,origin:string,transport:OwnerContext["transport"]="cookie"){
+export async function challenge(store:Store,owner:string,origin:string,transport:OwnerContext["transport"]="cookie",apiOrigin=configuration().origin){
  address.parse(owner);const cfg=configuration(),nonce=randomBytes(24).toString("hex"),expires=Date.now()+300000;
- const message=["IntentGuard owner login",new URL(origin).host,owner.toLowerCase(),"URI: "+origin,"API: "+cfg.origin,"Payment environment: "+cfg.paymentEnvironment,"Chain ID: "+cfg.chainId,"Nonce: "+nonce,"Expires: "+new Date(expires).toISOString(),"This signature authorizes a dashboard session only."].join("\n");
+ // Same-origin testnet aliases label the API actually contacted; stored
+ // session authority remains bound to the configured payment deployment.
+ if(apiOrigin!==cfg.origin&&(cfg.mainnet||transport!=="cookie"||apiOrigin!==origin))throw new ApiError(403,"ORIGIN_DENIED","Use the approved application API");
+ const message=["IntentGuard owner login",new URL(origin).host,owner.toLowerCase(),"URI: "+origin,"API: "+apiOrigin,"Payment environment: "+cfg.paymentEnvironment,"Chain ID: "+cfg.chainId,"Nonce: "+nonce,"Expires: "+new Date(expires).toISOString(),"This signature authorizes a dashboard session only."].join("\n");
  await store.put("challenges",{_id:owner.toLowerCase(),message,expires,origin,transport,apiOrigin:cfg.origin,credentialScope:credentialScope()});return{message};
 }
 export function session(owner:string,context:OwnerContext={origin:configuration().origin,transport:"cookie"}){

@@ -7,6 +7,7 @@ const required=[
  "draft diagnostics are allowlisted and only finalized proposed policies expose activation",
  "owner gallery supplies actual PAID-only usage without querying every public preview",
  "SDK aliases use their own challenge URI and origin-bound memory-only owner session",
+ "same-origin testnet aliases sign their actual API identity and reject challenge and cookie replay between hosts",
  "SDK fails closed on ambiguous frontend allowlists or deployment links before sending credentials",
  "protocol test merchant config is testnet-only actual public information and never exposes its admin key",
  "cross-environment, API, frontend, reviewer and release mismatches send no credential"

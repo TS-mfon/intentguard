@@ -34,13 +34,30 @@ test("frontend aliases are explicit bounded canonical origins with separate envi
 test("SDK aliases use their own challenge URI and origin-bound memory-only owner session",()=>fixture(async f=>{
  const sdk=new IntentGuardOwner({baseUrl:apiOrigin,paymentEnvironment:"testnet",frontendOrigin:fallback,fetchImpl:f.fetchImpl});
  const c=await sdk.capabilities();assert.equal(c.frontendOrigin,fallback);assert.equal(c.applicationUrl,fallback);assert.equal(c.environmentUrls?.testnet,primary);assert.equal(c.ownerSessionTransport,"owner-bearer");
- const {message}=await sdk.challenge(account.address);assert.ok(message.includes("URI: "+fallback));
+ const {message}=await sdk.challenge(account.address);assert.ok(message.includes("URI: "+fallback));assert.ok(message.includes("API: "+apiOrigin));
  await sdk.login(account.address,await account.signMessage({message}));assert.deepEqual(await sdk.listCards(),{cards:[]});
  const saved=f.seen.at(-1)!;assert.equal(saved.credentials,"omit");const headers=new Headers(saved.headers);assert.equal(headers.get("Origin"),fallback);assert.match(headers.get("Authorization")!,/^Owner /);
  const copied=headers.get("Authorization")!;
  for(const origin of [primary,apiOrigin,"https://evil.example"]){const request=new Request(apiOrigin+"/api/v1/owner/cards",{headers:{origin,authorization:copied,"x-intentguard-environment":"testnet"}});const response=await f.api(request,"/owner/cards");assert.ok([401,403].includes(response.status),origin);}
  await sdk.logout();await assert.rejects(sdk.listCards(),e=>e instanceof IntentGuardError&&e.code==="LOGIN_REQUIRED");
  const revoked=await f.api(new Request(apiOrigin+"/api/v1/owner/cards",{headers:{origin:fallback,authorization:copied,"x-intentguard-environment":"testnet"}}),"/owner/cards");assert.equal(revoked.status,401);
+}));
+
+test("same-origin testnet aliases sign their actual API identity and reject challenge and cookie replay between hosts",()=>fixture(async f=>{
+ process.env.FRONTEND_URL=apiOrigin;
+ for(const target of [apiOrigin,fallback]){
+  const other=target===apiOrigin?fallback:apiOrigin;
+  const call=(origin:string,path:string,method="GET",body?:unknown,cookie?:string)=>f.api(new Request(origin+"/api/v1"+path,{method,headers:{origin,"content-type":"application/json","x-intentguard-environment":"testnet",...(cookie?{cookie}:{})},...(body?{body:JSON.stringify(body)}:{})}),path);
+  const config=await(await call(target,"/config")).json();assert.equal(config.apiOrigin,target);assert.equal(config.frontendOrigin,target);
+  const challengeResponse=await call(target,"/auth/challenge","POST",{address:account.address});assert.equal(challengeResponse.status,200);
+  const {message}=await challengeResponse.json();const lines=message.split("\n");assert.ok(lines.includes("URI: "+target));assert.ok(lines.includes("API: "+config.apiOrigin));
+  const signature=await account.signMessage({message});
+  const replay=await call(other,"/auth/login","POST",{address:account.address,signature});assert.equal(replay.status,401,"A challenge cannot be used at another host");
+  const login=await call(target,"/auth/login","POST",{address:account.address,signature});assert.equal(login.status,200);
+  const cookie=login.headers.get("set-cookie")!.split(";")[0];assert.ok(login.headers.get("set-cookie")!.includes("HttpOnly"));assert.ok(login.headers.get("set-cookie")!.includes("Secure"));
+  assert.equal((await(await call(target,"/auth/session","GET",undefined,cookie)).json()).address,account.address.toLowerCase());
+  assert.equal((await(await call(other,"/auth/session","GET",undefined,cookie)).json()).address,null,"Host cookies never share owner authority");
+ }
 }));
 
 test("the API frontend uses cookies while approved separate frontends never inherit cookie authority",()=>fixture(async f=>{
