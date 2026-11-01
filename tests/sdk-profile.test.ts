@@ -105,7 +105,7 @@ test("unready configurations and old hosted schemas remain public but cannot rec
 
 test("mainnet V2 settlement and V4 review work without enabling an unverified route", () => fixture(async f => {
   const origin = "https://sdk.mainnet.example", pins = PROFILES.mainnet;
-  const config = {...f.config, mode: "mainnet", paymentEnvironment: "mainnet", chainId: 196, apiOrigin: origin, frontendOrigin: origin, applicationUrl: origin, token: pins.usdt0, settlementVersion: 2,
+  const config = {...f.config, mode: "mainnet", paymentEnvironment: "mainnet", chainId: 196, apiOrigin: origin, frontendOrigin: origin, applicationUrl: origin, frontendOrigins: [origin], environmentUrls: {mainnet: origin}, token: pins.usdt0, settlementVersion: 2,
     assets: [{asset: "USDC", available: true, chainId: 196, decimals: 6, token: pins.sourceUSDC}, {asset: "USDT0", available: true, chainId: 196, decimals: 6, token: pins.usdt0}],
     spendingNetworks: [196, 8453].map(chainId => ({chainId, ...pins.routes[chainId]}))};
   let posted = 0;
@@ -162,7 +162,7 @@ test("owner transport uses memory-only Owner tokens, verifies challenge identity
   assert.equal(JSON.stringify(sdk).includes("Owner"), false);
   await sdk.logout(); assert.equal(f.seen.at(-2)!.init.method, "GET", "logout preflight stays anonymous GET");
   await assert.rejects(sdk.listCards(), expectedError("LOGIN_REQUIRED", 401));
-  const wrong = new IntentGuardOwner({baseUrl: base, paymentEnvironment: "testnet", frontendOrigin: frontend, fetchImpl: async () => Response.json({...f.config, frontendOrigin: frontend, applicationUrl: frontend, ownerSessionTransport: "owner-bearer"})});
+  const wrong = new IntentGuardOwner({baseUrl: base, paymentEnvironment: "testnet", frontendOrigin: frontend, fetchImpl: async () => Response.json({...f.config, frontendOrigin: frontend, applicationUrl: frontend, frontendOrigins: [base, frontend], environmentUrls: {testnet: frontend}, ownerSessionTransport: "owner-bearer"})});
   await assert.rejects(wrong.challenge(account.address), expectedError("CHALLENGE_IDENTITY_MISMATCH", 409));
   assert.throws(() => new IntentGuardOwner({baseUrl: base, paymentEnvironment: "testnet", apiKey: key} as any), expectedError("INVALID_INPUT", 422));
 }));

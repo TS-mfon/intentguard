@@ -1,14 +1,17 @@
 import {createPublicClient, createWalletClient, custom, defineChain, decodeEventLog, type Address, type Abi} from "viem";
 import type {CardView, DraftView, Policy, RequestView, Settlement} from "@intentguard/shared";
 import exportedAbis from "../../../contracts/evm/abi.json";
+import {profileRoutes,sourceToken} from "../../../packages/shared/payment-profiles";
 
 export type {CardView, DraftView, Policy, RequestView, Settlement};
-export type Config = {mode:"local"|"testnet"|"mainnet";paymentEnvironment?:"local"|"testnet"|"mainnet";reviewEnvironment?:"testnet";reviewNetwork?:"studionet";reviewChainId?:61999;releaseId?:string|null;sourceCommit?:string|null;apiOrigin?:string;frontendOrigin?:string;ownerSessionTransport?:"cookie"|"owner-bearer";settlementVersion?:1|2;readinessReasons?:string[];rpcUrl?:string;networkName?:string;paymentSymbol?:string;chainId:number;token:string;factoryAddress:string|null;explorerUrl:string;genLayerExplorerUrl:string;applicationUrl?:string;configured:boolean;activation?:Record<string,unknown>;assets?:{asset:string;symbol:string;chainId:number;decimals:number;token:string|null;available:boolean;reason:string;sources:string[]}[];spendingNetworks?:{chainId:number;name:string;domain:number;token:string;explorerUrl:string}[];cctpFactoryAddress?:string|null};
+export type Config = OnboardingConfig & {mode:"local"|"testnet"|"mainnet";paymentEnvironment?:"local"|"testnet"|"mainnet";reviewEnvironment?:"testnet";reviewNetwork?:"studionet";reviewChainId?:61999;releaseId?:string|null;sourceCommit?:string|null;apiOrigin?:string;frontendOrigin?:string;ownerSessionTransport?:"cookie"|"owner-bearer";settlementVersion?:1|2;readinessReasons?:string[];rpcUrl?:string;networkName?:string;paymentSymbol?:string;chainId:number;token:string;factoryAddress:string|null;explorerUrl:string;genLayerExplorerUrl:string;applicationUrl?:string;configured:boolean;activation?:Record<string,unknown>;assets?:{asset:string;symbol:string;chainId:number;decimals:number;token:string|null;available:boolean;reason:string;sources:string[]}[];spendingNetworks?:{chainId:number;name:string;domain:number;token:string;explorerUrl:string}[];cctpFactoryAddress?:string|null};
 export type ActivationDraft = DraftView & {input?:{description:string;guidance?:unknown};settlement?:Settlement;activation?:{factoryAddress:string;config:Record<string,unknown>;kind?:"CCTP_V2"|"CCTP_V4"|"USDT0_LOCAL";destinationDomains?:number[];settlement?:Settlement}};
+export type SetupMerchant={name:string;recipient:string;origin:string;products:string[]};
+export type OnboardingConfig={frontendOrigins?:string[];environmentUrls?:{testnet?:string;mainnet?:string};setupMerchant?:SetupMerchant};
 type Provider = {request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,handler:(...args:unknown[])=>void)=>void;removeListener?:(event:string,handler:(...args:unknown[])=>void)=>void};
 declare global {interface Window {ethereum?:Provider}}
 export class ProductApiError extends Error{
- constructor(message:string,public status:number,public code:string,public requestId:string|null,public retryable:boolean,public retryAfter:number|null){super(message)}
+ constructor(message:string,public status:number,public code:string,public requestId:string|null,public retryable:boolean,public retryAfter:number|null,public details?:unknown){super(message)}
 }
 const compiledApiOrigin=process.env.NEXT_PUBLIC_INTENTGUARD_API_ORIGIN||"";
 const compiledEnvironment=process.env.NEXT_PUBLIC_INTENTGUARD_PAYMENT_ENV||"";
@@ -21,15 +24,26 @@ export function transactionHref(id:string){return staticFrontend?"/transaction?i
 export function apiOrigin(){if(typeof window==="undefined")throw Error("Browser API access is unavailable during rendering.");if(!compiledApiOrigin)return window.location.origin;const url=new URL(compiledApiOrigin);if(url.origin!==compiledApiOrigin||url.protocol!=="https:")throw Error("The frontend API origin must be a pinned HTTPS origin.");return url.origin;}
 function validateConfig(config:Config){
  try{
+ if(config===verifiedConfig)return config;
  const target=apiOrigin(),cross=target!==window.location.origin,expected=compiledEnvironment;
  if(!["local","testnet","mainnet"].includes(config.mode)||config.paymentEnvironment!==config.mode)throw Error("The service returned an inconsistent payment environment.");
  if((expected&&config.mode!==expected)||(config.mode==="testnet"&&config.chainId!==1952)||(config.mode==="mainnet"&&config.chainId!==196))throw Error("This frontend and API belong to different payment deployments.");
  if(config.reviewEnvironment!=="testnet"||config.reviewNetwork!=="studionet"||config.reviewChainId!==61999)throw Error("This deployment must use the disclosed Studionet testnet review.");
  if(config.apiOrigin&&config.apiOrigin!==target)throw Error("The service API origin does not match the frontend pin.");
- if(cross&&(config.apiOrigin!==target||config.frontendOrigin!==window.location.origin||config.ownerSessionTransport!=="owner-bearer"||!expected))throw Error("The separate frontend/API authority is not configured.");
+ const canonical=config.frontendOrigin||target,originList=(config as Config&OnboardingConfig).frontendOrigins||[canonical];
+ const safeOrigin=(value:string)=>{try{const url=new URL(value);return url.origin===value&&!url.username&&!url.password&&!value.includes("*")&&(url.protocol==="https:"||url.protocol==="http:"&&["localhost","127.0.0.1","[::1]"].includes(url.hostname));}catch{return false;}};
+ if(!safeOrigin(canonical)||!Array.isArray(originList)||originList.length<1||originList.length>10||new Set(originList).size!==originList.length||originList.some(value=>typeof value!=="string"||!safeOrigin(value))||!originList.includes(canonical)||!originList.includes(window.location.origin)||config.applicationUrl!==canonical||config.ownerSessionTransport!==(canonical===target?"cookie":"owner-bearer"))throw Error("This frontend is not an explicitly approved application origin.");
+ const links=(config as Config&OnboardingConfig).environmentUrls;
+ if(links&&(typeof links!=="object"||Array.isArray(links)||Object.keys(links).some(key=>!["testnet","mainnet"].includes(key))||Object.values(links).some(value=>typeof value!=="string"||!safeOrigin(value))||config.mode!=="local"&&links[config.mode]!==canonical))throw Error("The payment environment links are not valid deployment origins.");
+ if(cross&&(config.apiOrigin!==target||!expected))throw Error("The separate frontend/API authority is not configured.");
  if(config.mode==="mainnet"&&(!expected||!config.releaseId||!/^[a-f0-9]{40}$/.test(config.sourceCommit||"")||(compiledSourceCommit&&config.sourceCommit!==compiledSourceCommit)))throw Error("The mainnet release identity does not match this frontend.");
+ if(config.mode!=="local"){
+  const routes=profileRoutes(config.mode),assets=new Set<string>(),chains=new Set<number>();
+  for(const asset of config.assets||[]){if(!asset||typeof asset!=="object"||!["USDC","USDT0"].includes(asset.asset)||assets.has(asset.asset)||asset.chainId!==config.chainId||asset.decimals!==6||typeof asset.available!=="boolean"||asset.available&&(config.mode==="testnet"&&asset.asset==="USDT0"||asset.token?.toLowerCase()!==sourceToken(config.mode,asset.asset as "USDC"|"USDT0")))throw Error("The advertised asset does not match its payment environment and issuer.");assets.add(asset.asset);}
+  for(const route of config.spendingNetworks||[]){const pin=route&&routes[route.chainId];if(!pin||chains.has(route.chainId)||route.domain!==pin.domain||route.token?.toLowerCase()!==pin.token.toLowerCase())throw Error("The advertised spending network does not match its payment environment and issuer.");chains.add(route.chainId);}
+ }
  if(verifiedConfig&&(verifiedConfig.mode!==config.mode||verifiedConfig.chainId!==config.chainId||verifiedConfig.sourceCommit!==config.sourceCommit))clearOwnerSession();
- verifiedConfig=config;return config;
+ verifiedConfig=Object.freeze({...config,frontendOrigin:window.location.origin,ownerSessionTransport:cross?"owner-bearer" as const:"cookie" as const});return verifiedConfig;
  }catch(error){clearOwnerSession();verifiedConfig=null;throw error;}
 }
 async function checkedConfig(){if(verifiedConfig)return verifiedConfig;if(!configTask)configTask=api<Config>("/config").finally(()=>{configTask=null;});return configTask;}
@@ -52,7 +66,9 @@ export async function api<T>(path:string,init?:RequestInit):Promise<T>{
  const response=await apiResponse(path,init);
  if(response.status===204&&response.ok)return undefined as T;
  let body:unknown;try{body=await response.json();}catch{throw new ProductApiError("The service returned an unreadable response. Retry or share its request ID with the operator.",response.status,"INVALID_RESPONSE",response.headers.get("X-Request-Id"),true,null);}
- if(!response.ok){if(response.status===401)clearOwnerSession();const error=(body as {error?:{message?:string;code?:string;requestId?:string;retryable?:boolean}}).error;const code=error?.code??"REQUEST_FAILED",requestId=error?.requestId??response.headers.get("X-Request-Id"),after=response.headers.get("Retry-After");throw new ProductApiError((error?.message||"The request could not be completed.")+" ["+code+"]"+(requestId?" Request ID: "+requestId:""),response.status,code,requestId,error?.retryable??response.status>=500,after!==null&&Number.isFinite(Number(after))?Number(after):null);}
+ if(!response.ok){const secrets=[ownerToken?.value,new Headers(init?.headers).get("Authorization")?.replace(/^(?:Owner|Bearer) /,"")];try{if(typeof init?.body==="string")secrets.push(JSON.parse(init.body)?.signature);}catch{}
+ const redact=(value:unknown):unknown=>typeof value==="string"?secrets.reduce<string>((text,secret)=>typeof secret==="string"&&secret?text.replaceAll(secret,"[REDACTED]"):text,value):Array.isArray(value)?value.map(redact):value&&typeof value==="object"?Object.fromEntries(Object.entries(value).map(([key,value])=>[String(redact(key)),redact(value)])):value;
+ const error=(redact(body) as {error?:{message?:string;code?:string;requestId?:string;retryable?:boolean;details?:unknown}}).error;if(response.status===401)clearOwnerSession();const code=error?.code??"REQUEST_FAILED",requestId=error?.requestId??response.headers.get("X-Request-Id"),after=response.headers.get("Retry-After");throw new ProductApiError(error?.message||"The request could not be completed.",response.status,code,requestId,error?.retryable??response.status>=500,after!==null&&Number.isFinite(Number(after))?Number(after):null,error?.details);}
  return (path==="/config"?validateConfig(body as Config):body) as T;
 }
 export function parseUnitsExact(v:string):bigint{if(!/^(0|[1-9]\d*)(\.\d{1,6})?$/.test(v))throw Error("Use an exact token amount with up to six decimal places.");const[a,b=""]=v.split(".");const n=BigInt(a)*1000000n+BigInt(b.padEnd(6,"0"));if(n>(1n<<64n)-1n)throw Error("This amount exceeds the supported limit.");return n}
@@ -70,6 +86,8 @@ export async function login(address:Address){
  if(!window.ethereum)throw Error("Wallet unavailable.");
  const epoch=sessionEpoch,config=await checkedConfig();
  const {message}=await api<{message:string}>("/auth/challenge",{method:"POST",body:JSON.stringify({address})});
+ const lines=typeof message==="string"?message.split("\n"):[];
+ if(["IntentGuard owner login",address.toLowerCase(),"URI: "+window.location.origin,"API: "+apiOrigin(),"Payment environment: "+config.mode,"Chain ID: "+config.chainId,"This signature authorizes a dashboard session only."].some(line=>!lines.includes(line)))throw Error("The sign-in challenge has a different wallet or deployment identity. Refresh before signing.");
  const wallet=createWalletClient({transport:custom(window.ethereum)}),signature=await wallet.signMessage({account:address,message});
  if(epoch!==sessionEpoch)throw Error("The owner account changed during sign-in.");
  const selected=await window.ethereum.request({method:"eth_accounts"}) as string[];

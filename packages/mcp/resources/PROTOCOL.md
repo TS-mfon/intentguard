@@ -22,6 +22,8 @@ The historical testnet application is https://intentguard-tapeout.vercel.app. In
 |---|---|
 | `mode`, `paymentEnvironment`, `chainId` | Explicit payment identity; testnet 1952 or mainnet 196 |
 | `apiOrigin`, `frontendOrigin`, `applicationUrl` | Canonical API and approved frontend origins |
+| `frontendOrigins`, `environmentUrls` | Optional explicit frontend allowlist and testnet/mainnet navigation links; each login binds the actual requesting origin |
+| `setupMerchant` | Optional actual public protocol-test merchant profile on testnet1952; contains no administrator or issuer key |
 | `ownerSessionTransport` | Same-origin `cookie` or separate-origin `owner-bearer` |
 | `reviewEnvironment`, `reviewNetwork`, `reviewChainId`, `reviewInfrastructure` | `testnet`, `studionet`, 61999, `studionet-simulator` |
 | `releaseId`, `sourceCommit` | Release and full source identity, independently pinnable by clients |
@@ -108,7 +110,13 @@ All amounts are exact decimal strings with at most six fractional digits. The ma
 
 ### Templates and clear setup input
 
-Create agent offers **Research assistant** (`research`), **API access** (`api-access`) and **Protocol test** (`protocol-test`, testnet1952 only). A template fills editable mission, product and review clauses and conservative example budgets. Enter the actual project, merchant name, recipient, HTTPS origins, evidence and validity before proposing; template defaults are not an activated permission or an approved merchant. The protocol-test template supports testing an agent you own. The public visitor sandbox uses a separate fixed dedicated policy and server key.
+Create agent starts with **Quick setup**: Choose template → Customize → Review and activate. **Manual setup** retains Identity → Permissions → Money & validity → Review. Both share the same saved form and exact serializer. **Research assistant** (`research`), **API access** (`api-access`) and **Protocol test** (`protocol-test`, testnet1952 only) each fill every policy section, including editable merchants, evidence, criteria, money and UTC validity. Research/API merchant examples must be replaced with verified details before proposal. Protocol test uses the actual public `setupMerchant` profile when available. The public visitor sandbox uses a separate fixed dedicated policy and server key.
+
+Complete guidance is structurally validated before queue admission. Invalid amounts or fields return422 `INVALID_POLICY` with `error.details.issues` containing field paths and messages; existing errors may still use the legacy details array. Partial/no-guidance clients retain the interpreter path. The interpreter still requires substantive finalized semantic consensus. A template cannot guarantee validator agreement.
+
+`GET /owner/drafts/{id}` may include an allowlisted `diagnosticCode`; activation is exposed only for FINALIZED/PROPOSED terms with a policy. Original failed inputs remain available for explicit revision. New forms save only form data, mode, step, template and admitted draft ID, scoped to the current owner/API/payment environment. Wallet signatures, owner sessions and agent keys are never saved in this form storage.
+
+**My agents** is a searchable card gallery. Clicking a card opens `/agents?agent=<id>` with its policy, transactions, funding and key controls. Search and scroll position survive the return to the gallery. `GET /owner/cards` includes an optional actual `usage` snapshot for each card, using the same PAID-only semantics as the public card; the gallery does not poll a public preview endpoint for every card. Missing IDs never select another agent.
 
 Put every numerical limit in **Money & validity**, using strings such as `"250"` or `"0.000001"`, without commas, currency symbols, exponent syntax or more than six fractional digits. Write purpose and deliverables in mission/context/criteria, and remove repeated budget amounts from that prose. The policy supports **one aggregate period**: for example `periodBudget: "500", periodSeconds: 604800` is500 per seven-day period. It cannot simultaneously encode an additional250/day aggregate limit. Choose the intended period and make the prose agree; a per-payment cap is a distinct limit. Use UTC dates and actual EVM merchant recipients; invoice buyer is the vault, not the owner.
 

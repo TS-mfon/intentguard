@@ -1,5 +1,6 @@
 import {randomUUID} from "node:crypto";
-export type ErrorDetails={field?:string;code?:string;message:string}[];
+export type ErrorIssue={path?:(string|number)[];field?:string;code?:string;message:string};
+export type ErrorDetails=ErrorIssue[]|{issues:ErrorIssue[]};
 export class ApiError extends Error {
  constructor(public status:number,public code:string,message:string,public details?:ErrorDetails,public retryAfter?:number,public allow?:string){super(message)}
 }

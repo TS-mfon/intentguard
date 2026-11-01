@@ -1,12 +1,12 @@
 import type {Policy} from "@intentguard/shared";
 
-export type MerchantForm={name:string;recipient:string;origins:string;products:string};
+export type MerchantForm={name:string;recipient:string;origins:string;products:string;example?:boolean};
 export type CriterionForm={id:string;description:string};
 export type SetupFormValues={asset:"USDC"|"USDT0";destinationChainIds:number[];name:string;mission:string;taskContext:string;categories:string;prohibited:string;exceptions:string;totalBudget:string;perPaymentLimit:string;periodBudget:string;periodSeconds:string;start:string;end:string;merchants:MerchantForm[];evidenceTypes:string;approvedOrigins:string;maxAgeSeconds:string;criteria:CriterionForm[]};
 export const inputLines=(value:string)=>value.split(/[\n,]/).map(part=>part.trim()).filter(Boolean);
 
 export function emptySetup(now=Date.now()):SetupFormValues{
- return {asset:"USDC",destinationChainIds:[],name:"",mission:"",taskContext:"",categories:"",prohibited:"",exceptions:"",totalBudget:"",perPaymentLimit:"",periodBudget:"",periodSeconds:"86400",start:new Date(now).toISOString().slice(0,16),end:new Date(now+30*86400000).toISOString().slice(0,16),merchants:[{name:"",recipient:"",origins:"",products:""}],evidenceTypes:"Merchant invoice\nProduct description",approvedOrigins:"",maxAgeSeconds:"86400",criteria:[{id:"mission",description:"The purchase directly supports the assigned mission."},{id:"invoice",description:"An approved merchant invoice matches the buyer vault, recipient, token, destination and exact requested amount."}]};
+ return {asset:"USDC",destinationChainIds:[],name:"",mission:"",taskContext:"",categories:"",prohibited:"",exceptions:"",totalBudget:"",perPaymentLimit:"",periodBudget:"",periodSeconds:"86400",start:new Date(now).toISOString().slice(0,19),end:new Date(now+30*86400000).toISOString().slice(0,19),merchants:[{name:"",recipient:"",origins:"",products:""}],evidenceTypes:"Merchant invoice\nProduct description",approvedOrigins:"",maxAgeSeconds:"86400",criteria:[{id:"mission",description:"The purchase directly supports the assigned mission."},{id:"invoice",description:"An approved merchant invoice matches the buyer vault, recipient, token, destination and exact requested amount."}]};
 }
 
 export const agentTemplates=[
@@ -16,17 +16,24 @@ export const agentTemplates=[
 ] as const;
 export type AgentTemplateId=typeof agentTemplates[number]["id"];
 
-export function setupFromTemplate(id:AgentTemplateId,chainId:number,now=Date.now()):SetupFormValues{
+export type TemplateMerchant={name:string;recipient:string;origin:string;products:string[]};
+// Illustrative only. This exact value is rejected before a proposal is sent.
+export const EXAMPLE_RECIPIENT="0x83a17e042c59b601dfc2e94a770b9d6e185fc3a8";
+export function setupFromTemplate(id:AgentTemplateId,chainId:number,now=Date.now(),merchant?:TemplateMerchant):SetupFormValues{
  const template=agentTemplates.find(item=>item.id===id);
  if(!template)throw Error("Unknown agent template");
  if(id==="protocol-test"&&chainId!==1952)throw Error("The protocol test template requires X Layer testnet.");
  const base=emptySetup(now);
- return {...base,name:template.name,mission:template.mission,taskContext:template.taskContext+" This reusable policy applies to later payment requests. The vault address is assigned after policy finalization; the exact invoice ID and amount are supplied with each request and verified at purchase review. Positive amounts allowed by all financial controls are permitted only when every purchase criterion passes.",categories:template.categories,prohibited:template.prohibited,totalBudget:"1",perPaymentLimit:"0.01",periodBudget:"0.1",destinationChainIds:[chainId],merchants:[{name:"",recipient:"",origins:"",products:template.products}],criteria:[...base.criteria,{id:"product",description:template.criterion}]};
+ const actual=id==="protocol-test"&&merchant;
+ if(actual&&(!/^0x[0-9a-fA-F]{40}$/.test(actual.recipient)||placeholderRecipient(actual.recipient)||!actual.name||!actual.products.length))throw Error("The protocol test merchant is not configured with valid public details.");
+ const exampleOrigin="https://"+(id==="api-access"?"api-provider":"research-publisher")+".example";
+ const recipient=actual?actual.recipient:EXAMPLE_RECIPIENT;
+ return {...base,name:template.name,mission:template.mission,taskContext:template.taskContext+" This reusable policy applies to later payment requests. The vault address is assigned after policy finalization; each later request supplies its own invoice ID and exact amount. The invoice must match that request and buyer vault. Supporting evidence sources do not add merchants or authorize payments to them.",categories:template.categories,prohibited:template.prohibited,totalBudget:"1",perPaymentLimit:"0.01",periodBudget:"0.1",destinationChainIds:[chainId],approvedOrigins:actual?actual.origin:exampleOrigin,merchants:[{name:actual?actual.name:id==="api-access"?"Example API provider":"Example research publisher",recipient,origins:actual?actual.origin:exampleOrigin,products:actual?actual.products.join("\n"):template.products,...(!actual?{example:true}:{})}],criteria:[...base.criteria,{id:"product",description:template.criterion}]};
 }
 
 export function setupFromPolicy(policy:Policy,asset:"USDC"|"USDT0",destinationChainIds:number[]):SetupFormValues{
  for(const timestamp of [policy.financial.validFrom,policy.financial.validUntil])if(!Number.isSafeInteger(timestamp)||timestamp<0||timestamp>253402300799)throw Error("The saved validity dates cannot be displayed. Enter supported UTC dates before submitting a new draft.");
- return {asset,destinationChainIds:[...destinationChainIds],name:policy.name,mission:policy.mission,taskContext:policy.taskContext,categories:policy.allowedCategories.join("\n"),prohibited:policy.prohibitedPurchases.join("\n"),exceptions:policy.exceptions.join("\n"),totalBudget:policy.financial.totalBudget,perPaymentLimit:policy.financial.perPaymentLimit,periodBudget:policy.financial.periodBudget,periodSeconds:String(policy.financial.periodSeconds),start:new Date(policy.financial.validFrom*1000).toISOString().slice(0,16),end:new Date(policy.financial.validUntil*1000).toISOString().slice(0,16),merchants:policy.merchants.map(merchant=>({...merchant,origins:merchant.origins.join("\n"),products:merchant.products.join("\n")})),evidenceTypes:policy.evidence.requiredTypes.join("\n"),approvedOrigins:policy.evidence.approvedOrigins.join("\n"),maxAgeSeconds:String(policy.evidence.maxAgeSeconds),criteria:policy.criteria.map(criterion=>({...criterion}))};
+ return {asset,destinationChainIds:[...destinationChainIds],name:policy.name,mission:policy.mission,taskContext:policy.taskContext,categories:policy.allowedCategories.join("\n"),prohibited:policy.prohibitedPurchases.join("\n"),exceptions:policy.exceptions.join("\n"),totalBudget:policy.financial.totalBudget,perPaymentLimit:policy.financial.perPaymentLimit,periodBudget:policy.financial.periodBudget,periodSeconds:String(policy.financial.periodSeconds),start:new Date(policy.financial.validFrom*1000).toISOString().slice(0,19),end:new Date(policy.financial.validUntil*1000).toISOString().slice(0,19),merchants:policy.merchants.map(merchant=>({...merchant,origins:merchant.origins.join("\n"),products:merchant.products.join("\n")})),evidenceTypes:policy.evidence.requiredTypes.join("\n"),approvedOrigins:policy.evidence.approvedOrigins.join("\n"),maxAgeSeconds:String(policy.evidence.maxAgeSeconds),criteria:policy.criteria.map(criterion=>({...criterion}))};
 }
 
 export function restoreGuidedSetup(input:unknown,current:SetupFormValues,asset:"USDC"|"USDT0",destinations:number[]):SetupFormValues{
@@ -39,7 +46,7 @@ export function restoreGuidedSetup(input:unknown,current:SetupFormValues,asset:"
  return setupFromPolicy(policy,asset,destinations);
 }
 
-export const placeholderRecipient=(value:string)=>/^0x([0-9a-f])\1{39}$/i.test(value);
+export const placeholderRecipient=(value:string)=>value.toLowerCase()===EXAMPLE_RECIPIENT||/^0x([0-9a-f])\1{39}$/i.test(value);
 
 /** Flag explicit duplicate budget prose; money belongs in the financial controls. */
 export function budgetProseWarnings(form:Pick<SetupFormValues,"mission"|"taskContext"|"criteria">):string[]{

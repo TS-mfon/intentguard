@@ -50,6 +50,8 @@ jobs:
           GENLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.GENLAYER_OPERATOR_PRIVATE_KEY }}
           INTENTGUARD_PAYMENT_ENV: testnet
           GENLAYER_NETWORK: studionet
+          INTENTGUARD_SOURCE_COMMIT: ${{ github.sha }}
+          INTENTGUARD_RELEASE_ID: ${{ vars.INTENTGUARD_RELEASE_ID }}
           INTENTGUARD_MODE: ${{ vars.INTENTGUARD_MODE }}
           XLAYER_CHAIN_ID: ${{ vars.XLAYER_CHAIN_ID }}
           XLAYER_RPC_URL: ${{ vars.XLAYER_RPC_URL }}

@@ -65,7 +65,7 @@ try{
   else if(path.endsWith("/card")){
    if(delayCard)await new Promise(r=>setTimeout(r,800));
    if(cardError){status=503;data={error:{code:"UNAVAILABLE",message:"Card service is temporarily unavailable."}};}else data=snapshot;
-  }else if(path==="/owner/cards")data={cards:[{...view,...snapshot.agent,keyStatus:"NONE"}]};
+  }else if(path==="/owner/cards")data={cards:[{...view,...snapshot.agent,keyStatus:"NONE",usage:snapshot.usage}]};
   else if(path==="/owner/requests")data={requests:[]};
   else{status=404;data={error:{code:"NOT_FOUND",message:"Isolated endpoint unavailable"}};}
   await route.fulfill({status,contentType:"application/json",body:JSON.stringify(data)});
@@ -82,7 +82,7 @@ try{
  await check("owner full preview and compact directory layout",async()=>{
   authenticated=true;
   for(const width of [320,390,768,1440]){
-   await page.setViewportSize({width,height:1100});await page.goto(base+"/agents");await page.locator(".atm-card").waitFor();await fits(page);await capture(page,"full-"+width);
+   await page.setViewportSize({width,height:1100});await page.goto(base+"/agents?agent="+agent.id);await page.locator(".atm-card").waitFor();await fits(page);await capture(page,"full-"+width);
   }
   authenticated=false;await page.goto(publicPath+"&view=agents");await page.locator(".atm-card").waitFor();await fits(page);
  });

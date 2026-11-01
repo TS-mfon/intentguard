@@ -8,7 +8,7 @@ function context(req:Request,canonicalOrigin:string):OwnerContext{
   if(req.headers.get("sec-fetch-site")==="cross-site")throw new ApiError(403,"ORIGIN_DENIED","Action must originate from this application");
   return {origin:target,transport:"cookie"};
  }
- if(target===canonicalOrigin&&supplied===cfg.frontendOrigin&&cfg.frontendOrigin!==canonicalOrigin)return {origin:supplied,transport:"owner-bearer"};
+ if(target===canonicalOrigin&&cfg.frontendOrigins.includes(supplied)&&supplied!==canonicalOrigin)return {origin:supplied,transport:"owner-bearer"};
  throw new ApiError(403,"ORIGIN_DENIED","Use the approved application origin");
 }
 export function ownerContext(req:Request){return context(req,configuration().origin);}

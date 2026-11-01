@@ -11223,26 +11223,89 @@
                 "minLength": 1
               },
               "details": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "field": {
-                      "type": "string"
-                    },
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string",
-                      "minLength": 1
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            ]
+                          }
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ],
+                      "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "message"
-                  ],
-                  "additionalProperties": false
-                }
+                  {
+                    "type": "object",
+                    "properties": {
+                      "issues": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string"
+                            },
+                            "path": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                ]
+                              }
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "issues"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
               }
             },
             "required": [
@@ -12042,6 +12105,71 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "frontendOrigins": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "minItems": 1,
+            "maxItems": 10,
+            "uniqueItems": true
+          },
+          "environmentUrls": {
+            "type": "object",
+            "properties": {
+              "testnet": {
+                "type": "string",
+                "format": "uri"
+              },
+              "mainnet": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "description": "Explicit deployment links. Navigating to another environment never transfers owner or agent credentials."
+          },
+          "setupMerchant": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "recipient": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              },
+              "origin": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048,
+                "pattern": "^https://[^/?#@]+/?$",
+                "description": "Public HTTPS DNS origin; no credentials, path or query. The server rejects private/internal hosts and nonstandard ports."
+              },
+              "products": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "minItems": 1,
+                "maxItems": 30
+              }
+            },
+            "required": [
+              "name",
+              "recipient",
+              "origin",
+              "products"
+            ],
+            "additionalProperties": false,
+            "description": "Actual configured public protocol-test merchant on testnet1952 only. No issuer or administrator credential is returned."
           }
         },
         "required": [
@@ -12511,6 +12639,9 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 4
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AgentUsage"
           }
         },
         "required": [
@@ -13148,6 +13279,17 @@
           },
           "activation": {
             "$ref": "#/components/schemas/Activation"
+          },
+          "diagnosticCode": {
+            "type": "string",
+            "enum": [
+              "DRAFT_GENERATION_INVALID_AMOUNT",
+              "DRAFT_GENERATION_INVALID_SCHEMA",
+              "DRAFT_GENERATION_CHANGED_GUIDANCE",
+              "GENLAYER_REVIEW_FAILED",
+              "PROCESSING_TIMEOUT",
+              "PROCESSING_DELAYED"
+            ]
           }
         },
         "required": [

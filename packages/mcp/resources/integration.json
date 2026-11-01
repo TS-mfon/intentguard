@@ -41,6 +41,11 @@
       "assets",
       "spendingNetworks"
     ],
+    "optionalConfigIdentityFields": [
+      "frontendOrigins",
+      "environmentUrls",
+      "setupMerchant"
+    ],
     "noDefaultOrigin": true,
     "noDefaultPaymentEnvironment": true,
     "freshPreflightBeforeSubmission": true,

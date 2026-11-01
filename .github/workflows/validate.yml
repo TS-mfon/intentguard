@@ -30,6 +30,8 @@ jobs:
       - run: npm ci --ignore-scripts --prefix packages/mcp
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Verify live evidence qualification and sustained availability controls
+        run: node --test tests/acceptance-report.test.mjs tests/availability.test.mjs tests/release-live.test.mjs
       - run: node tools/check.mjs circuit
       - run: node tools/check.mjs release
       - run: pnpm exec tsx scripts/verify-protocol-docs.ts

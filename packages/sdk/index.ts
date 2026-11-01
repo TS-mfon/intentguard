@@ -4,7 +4,7 @@ import type {CardView, PaymentInput, RequestView, RequestStatus, PublicConfigura
 export {IntentGuardError, canonicalJson, commitment, normalizeSettlement, validatePayment} from "./client.mjs";
 export type {ClientOptions, CallOptions, WaitOptions, OwnerClientOptions, SandboxClientOptions};
 export type * from "./types";
-export type ProtocolErrorDetail = {field?: string; code?: string; message?: string};
+export type ProtocolErrorDetail = {path?: (string | number)[]; field?: string; code?: string; message?: string};
 
 /** Source SDK; no default host or payment environment and no arbitrary wallet signing. */
 export class IntentGuard {

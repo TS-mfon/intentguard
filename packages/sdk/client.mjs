@@ -110,6 +110,29 @@ function retryAfter(value) {
   return Number.isSafeInteger(n) && n > 0 ? n : undefined;
 }
 
+function frontendConfiguration(config, profile) {
+  const denied = () => error("FRONTEND_IDENTITY_MISMATCH", "The canonical frontend, allowed origins or owner transport differs from this client profile.");
+  let canonical, origins;
+  try {
+    canonical = safeOrigin(config.frontendOrigin, "frontendOrigin");
+    origins = config.frontendOrigins === undefined ? [canonical] : config.frontendOrigins;
+    if (canonical !== config.frontendOrigin || config.applicationUrl !== canonical ||
+      config.ownerSessionTransport !== (canonical === profile.baseUrl ? "cookie" : "owner-bearer") ||
+      !Array.isArray(origins) || origins.length < 1 || origins.length > 10 || new Set(origins).size !== origins.length ||
+      origins.some(value => safeOrigin(value, "frontendOrigins") !== value || value.includes("*")) ||
+      !origins.includes(canonical) || !origins.includes(profile.frontendOrigin)) throw denied();
+    if (config.environmentUrls !== undefined) {
+      if (!record(config.environmentUrls) || Object.keys(config.environmentUrls).some(key => !["testnet", "mainnet"].includes(key)) ||
+        Object.values(config.environmentUrls).some(value => safeOrigin(value, "environmentUrls") !== value || value.includes("*")) ||
+        (profile.paymentEnvironment !== "local" && config.environmentUrls[profile.paymentEnvironment] !== canonical)) throw denied();
+    }
+  } catch { throw denied(); }
+  // A configured alias has its own challenge URI and session transport. Keep the
+  // canonical deployment URL in environmentUrls; authority never moves with it.
+  return {...config, frontendOrigin: profile.frontendOrigin, applicationUrl: profile.frontendOrigin,
+    ownerSessionTransport: profile.frontendOrigin === profile.baseUrl ? "cookie" : "owner-bearer"};
+}
+
 class Transport {
   #fetch; #secrets;
   constructor(options, secrets = []) {
@@ -153,8 +176,7 @@ class Transport {
     if (c.paymentEnvironment !== p.paymentEnvironment || c.mode !== p.paymentEnvironment || c.chainId !== p.sourceChainId)
       throw error("PAYMENT_ENVIRONMENT_MISMATCH", "The API payment environment or source chain differs from the explicit client profile.");
     if (c.apiOrigin !== p.baseUrl) throw error("API_IDENTITY_MISMATCH", "The configured API origin differs from this client endpoint.");
-    if (c.frontendOrigin !== p.frontendOrigin || c.applicationUrl !== p.frontendOrigin || c.ownerSessionTransport !== (p.frontendOrigin === p.baseUrl ? "cookie" : "owner-bearer"))
-      throw error("FRONTEND_IDENTITY_MISMATCH", "The configured frontend origin or owner session transport differs from this client profile.");
+    const frontend = frontendConfiguration(c, p);
     if (c.reviewEnvironment !== "testnet" || c.reviewNetwork !== "studionet" || c.reviewChainId !== 61999 || c.reviewInfrastructure !== "studionet-simulator")
       throw error("REVIEW_IDENTITY_MISMATCH", "The API must identify GenLayer Studionet 61999 testnet review.");
     if ((p.expectedReleaseId !== undefined && c.releaseId !== p.expectedReleaseId) || (p.expectedSourceCommit !== undefined && c.sourceCommit !== p.expectedSourceCommit) ||
@@ -180,7 +202,7 @@ class Transport {
         ids.add(n.chainId);
       }
     }
-    return c;
+    return frontend;
   }
   async ready(options) {
     const config = await this.capabilities(options);
