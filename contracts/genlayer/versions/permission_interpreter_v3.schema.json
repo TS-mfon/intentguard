@@ -1,0 +1,63 @@
+{
+  "ctor": {
+    "params": [
+      [
+        "operator",
+        "address"
+      ]
+    ],
+    "kwparams": {}
+  },
+  "methods": {
+    "get_version": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_draft": {
+      "params": [
+        [
+          "draftId",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_draft_input_hash": {
+      "params": [
+        [
+          "draftId",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_operator": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "address"
+    },
+    "propose": {
+      "params": [
+        [
+          "draftId",
+          "string"
+        ],
+        [
+          "inputJson",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "string",
+      "payable": false
+    }
+  }
+}

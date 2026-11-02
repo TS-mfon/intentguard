@@ -10,8 +10,17 @@ import pytest
 from test_intentguard import policy, canonical, digest
 
 SOURCE = "contracts/genlayer/versions/permission_interpreter_v2.py"
+EXPECTED_VERSION = 2
 SEMANTIC = {"status": "PROPOSED", "questions": [], "interpretation": "All explicit owner terms are retained and the purpose is clear."}
 EVALUATION = {"faithful": True, "financialFaithful": True, "restrictionsFaithful": True, "clarificationAppropriate": True, "reason": "Independently compared original purpose and exact owner permissions."}
+
+
+@pytest.fixture(autouse=True, params=[2, 3], ids=["v2", "v3"])
+def interpreter_version(request, monkeypatch):
+    # Run every exact-policy, hostile model, replay and independent-validator
+    # control against both the retained deployment and the new interpreter.
+    monkeypatch.setattr(sys.modules[__name__], "SOURCE", f"contracts/genlayer/versions/permission_interpreter_v{request.param}.py")
+    monkeypatch.setattr(sys.modules[__name__], "EXPECTED_VERSION", request.param)
 
 
 def setup(vm, deploy, operator, semantic=None, evaluation=None):
@@ -40,7 +49,7 @@ def test_complete_guidance_is_preserved_exactly_with_independent_validator(direc
     assert result == {**SEMANTIC, "policy": p}
     assert contract.get_draft_input_hash("guided") == digest(json.loads(raw))
     assert json.loads(contract.get_draft("guided")) == result
-    assert contract.get_version() == 2
+    assert contract.get_version() == EXPECTED_VERSION
     assert direct_vm.run_validator() is True
 
 
@@ -75,7 +84,7 @@ def test_model_cannot_emit_a_replacement_policy(direct_vm, direct_deploy, direct
 ])
 def test_malformed_complete_input_fails_before_model(direct_vm, direct_deploy, direct_alice, monkeypatch, change, reason):
     contract = setup(direct_vm, direct_deploy, direct_alice)
-    module = sys.modules["_contract_permission_interpreter_v2"]
+    module = sys.modules[f"_contract_permission_interpreter_v{EXPECTED_VERSION}"]
     calls = []
     def forbidden_model(_prompt):
         calls.append(_prompt)
@@ -142,6 +151,18 @@ def test_guided_replay_preserves_input_and_does_not_rerun_models(direct_vm, dire
     assert contract.propose("same-draft", raw) == first
     with direct_vm.expect_revert("Draft ID payload changed"):
         contract.propose("same-draft", owner_input(description="A different mission for advertising."))
+
+
+def test_distinct_lifetime_individual_and_period_caps_are_retained_together(direct_vm, direct_deploy, direct_alice):
+    p = policy()
+    p["financial"].update(totalBudget="1", perPaymentLimit="0.01", periodBudget="0.1", periodSeconds=86400)
+    contract = setup(direct_vm, direct_deploy, direct_alice)
+    result = json.loads(contract.propose("template-caps", owner_input(p)))
+    assert result["status"] == "PROPOSED"
+    assert result["questions"] == []
+    assert result["policy"]["financial"] == p["financial"]
+    assert digest(result["policy"]) == digest(p)
+    assert direct_vm.run_validator() is True
 
 
 @pytest.mark.parametrize("guidance", [{}, {"name": policy()["name"]}])

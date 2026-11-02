@@ -13,6 +13,7 @@ const oldSources = {
   "contracts/genlayer/versions/purchase_reviewer_v1.py": "0ec8749a19725514590989989645671f8211c346d78e68e3c9bf18866a3585b4",
   "contracts/genlayer/versions/purchase_reviewer_v3.py": "8259d6147bb7ee1d8c13b6fa845739672a27080f028735068aa5bc53f72aca96",
   "contracts/genlayer/permission_interpreter.py": "9621ce5044401a583a0b8400110fb6d34e4929851a52343de1f38c2983abf8e9",
+  "contracts/genlayer/versions/permission_interpreter_v2.py": "61483b2fee8a48a0821cd23a137dc64e280914a764032f0d037d9e82d6544995",
 };
 for (const [path, hash] of Object.entries(oldSources)) {
   assert.equal(createHash("sha256").update(readFileSync(new URL("../../" + path, import.meta.url))).digest("hex"), hash, "Legacy source changed: " + path);
@@ -48,11 +49,13 @@ const lint = run(["genvm-linter==0.11.0", "genvm-lint", "check", source, "--json
 const lintResult = JSON.parse(lint);
 assert.equal(lintResult.ok, true, "V4 lint/validation did not succeed");
 
-const interpreterSource="contracts/genlayer/versions/permission_interpreter_v2.py";
-const interpreterSchema=JSON.parse(readFileSync(new URL("../../contracts/genlayer/versions/permission_interpreter_v2.schema.json",import.meta.url),"utf8"));
-const interpreterExtracted=JSON.parse(run(["genvm-linter==0.11.0","genvm-lint","schema",interpreterSource,"--json"],"V2 interpreter schema"));
-assert.equal(interpreterExtracted.ok,true);assert.deepStrictEqual(interpreterExtracted.schema,interpreterSchema);
-const interpreterLint=JSON.parse(run(["genvm-linter==0.11.0","genvm-lint","check",interpreterSource,"--json"],"V2 interpreter lint"));assert.equal(interpreterLint.ok,true);
+for(const version of [2,3]){
+ const interpreterSource="contracts/genlayer/versions/permission_interpreter_v"+version+".py";
+ const interpreterSchema=JSON.parse(readFileSync(new URL("../../contracts/genlayer/versions/permission_interpreter_v"+version+".schema.json",import.meta.url),"utf8"));
+ const interpreterExtracted=JSON.parse(run(["genvm-linter==0.11.0","genvm-lint","schema",interpreterSource,"--json"],"V"+version+" interpreter schema"));
+ assert.equal(interpreterExtracted.ok,true);assert.deepStrictEqual(interpreterExtracted.schema,interpreterSchema);
+ const interpreterLint=JSON.parse(run(["genvm-linter==0.11.0","genvm-lint","check",interpreterSource,"--json"],"V"+version+" interpreter lint"));assert.equal(interpreterLint.ok,true);
+}
 
 // Includes legacy behavior, real SDK pickling and explicitly captured validators.
 // Web/model fixtures are controls, not a live-consensus or deployment claim.
