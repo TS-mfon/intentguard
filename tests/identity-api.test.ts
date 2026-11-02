@@ -65,14 +65,15 @@ test("production route errors retain one correlation identifier through every re
  }
  const response=await route(request("/config"));assert.equal(response.status,200);assert.ok(response.headers.get("X-Request-Id"));assert.equal((await response.json()).error,undefined);
 });
-test("legacy testnet aliases expose their actual same-origin API without changing separate frontend or mainnet pins",async()=>{
- const names=["INTENTGUARD_MODE","INTENTGUARD_PAYMENT_ENV","XLAYER_CHAIN_ID","MONGODB_DB","APP_URL","FRONTEND_URL"],saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+test("approved legacy testnet aliases expose coherent same-origin login URLs while preserving separate frontend and mainnet pins",async()=>{
+ const names=["INTENTGUARD_MODE","INTENTGUARD_PAYMENT_ENV","XLAYER_CHAIN_ID","MONGODB_DB","APP_URL","FRONTEND_URL","INTENTGUARD_FRONTEND_ORIGINS","INTENTGUARD_TESTNET_APPLICATION_URL","INTENTGUARD_MAINNET_APPLICATION_URL"],saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
  try{
-  Object.assign(process.env,{INTENTGUARD_MODE:"testnet",INTENTGUARD_PAYMENT_ENV:"testnet",XLAYER_CHAIN_ID:"1952",MONGODB_DB:"intentguard",APP_URL:"https://canonical.example",FRONTEND_URL:"https://canonical.example"});
+  names.forEach(name=>delete process.env[name]);
+  Object.assign(process.env,{INTENTGUARD_MODE:"testnet",INTENTGUARD_PAYMENT_ENV:"testnet",XLAYER_CHAIN_ID:"1952",MONGODB_DB:"intentguard",APP_URL:"https://canonical.example",FRONTEND_URL:"https://canonical.example",INTENTGUARD_FRONTEND_ORIGINS:JSON.stringify(["https://legacy.example"])});
   const req=new Request("https://legacy.example/api/v1/config");
-  const legacy=await(await route(req)).json();assert.equal(legacy.apiOrigin,"https://legacy.example");assert.equal(legacy.frontendOrigin,"https://legacy.example");assert.equal(legacy.applicationUrl,"https://canonical.example");assert.equal(legacy.ownerSessionTransport,"cookie");
+  const legacy=await(await route(req)).json();assert.equal(legacy.apiOrigin,"https://legacy.example");assert.equal(legacy.frontendOrigin,"https://legacy.example");assert.equal(legacy.applicationUrl,"https://legacy.example");assert.equal(legacy.environmentUrls.testnet,"https://legacy.example");assert.equal(legacy.ownerSessionTransport,"cookie");
   process.env.FRONTEND_URL="https://static.example";
-  const separate=await(await route(req)).json();assert.equal(separate.apiOrigin,"https://canonical.example");assert.equal(separate.frontendOrigin,"https://static.example");assert.equal(separate.ownerSessionTransport,"owner-bearer");
+  const separate=await(await route(req)).json();assert.equal(separate.apiOrigin,"https://canonical.example");assert.equal(separate.frontendOrigin,"https://static.example");assert.equal(separate.applicationUrl,"https://static.example");assert.equal(separate.ownerSessionTransport,"owner-bearer");
   Object.assign(process.env,{INTENTGUARD_MODE:"mainnet",INTENTGUARD_PAYMENT_ENV:"mainnet",XLAYER_CHAIN_ID:"196",MONGODB_DB:"intentguard_mainnet",FRONTEND_URL:"https://canonical.example"});
   const mainnet=await(await route(req)).json();assert.equal(mainnet.apiOrigin,"https://canonical.example");assert.equal(mainnet.frontendOrigin,"https://canonical.example");assert.equal(mainnet.configured,false);
  }finally{for(const name of names){if(saved[name]===undefined)delete process.env[name];else process.env[name]=saved[name];}}
