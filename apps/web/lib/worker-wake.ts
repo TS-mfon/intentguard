@@ -2,12 +2,19 @@ import type {Store,Doc} from "./store";
 import {activeStatuses} from "./models";
 import {configuration} from "./config";
 
-export type WakeConfiguration={token:string;repository:string;workflow:string;ref:string};
+export type WakeConfiguration={token:string;repository:string;workflow:string;ref:string;keepAliveUntil?:number};
 export type WakeOutcome="disabled"|"coalesced"|"idle"|"active"|"dispatched"|"failed";
 type Runtime=Doc&{runId:string;deadline:number;heartbeatAt:number;state:string};
 type Run={id:number;status:string;created_at:string;run_started_at?:string};
 type Options={config?:WakeConfiguration;fetcher?:typeof fetch;now?:()=>number};
 const queuedStatuses=new Set(["queued","requested","waiting","pending"]);
+const maximumKeepAliveMs=73*60*60*1000;
+export function workerKeepAliveUntil(value:string|undefined,now=Date.now()):number|undefined{
+ if(!value)return undefined;
+ const until=Date.parse(value);
+ if(!Number.isSafeInteger(until)||until<=now||until>now+maximumKeepAliveMs||new Date(until).toISOString()!==value)return undefined;
+ return until;
+}
 export async function hasPendingWork(store:Store){
  for(const [table,query] of [["drafts",{state:{$in:["QUEUED","AWAITING_FINALITY"]}}],["cards",{state:"SETTING_UP"}],["requests",{status:{$in:activeStatuses}}]] as const){
   if((await store.find(table,query,{limit:1})).length)return true;
@@ -19,7 +26,8 @@ export function wakeConfiguration():WakeConfiguration|undefined{
  if(!token||!repository)return undefined;
  const workflow=process.env.GITHUB_WORKER_WORKFLOW??(cfg.mainnet?"worker-mainnet.yml":"worker.yml"),ref=process.env.GITHUB_WORKER_REF??"main";
  if(cfg.mainnet&&(workflow!=="worker-mainnet.yml"||ref!=="main"||!cfg.sourceCommit))throw Error("Mainnet wake requires the isolated worker and pinned release");
- return {token,repository,workflow,ref};
+ const keepAliveUntil=cfg.testnet&&cfg.chainId===1952&&workflow==="worker.yml"&&ref==="main"?workerKeepAliveUntil(process.env.INTENTGUARD_WORKER_KEEPALIVE_UNTIL):undefined;
+ return {token,repository,workflow,ref,...(keepAliveUntil===undefined?{}:{keepAliveUntil})};
 }
 /** A durable, short-lived coordinator prevents a burst of API admissions from
  * dispatching one Actions run per request. Queue records remain authoritative. */
@@ -33,7 +41,9 @@ export async function wakeWorker(store:Store,options:Options={}):Promise<WakeOut
   await store.create("locks",{_id:"worker-wake",createdAt:now()});
   lock=await store.claim("locks",{_id:"worker-wake"},now(),30000);
   if(!lock)return "coalesced";
-  if(!await hasPendingWork(store)){outcome="idle";return outcome;}
+  const time=now(),until=cfg.keepAliveUntil,pending=await hasPendingWork(store);
+  const keepAlive=cfg.workflow==="worker.yml"&&cfg.ref==="main"&&typeof until==="number"&&Number.isSafeInteger(until)&&until>time&&until<=time+maximumKeepAliveMs;
+  if(!pending&&!keepAlive){outcome="idle";return outcome;}
   const base="https://api.github.com/repos/"+cfg.repository+"/actions/workflows/"+encodeURIComponent(cfg.workflow);
   const headers={Accept:"application/vnd.github+json",Authorization:"Bearer "+cfg.token,"X-GitHub-Api-Version":"2022-11-28"};
   const listed=await fetcher(base+"/runs?branch="+encodeURIComponent(cfg.ref)+"&per_page=100",{headers,redirect:"error",signal:AbortSignal.timeout(8000)});
@@ -50,6 +60,7 @@ export async function wakeWorker(store:Store,options:Options={}):Promise<WakeOut
    return Number.isFinite(started)&&started>now()-90000;
   });
   if(active){outcome="active";return outcome;}
+  if(!pending&&(until===undefined||until<=now())){outcome="idle";return outcome;}
   const dispatched=await fetcher(base+"/dispatches",{method:"POST",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({ref:cfg.ref,inputs:{duration_seconds:"180",...(cfg.workflow==="worker-mainnet.yml"?{release_ref:configuration().sourceCommit}:{})}}),redirect:"error",signal:AbortSignal.timeout(8000)});
   if(dispatched.status!==204)throw Error("GitHub worker dispatch failed");
   outcome="dispatched";return outcome;

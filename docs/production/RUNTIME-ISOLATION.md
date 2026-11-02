@@ -18,6 +18,8 @@ The existing workload uses Vercel instances and bounded Actions jobs. Each reuse
 
 `GET /api/v1/health` reports release/source identity, both networks, database reachability and worker freshness without credentials. A stale worker produces503 rather than a healthy status.
 
+GitHub schedules are best effort. Actual testnet observations on2026-11-02 found multi-hour gaps between scheduled idle workers, so a schedule alone cannot establish the required availability. For a bounded testnet verification window, set repository variable `INTENTGUARD_TESTNET_WORKER_KEEPALIVE_UNTIL` to a canonical UTC ISO timestamp no more than73 hours ahead, then dispatch `worker.yml`. An ending worker hands off an idle queue through the existing durable coordinator; simultaneous wake requests still coalesce and a healthy runner is reused. The handoff stops at the fixed deadline. Missing, expired, malformed or overlong values retain ordinary pending-job behavior. The option is supplied only to the chain1952 testnet workflow and cannot enable the mainnet worker. No healthy status is synthesized: public probes still require actual recent heartbeats, and runner or dispatch outages remain measured failures. Clear the variable after the verification window.
+
 ## Verification and remaining acceptance
 
 The driver reverified88 runtime integration tests with zero failures/skips and six database tests. The complete application suite passed127 tests, and TypeScript validation passed. Positive controls and attacks cover copied credentials, wrong card/route/token/reviewer bindings, journal tampering, changed manifests, missing indexes, unsafe database initialization, financial blocks, semantic failures, irreversible-burn recovery and duplicate execution.

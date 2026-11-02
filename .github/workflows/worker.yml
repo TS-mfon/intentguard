@@ -44,6 +44,7 @@ jobs:
           GITHUB_WORKER_WORKFLOW: worker.yml
           GITHUB_WORKER_REF: main
           WORKER_RUN_SECONDS: ${{ inputs.duration_seconds || '180' }}
+          INTENTGUARD_WORKER_KEEPALIVE_UNTIL: ${{ vars.INTENTGUARD_TESTNET_WORKER_KEEPALIVE_UNTIL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           XLAYER_OPERATOR_PRIVATE_KEY: ${{ secrets.XLAYER_OPERATOR_PRIVATE_KEY }}
           REVIEW_ATTESTOR_PRIVATE_KEY: ${{ secrets.REVIEW_ATTESTOR_PRIVATE_KEY }}

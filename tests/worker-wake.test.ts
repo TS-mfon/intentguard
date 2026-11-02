@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {MemoryStore} from "../apps/web/lib/store";
-import {wakeWorker,hasPendingWork,workerHeartbeat,finishWorker,type WakeConfiguration} from "../apps/web/lib/worker-wake";
+import {wakeWorker,hasPendingWork,workerHeartbeat,finishWorker,workerKeepAliveUntil,wakeConfiguration,type WakeConfiguration} from "../apps/web/lib/worker-wake";
 const config:WakeConfiguration={token:"test-only-github-token",repository:"owner/repository",workflow:"worker.yml",ref:"main"};
 async function setup(){
  const store=new MemoryStore();await store.create("drafts",{_id:"draft",state:"QUEUED",createdAt:1});
@@ -47,6 +47,45 @@ test("completed runs cannot suppress a wake",async()=>{
 test("empty and terminal queues do not start workers",async()=>{
  const s=await setup();await s.store.patch("drafts","draft",{state:"FINALIZED"});await s.store.create("requests",{_id:"paid",status:"PAID"});await s.store.create("cards",{_id:"ready",state:"READY"});
  assert.equal(await hasPendingWork(s.store),false);assert.equal(await wakeWorker(s.store,s.options),"idle");assert.equal(s.calls.length,0);
+});
+test("bounded testnet keep-alive dispatches an idle queue once and stops at expiry",async()=>{
+ const s=await setup();await s.store.patch("drafts","draft",{state:"FINALIZED"});
+ const options={...s.options,config:{...config,keepAliveUntil:200000}};
+ const outcomes=await Promise.all(Array.from({length:20},()=>wakeWorker(s.store,options)));
+ assert.equal(outcomes.filter(value=>value==="dispatched").length,1);assert.equal(s.calls.filter(call=>call.init?.method==="POST").length,1);
+ assert.equal(await hasPendingWork(s.store),false);
+ s.setClock(200000);assert.equal(await wakeWorker(s.store,options),"idle");assert.equal(s.calls.length,2);
+});
+test("keep-alive cannot target mainnet another ref or an invalid or overlong window",async()=>{
+ for(const changes of [{workflow:"worker-mainnet.yml"},{ref:"other"},{keepAliveUntil:100000},{keepAliveUntil:NaN},{keepAliveUntil:Infinity},{keepAliveUntil:200000.5},{keepAliveUntil:100001+73*60*60*1000}]){
+  const s=await setup();await s.store.patch("drafts","draft",{state:"FINALIZED"});
+  assert.equal(await wakeWorker(s.store,{...s.options,config:{...config,keepAliveUntil:200000,...changes}}),"idle");assert.equal(s.calls.length,0);
+ }
+});
+test("idle keep-alive reuses a healthy runner and expired keep-alive retains pending work",async()=>{
+ const s=await setup();await s.store.patch("drafts","draft",{state:"FINALIZED"});s.setRuns([{id:7,status:"in_progress",created_at:new Date(1).toISOString()}]);await workerHeartbeat(s.store,"7",300000,99000);
+ assert.equal(await wakeWorker(s.store,{...s.options,config:{...config,keepAliveUntil:200000}}),"active");assert.equal(s.calls.length,1);
+ const pending=await setup();assert.equal(await wakeWorker(pending.store,{...pending.options,config:{...config,keepAliveUntil:1}}),"dispatched");assert.equal((await pending.store.get("drafts","draft"))?.state,"QUEUED");
+});
+test("keep-alive accepts only a canonical future UTC deadline within 73 hours",()=>{
+ assert.equal(workerKeepAliveUntil(new Date(200000).toISOString(),100000),200000);
+ for(const value of [undefined,"","not a date","1970-01-01",new Date(100000).toISOString(),new Date(100001+73*60*60*1000).toISOString()])assert.equal(workerKeepAliveUntil(value,100000),undefined);
+});
+test("keep-alive environment configuration is limited to the isolated testnet worker",()=>{
+ const names=["INTENTGUARD_MODE","INTENTGUARD_PAYMENT_ENV","XLAYER_CHAIN_ID","GITHUB_WORKER_TOKEN","GITHUB_WORKER_REPOSITORY","GITHUB_WORKER_WORKFLOW","GITHUB_WORKER_REF","INTENTGUARD_WORKER_KEEPALIVE_UNTIL","INTENTGUARD_SOURCE_COMMIT","MONGODB_DB","APP_URL","FRONTEND_URL"];
+ const saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+ try{
+  Object.assign(process.env,{INTENTGUARD_MODE:"testnet",INTENTGUARD_PAYMENT_ENV:"testnet",XLAYER_CHAIN_ID:"1952",MONGODB_DB:"intentguard",APP_URL:"https://testnet.example",FRONTEND_URL:"https://testnet.example",GITHUB_WORKER_TOKEN:config.token,GITHUB_WORKER_REPOSITORY:config.repository,GITHUB_WORKER_WORKFLOW:"worker.yml",GITHUB_WORKER_REF:"main",INTENTGUARD_WORKER_KEEPALIVE_UNTIL:new Date(Date.now()+600000).toISOString(),INTENTGUARD_SOURCE_COMMIT:"a".repeat(40)});
+  assert.ok(wakeConfiguration()?.keepAliveUntil);
+  process.env.GITHUB_WORKER_REF="other";assert.equal(wakeConfiguration()?.keepAliveUntil,undefined);
+  Object.assign(process.env,{INTENTGUARD_MODE:"mainnet",INTENTGUARD_PAYMENT_ENV:"mainnet",XLAYER_CHAIN_ID:"196",MONGODB_DB:"intentguard_mainnet",GITHUB_WORKER_WORKFLOW:"worker-mainnet.yml",GITHUB_WORKER_REF:"main"});
+  assert.equal(wakeConfiguration()?.keepAliveUntil,undefined);
+ }finally{for(const name of names){if(saved[name]===undefined)delete process.env[name];else process.env[name]=saved[name];}}
+});
+test("an idle keep-alive cannot dispatch after its deadline passes during lookup",async()=>{
+ const s=await setup();await s.store.patch("drafts","draft",{state:"FINALIZED"});
+ const fetcher:typeof fetch=async(url,init)=>{const response=await s.options.fetcher(url,init);if(init?.method!=="POST")s.setClock(200000);return response;};
+ assert.equal(await wakeWorker(s.store,{...s.options,fetcher,config:{...config,keepAliveUntil:200000}}),"idle");assert.equal(s.calls.length,1);
 });
 test("drafts, reviewer setup and active payment states are pending",async()=>{
  for(const [table,fields] of [["drafts",{state:"AWAITING_FINALITY"}],["cards",{state:"SETTING_UP"}],["requests",{status:"REVIEWING"}],["requests",{status:"APPROVED"}]] as const){
