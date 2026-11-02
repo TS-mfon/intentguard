@@ -48,7 +48,7 @@ test("same-origin testnet aliases sign their actual API identity and reject chal
  for(const target of [apiOrigin,fallback]){
   const other=target===apiOrigin?fallback:apiOrigin;
   const call=(origin:string,path:string,method="GET",body?:unknown,cookie?:string)=>f.api(new Request(origin+"/api/v1"+path,{method,headers:{origin,"content-type":"application/json","x-intentguard-environment":"testnet",...(cookie?{cookie}:{})},...(body?{body:JSON.stringify(body)}:{})}),path);
-  const config=await(await call(target,"/config")).json();assert.equal(config.apiOrigin,target);assert.equal(config.frontendOrigin,target);
+  const config=await(await call(target,"/config")).json();assert.equal(config.apiOrigin,target);assert.equal(config.frontendOrigin,target);assert.equal(config.applicationUrl,target);assert.ok(config.frontendOrigins.includes(target));assert.equal(config.environmentUrls.testnet,target);assert.equal(config.ownerSessionTransport,"cookie");
   const challengeResponse=await call(target,"/auth/challenge","POST",{address:account.address});assert.equal(challengeResponse.status,200);
   const {message}=await challengeResponse.json();const lines=message.split("\n");assert.ok(lines.includes("URI: "+target));assert.ok(lines.includes("API: "+config.apiOrigin));
   const signature=await account.signMessage({message});
@@ -58,6 +58,8 @@ test("same-origin testnet aliases sign their actual API identity and reject chal
   assert.equal((await(await call(target,"/auth/session","GET",undefined,cookie)).json()).address,account.address.toLowerCase());
   assert.equal((await(await call(other,"/auth/session","GET",undefined,cookie)).json()).address,null,"Host cookies never share owner authority");
  }
+ const unapproved="https://unapproved-alias.example",config=await(await f.api(new Request(unapproved+"/api/v1/config",{headers:{"x-intentguard-environment":"testnet"}}),"/config")).json();
+ assert.equal(config.apiOrigin,apiOrigin);assert.equal(config.applicationUrl,apiOrigin);assert.equal(config.frontendOrigins.includes(unapproved),false,"An undeclared alias cannot acquire frontend authority from its request host");
 }));
 
 test("the API frontend uses cookies while approved separate frontends never inherit cookie authority",()=>fixture(async f=>{

@@ -45,13 +45,13 @@ try{
   await page.getByRole("searchbox",{name:"Search my agents"}).waitFor();
   const first=cards[0];for(const card of cards){assert.ok(card.usage);assert.equal(card.usage.chainId,1952);assert.equal(card.usage.token.toLowerCase(),card.token.toLowerCase());}
   await page.getByRole("searchbox",{name:"Search my agents"}).fill(first.name);await page.locator('a[href*="agent='+first.id+'"]').click();
-  assert.equal(new URL(page.url()).searchParams.get("agent"),first.id);await page.getByRole("tab",{name:"Overview",exact:true}).waitFor();
-  await page.getByRole("link",{name:"Back to my agents",exact:true}).click();assert.equal(await page.getByRole("searchbox",{name:"Search my agents"}).inputValue(),first.name);
+  await page.waitForURL(url=>url.pathname==="/agents"&&url.searchParams.get("agent")===first.id);assert.equal(new URL(page.url()).searchParams.get("agent"),first.id);await page.getByRole("tab",{name:"Overview",exact:true}).waitFor();
+  await page.getByRole("link",{name:"Back to my agents",exact:true}).click();await page.waitForURL(url=>url.pathname==="/agents"&&!url.searchParams.has("agent"));assert.equal(await page.getByRole("searchbox",{name:"Search my agents"}).inputValue(),first.name);
   await page.getByRole("searchbox",{name:"Search my agents"}).fill("");
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await fits(page);}
   await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:folder+"/gallery-"+index+".png",fullPage:true});
   for(const template of ["research","api-access","protocol-test"] as const){
-   await page.goto(origin+"/agent-setup");if(!await page.getByRole("radio",{name:/Research assistant/}).count())await page.getByRole("button",{name:"Back",exact:true}).click();await page.getByRole("radio",{name:new RegExp(template==="research"?"Research assistant":template==="api-access"?"API access":"Protocol test")}).check();
+   await page.goto(origin+"/agent-setup");await page.getByRole("button",{name:/Choose template/}).click();await page.getByRole("radio",{name:new RegExp(template==="research"?"Research assistant":template==="api-access"?"API access":"Protocol test")}).check();
    await page.getByRole("button",{name:"Continue",exact:true}).click();
    const form=setupFromTemplate(template,1952,Date.now(),config.setupMerchant);
    assert.equal(await page.getByLabel("Agent name",{exact:true}).inputValue(),form.name);

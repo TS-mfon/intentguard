@@ -38,7 +38,7 @@ async function requestConfiguration(req:Request){
  const config=await publicDeploymentConfiguration(),c=configuration(),target=new URL(req.url).origin;
  // Existing testnet aliases serve the same API and use their own host cookies.
  // Separate frontends and mainnet keep their explicitly pinned origins.
- if(c.testnet&&c.frontendOrigin===c.origin&&target!==c.origin)return {...config,apiOrigin:target,frontendOrigin:target,frontendOrigins:[target],environmentUrls:{...config.environmentUrls,testnet:target}};
+ if(c.testnet&&c.frontendOrigin===c.origin&&target!==c.origin&&c.frontendOrigins.includes(target))return {...config,applicationUrl:target,apiOrigin:target,frontendOrigin:target,frontendOrigins:[target],environmentUrls:{...config.environmentUrls,testnet:target}};
  return config;
 }
 export function createApi(store:Store,evm:EvmPort,{requireConfigured=true,wake=()=>wakeWorker(store)}:{requireConfigured?:boolean;wake?:()=>unknown|Promise<unknown>}={}){
