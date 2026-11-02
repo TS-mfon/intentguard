@@ -1,9 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {mkdtemp,writeFile,rm,symlink} from "node:fs/promises";
+import {mkdtemp,mkdir,readFile,writeFile,rm,symlink} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {PINS,ZERO} from "../tools/hosting/protocol.mjs";
+import {scanBundle} from "../tools/hosting/bundle.mjs";
 import {EXPECTED_TOOLCHAIN,REVIEW,OUTPUTS,CONTRACT_NAMES,COST_IDS,PROVENANCE_INPUTS,StrictReadOnlyRpc,verifyRuntimeTemplate,inspectFrontend,rawJson,hash,digest,seal,paymentIdentities,validateSource,validateIdentities,quoteBody,validateQuote,makePreparation,validatePreparation,requireSpendingReady,deploymentInputs} from "../tools/production/release-plan.mjs";
 
 const now=Date.parse("2026-10-29T00:00:00.000Z"),sha="a".repeat(64),hex="0x"+sha;
@@ -64,6 +65,39 @@ test("frontend quote rejects missing source inventory and a resealed incomplete 
     m.sourceTreeSha256=hash(JSON.stringify(m.sourceInputs));await writeFile(path,JSON.stringify(m));await assert.rejects(inspectFrontend(path,{source,root:dir}),/input inventory/);
     m.frontendOrigin="https://frontend.example/path";await writeFile(path,JSON.stringify(m));await assert.rejects(inspectFrontend(path,{source,root:dir}),/canonical origins/);
   }finally{await rm(dir,{recursive:true,force:true});}
+});
+async function clientFrontendFixture(root){
+  const source=sourceFixture(),apiOrigin="https://api.example",frontendOrigin="https://frontend.example";
+  // A client artifact includes the card artwork helper, never API/database code.
+  const paths=["apps/web/next.config.ts","apps/web/tsconfig.json","apps/web/package.json","contracts/evm/abi.json","tsconfig.json","package.json","pnpm-lock.yaml","pnpm-workspace.yaml","scripts/static-frontend.mjs","tools/hosting/bundle.mjs","tools/hosting/protocol.mjs","tools/hosting/pins.json","apps/web/lib/agent-card-art.ts","apps/web/components/agent-card.tsx","apps/web/public/icon.svg","packages/shared/index.ts","apps/web/app/agent-setup/page.tsx"].sort();
+  const serverPath="apps/web/app/api/v1/config/route.ts";
+  for(const path of [...paths,serverPath]){const bytes=Buffer.from("source fixture for "+path);source.inputs[path]={sha256:hash(bytes),bytes:bytes.length};}
+  source.treeSha256=digest(source.inputs);
+  const sourceInputs=Object.fromEntries(paths.map(path=>[path,source.inputs[path].sha256]));
+  await mkdir(join(root,"out"));await writeFile(join(root,"out","index.html"),"<!doctype html><title>Agent card</title><main>Verified permission</main>");
+  const manifest={version:1,status:"PREPARED_NOT_HOSTED",paymentEnvironment:"mainnet",paymentChainId:196,reviewEnvironment:"testnet",reviewNetwork:"studionet",reviewChainId:61999,sourceCommit:source.commit,sourceDirty:false,serverRoutesIncluded:false,apiOrigin,frontendOrigin,sourceInputs,sourceTreeSha256:hash(JSON.stringify(sourceInputs)),bundle:await scanBundle(join(root,"out"),{apiOrigins:[apiOrigin]})};
+  return {source,manifest,path:join(root,"manifest.json"),serverPath};
+}
+test("frontend quote accepts the complete client artwork input and verifies the actual static bundle",async()=>{
+  const root=await mkdtemp(join(tmpdir(),"release-frontend-art-"));try{
+    const {source,manifest,path}=await clientFrontendFixture(root);await writeFile(path,JSON.stringify(manifest));
+    const verified=await inspectFrontend(path,{source,root});assert.equal(verified.bundle.directorySha256,manifest.bundle.directorySha256);assert.equal(verified.manifestSha256,hash(await readFile(path)));assert.equal(verified.published,false);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+test("resealed frontend manifests reject missing or altered artwork and server-only source additions",async()=>{
+  const root=await mkdtemp(join(tmpdir(),"release-frontend-art-negative-"));try{
+    const {source,manifest,path,serverPath}=await clientFrontendFixture(root),art="apps/web/lib/agent-card-art.ts";
+    for(const [mutate,expected] of [
+      [m=>delete m.sourceInputs[art],/input inventory/],
+      [m=>m.sourceInputs[art]=hash("different artwork"),/source bytes mismatch/],
+      [m=>m.sourceInputs[serverPath]=source.inputs[serverPath].sha256,/input inventory/]
+    ]){
+      const changed=structuredClone(manifest);mutate(changed);changed.sourceTreeSha256=hash(JSON.stringify(changed.sourceInputs));await writeFile(path,JSON.stringify(changed));
+      await assert.rejects(inspectFrontend(path,{source,root}),expected);
+    }
+    const missingSource=structuredClone(source),missingManifest=structuredClone(manifest);delete missingSource.inputs[art];delete missingManifest.sourceInputs[art];missingSource.treeSha256=digest(missingSource.inputs);missingManifest.sourceTreeSha256=hash(JSON.stringify(missingManifest.sourceInputs));await writeFile(path,JSON.stringify(missingManifest));
+    await assert.rejects(inspectFrontend(path,{source:missingSource,root}),/Required frontend input missing/);
+  }finally{await rm(root,{recursive:true,force:true});}
 });
 test("Studionet identity reads cannot claim live reviewer verification or survive freshness drift",()=>{
   const f=fixture(),observation={environment:"testnet",network:"studionet",chainId:61999,observedAt:new Date(now).toISOString(),rpcUrl:REVIEW.rpcUrl,genesisHash:REVIEW.genesisHash,consensus:REVIEW.consensus,consensusCodeBytes:0,consensusCodeSha256:hash(Buffer.alloc(0)),genesisIsResetProof:false,consensusIsEvmDeploymentProof:false,liveReviewerVerified:false,evidence:["eth_chainId","eth_getBlockByNumber","eth_getCode"].map(method=>({method,paramsSha256:sha,responseSha256:sha,resultSha256:sha}))};
