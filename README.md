@@ -8,6 +8,23 @@ The public verified records are **testnet**: X Layer 1952, native USDC delivery 
 
 Only payment status **PAID** confirms recipient delivery. HTTP202 admits an operation; APPROVED, a CCTP burn, an attestation and a submitted mint remain pending.
 
+## Latest live API verification
+
+On **4 November 2026**, the Protocol Revenue Research agent completed a real **0.000001 USDC** payment on X Layer Testnet after a finalized GenLayer approval. The receipt proves one exact USDC transfer; replaying the same request returned the original operation. **Four purchase scenarios and ten API checks passed**, including policy-bypass rejection, payment-limit denial, wrong-buyer evidence, authentication and idempotency.
+
+[Confirmed USDC transaction](https://web3.okx.com/explorer/x-layer-testnet/tx/0x33006cd5a5dc543feefc8f686af374128b19361ee2341dca7efb2e47693cf956) · [Public paid record](https://intentguard-tapeout.vercel.app/explorer/transactions/0x9c1d64a35e956d8c945b13c4ef74ace3730f45421ca8fb5b77f2b4e4e1a884b2) · [Test report and CCTP attempt](docs/audits/LIVE-API-2026-11-04.md) · [Exact inputs and evidence](docs/audits/live-api-2026-11-04.json)
+
+A new Base Sepolia CCTP request correctly returned **422 DESTINATION_NOT_ALLOWED**: this agent permits only X Layer1952. No burn or destination payment occurred. The report distinguishes this permission check from earlier completed CCTP deliveries on a route-enabled agent.
+
+A subsequent funded **Research assistant** card permits Base Sepolia and Arbitrum Sepolia and has a reachable approved merchant. Its two new **0.000001 USDC Base requests finalized REJECTED**: invoice review compared the destination token with the source token, and the second also questioned buyer-vault identity. No burn or mint occurred; the observed balance remained 1.2 USDC with zero spent or reserved. The [follow-up CCTP evidence](docs/audits/LIVE-CCTP-2026-11-04.md) preserves both decisions and the prior unreachable-merchant failure, with [explicit new agent terms](docs/audits/CCTP-AGENT-SETUP-2026-11-04.md) for owner review.
+
+Run the public verification without a credential:
+
+```sh
+pnpm exec tsx scripts/verify-live-api-audit.ts
+pnpm exec tsx scripts/verify-live-cctp-audit.ts
+```
+
 ## First use without a wallet
 
 Open the paid or blocked record above. The public page/API needs no wallet, owner session or agent key. Read the asset, source/destination chain, guard outcome and review stage, then open the actual payment receipt. Compare the [semantic rejection](https://intentguard-tapeout.vercel.app/explorer/transactions/0xba422ff64117a52cd030cf2f80b52d02d26f82223b28fc9d075d7be5b87601ef) or [evidence failure](https://intentguard-tapeout.vercel.app/explorer/transactions/0xecafc6f325d9ff601bbe7f5e24410040f3c062c423960a8efdf9d576f1e8c886). A public failure record is an attempted purchase, not a transfer.

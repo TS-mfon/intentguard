@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "name": "Research assistant live CCTP request and merchant evidence audit",
+  "capturedAt": "2026-11-04T04:03:51.996Z",
+  "deployment": {
+    "apiOrigin": "https://intentguard-tapeout.vercel.app",
+    "paymentEnvironment": "testnet",
+    "releaseId": "intentguard-testnet-d0ed5ae88813",
+    "sourceCommit": "d0ed5ae888134a60e489295ac6813ef21e7a4664",
+    "cctpFactoryAddress": "0x12f4e3c0c3cb53854bd8f60ccfea3bce96f60ba6",
+    "paymentChainId": 1952,
+    "reviewChainId": 61999,
+    "reviewNetwork": "studionet",
+    "reviewInfrastructure": "studionet-simulator"
+  },
+  "agent": {
+    "id": "0x22da29ece8779975a3de858a7c2b0643198941a515dc74e78d94794e56b01cba",
+    "name": "Research assistant",
+    "vault": "0xa101dd9d8e6205a3d490a1a4bad16a717748abce",
+    "token": "0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3",
+    "policyHash": "0x28ac53b42aee011a20d993fcd6f71fbeda3800988ff3bc61d913ad2696e7b09c",
+    "activationTx": "0x043773f6c55b678f8c4ef3f5df734fd5e38bb8be32b5fd0a5d74fc0b3d2f7934",
+    "policy": {
+      "version": 1,
+      "name": "Research assistant",
+      "mission": "Purchase research reports and licensed datasets for the assigned project from approved merchants.",
+      "taskContext": "Prepare a sourced research brief. Each purchase must contribute directly to that brief. This reusable policy applies to later payment requests. The vault address is assigned after policy finalization; each later request supplies its own invoice ID and exact amount. The invoice must match that request and buyer vault. Supporting evidence sources do not add merchants or authorize payments to them.",
+      "allowedCategories": [
+        "Research reports",
+        "Licensed datasets"
+      ],
+      "prohibitedPurchases": [
+        "Personal data for advertising",
+        "Unrelated services"
+      ],
+      "exceptions": [],
+      "financial": {
+        "totalBudget": "1",
+        "perPaymentLimit": "0.01",
+        "periodBudget": "0.1",
+        "periodSeconds": 86400,
+        "validFrom": 1793762989,
+        "validUntil": 1796354989
+      },
+      "merchants": [
+        {
+          "name": "IntentGuard protocol test merchant",
+          "recipient": "0xe72E260811c6Fbc27D1C350D92AbaAC89BBF803D",
+          "origins": [
+            "https://intentguard-tapeout.vercel.app"
+          ],
+          "products": [
+            "Research reports",
+            "Licensed datasets"
+          ]
+        }
+      ],
+      "evidence": {
+        "requiredTypes": [
+          "Merchant invoice",
+          "Product description"
+        ],
+        "approvedOrigins": [
+          "https://intentguard-tapeout.vercel.app"
+        ],
+        "maxAgeSeconds": 86400
+      },
+      "criteria": [
+        {
+          "id": "mission",
+          "description": "The purchase directly supports the assigned mission."
+        },
+        {
+          "id": "invoice",
+          "description": "An approved merchant invoice matches the buyer vault, recipient, token, destination and exact requested amount."
+        },
+        {
+          "id": "product",
+          "description": "The report or dataset is relevant to the assigned research brief and has a clear product description."
+        }
+      ]
+    },
+    "settlement": {
+      "asset": "USDC",
+      "destinationChainIds": [
+        1952,
+        84532,
+        421614
+      ]
+    },
+    "reviewerAddress": "0x9509438fDc2148187e54b896dE9B48C3F6980688",
+    "reviewerVersion": 3
+  },
+  "researchReport": {
+    "title": "Funding and delivery assets in CCTP",
+    "text": "Research report: Funding and delivery assets in CCTP, 4 November 2026. The buyer vault is on X Layer Testnet (1952), funded with USDC 0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3. The merchant receives USDC 0x036CbD53842c5426634e7929541eC2318f3dCF7e on Base Sepolia (84532). A cross-chain invoice identifies the destination delivery token and chain. The funding token and delivery token are distinct contracts: canonical request token is the source asset; destinationToken is the delivery asset. CCTP V2 burns source USDC and mints destination USDC after Circle attestation; chain IDs 1952/84532 correspond to domains 37/6. This invoice text delivers the research report for a sourced CCTP brief. Testnet tokens have no monetary value. Sources: https://developers.circle.com/stablecoins/usdc-contract-addresses.md; https://developers.circle.com/cctp.md; https://intentguard-tapeout.vercel.app/api/v1/config",
+    "sha256": "94f13a5bf4de3e06474b78756e213c2c7871325d7ca68563de55622fe89e77e3",
+    "sources": [
+      {
+        "url": "https://developers.circle.com/stablecoins/usdc-contract-addresses.md",
+        "readAt": "2026-11-04T03:54:04.757Z",
+        "sha256": "993ced64d29c9374d4494fdedfafa70bf9237d1d7d6be995ad18ed7de3009203"
+      },
+      {
+        "url": "https://developers.circle.com/cctp.md",
+        "readAt": "2026-11-04T03:54:04.912Z",
+        "sha256": "2cc4bf53ad571663b12915e9670bc803098627a3ce3b91965083018fee81d581"
+      },
+      {
+        "url": "https://intentguard-tapeout.vercel.app/api/v1/config",
+        "readAt": "2026-11-04T03:54:05.223Z",
+        "sha256": "a2155f8d76014e5453e0262c06e6e306d1b6a3f03cda982ca115c38a0068ea70"
+      }
+    ]
+  },
+  "invoice": {
+    "invoice": {
+      "invoiceId": "9271fda42ff15a89a02a8bcab03b23ed",
+      "buyer": "0xa101dd9d8e6205a3d490a1a4bad16a717748abce",
+      "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+      "chainId": 84532,
+      "recipient": "0xe72e260811c6fbc27d1c350d92abaac89bbf803d",
+      "amount": "0.000001",
+      "description": "Research report: Funding and delivery assets in CCTP, 4 November 2026. The buyer vault is on X Layer Testnet (1952), funded with USDC 0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3. The merchant receives USDC 0x036CbD53842c5426634e7929541eC2318f3dCF7e on Base Sepolia (84532). A cross-chain invoice identifies the destination delivery token and chain. The funding token and delivery token are distinct contracts: canonical request token is the source asset; destinationToken is the delivery asset. CCTP V2 burns source USDC and mints destination USDC after Circle attestation; chain IDs 1952/84532 correspond to domains 37/6. This invoice text delivers the research report for a sourced CCTP brief. Testnet tokens have no monetary value. Sources: https://developers.circle.com/stablecoins/usdc-contract-addresses.md; https://developers.circle.com/cctp.md; https://intentguard-tapeout.vercel.app/api/v1/config",
+      "issuedAt": 1793764446,
+      "expiresAt": 1793771646
+    },
+    "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/9271fda42ff15a89a02a8bcab03b23ed"
+  },
+  "purchase": {
+    "id": "0xf05e13c7047973686da94f6667735e2b0da543938b722b78fd91569350804734",
+    "status": "REJECTED",
+    "input": {
+      "recipient": "0xe72e260811c6fbc27d1c350d92abaac89bbf803d",
+      "amount": "0.000001",
+      "purchaseDescription": "Research report: Distinct funding and delivery USDC contracts in X Layer-to-Base Sepolia CCTP.",
+      "justification": "The sourced research brief covers CCTP settlement. This merchant report documents the funding and delivery assets. The buyer is the X Layer vault, funded with source USDC on chain 1952. Merchant delivery is USDC on Base Sepolia 84532, so the invoice describes that destination token 0x036CbD53842c5426634e7929541eC2318f3dCF7e and chain. The canonical request contains the source token and a separate destinationToken. The report documents both roles and the Circle sources. This report purchase uses the card’s immutable Base Sepolia permission.",
+      "category": "Research reports",
+      "invoiceId": "9271fda42ff15a89a02a8bcab03b23ed",
+      "evidence": [
+        {
+          "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/9271fda42ff15a89a02a8bcab03b23ed"
+        }
+      ],
+      "destinationChainId": 84532
+    },
+    "idempotencyKey": "live-cctp-11dc0ab84d4819f5e05e801a-base-research-report",
+    "admission": {
+      "status": 202,
+      "id": "0xf05e13c7047973686da94f6667735e2b0da543938b722b78fd91569350804734"
+    },
+    "requestHash": "0x1a8b73981d62b1f77ae9d2f8af30943050f92ead44410066e8a0934da3b59021",
+    "evidenceHash": "0xb2fa6159eae6f000462eadde62ec3cd8eca5473e62aae3e2f38cc68457728636",
+    "guard": {
+      "allow": true,
+      "failures": [],
+      "txHash": "0x36e337343bfc4c961d63fb8a8f461d199b88de39971ba6f7bd64824bb76ee147"
+    },
+    "review": {
+      "decision": "REJECT",
+      "requestHash": "0x1a8b73981d62b1f77ae9d2f8af30943050f92ead44410066e8a0934da3b59021",
+      "policyHash": "0x28ac53b42aee011a20d993fcd6f71fbeda3800988ff3bc61d913ad2696e7b09c",
+      "evidenceHash": "0xb2fa6159eae6f000462eadde62ec3cd8eca5473e62aae3e2f38cc68457728636",
+      "criteria": [
+        {
+          "id": "mission",
+          "status": "PASS",
+          "reason": "The invoice and product description are for a research report, which is an allowed category, and the description states it supports a sourced CCTP research brief, matching the mission to purchase research reports for the assigned project.",
+          "sources": [
+            "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/9271fda42ff15a89a02a8bcab03b23ed"
+          ]
+        },
+        {
+          "id": "invoice",
+          "status": "FAIL",
+          "reason": "The approved merchant origin and recipient match, and the invoice amount matches the request amount. However, the invoice buyer matches the supplied card address rather than the required buyer vault referenced by policy criterion and task context, and no independent evidence establishes that this card address is the assigned buyer vault. The invoice token is the destination token, while the request token field is a different token, so the invoice does not match the exact requested token across the request fields.",
+          "sources": [
+            "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/9271fda42ff15a89a02a8bcab03b23ed"
+          ]
+        },
+        {
+          "id": "product",
+          "status": "PASS",
+          "reason": "The merchant evidence provides a clear product description for a research report about funding and delivery assets in X Layer-to-Base Sepolia CCTP, which is relevant to the stated research brief on CCTP settlement.",
+          "sources": [
+            "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/9271fda42ff15a89a02a8bcab03b23ed"
+          ]
+        }
+      ],
+      "reason": "REJECT: The purchase is mission-relevant and the product is an allowed research report, but the invoice criterion fails because the evidence does not verify that the invoice buyer is the required buyer vault, and the invoice token does not match the request token field exactly."
+    },
+    "reviewStage": {
+      "status": "COMPLETE",
+      "reason": "The finalized GenLayer decision is recorded."
+    },
+    "genLayerTxHash": "0x18f76c65f3fbd39fcaef428c4dc3ef8a494e80776aedd2343f58db8394e12b86",
+    "createdAt": 1793764449760,
+    "updatedAt": 1793764635287
+  },
+  "baselineBalances": {
+    "funded": "1.2",
+    "spent": "0",
+    "reserved": "0",
+    "available": "1.2",
+    "periodSpent": "0",
+    "periodReserved": "0"
+  },
+  "finalBalances": {
+    "funded": "1.2",
+    "spent": "0",
+    "reserved": "0",
+    "available": "1.2",
+    "periodSpent": "0",
+    "periodReserved": "0"
+  },
+  "elapsedMs": 185527,
+  "rejectedAttempts": [
+    {
+      "id": "0x87253376b1468dce0c4f61abc5edc030276ec51c6ae9761d635e6b0d3f9f119b",
+      "status": "REJECTED",
+      "input": {
+        "recipient": "0xe72e260811c6fbc27d1c350d92abaac89bbf803d",
+        "amount": "0.000001",
+        "purchaseDescription": "Research report: Native USDC testnet settlement routes for a sourced CCTP research brief.",
+        "justification": "Purchase the approved merchant’s sourced research report on native USDC addresses and CCTP burn-and-mint delivery. The report text is delivered in the public invoice and directly contributes to the research brief on X Layer-to-Base Sepolia payment routes. Settle this authorized report purchase on the permitted Base Sepolia destination.",
+        "category": "Research reports",
+        "invoiceId": "b4ce456ddfabddbca11d0026de7a320a",
+        "evidence": [
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/b4ce456ddfabddbca11d0026de7a320a"
+          }
+        ],
+        "destinationChainId": 84532
+      },
+      "idempotencyKey": "live-cctp-47f403a0f70a2c702c1442e6-base-research-report",
+      "admission": {
+        "status": 202,
+        "id": "0x87253376b1468dce0c4f61abc5edc030276ec51c6ae9761d635e6b0d3f9f119b"
+      },
+      "requestHash": "0x9c95e21d3be3cb576b12259d0d4d4f0010cb24e3b2e3725b5bca3827d857df2e",
+      "evidenceHash": "0x219d09c719ecfe8ac9e6d5b287a40b5ea8c02553573c30f7a2f05b0012121529",
+      "guard": {
+        "allow": true,
+        "failures": [],
+        "txHash": "0xd76413734095d62f6a1a961befbcd7a5070af9a2e1ebe35fd5d46b0c6136350c"
+      },
+      "review": {
+        "decision": "REJECT",
+        "requestHash": "0x9c95e21d3be3cb576b12259d0d4d4f0010cb24e3b2e3725b5bca3827d857df2e",
+        "policyHash": "0x28ac53b42aee011a20d993fcd6f71fbeda3800988ff3bc61d913ad2696e7b09c",
+        "evidenceHash": "0x219d09c719ecfe8ac9e6d5b287a40b5ea8c02553573c30f7a2f05b0012121529",
+        "criteria": [
+          {
+            "id": "mission",
+            "status": "PASS",
+            "reason": "The verified invoice describes the delivered product as a sourced research report and states it is for \"a brief on CCTP payment routes,\" which directly supports the mission to purchase research reports for the assigned project and task context to prepare a sourced research brief. The request category is also an allowed category: Research reports.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/b4ce456ddfabddbca11d0026de7a320a"
+            ]
+          },
+          {
+            "id": "invoice",
+            "status": "FAIL",
+            "reason": "The approved merchant and recipient match, and the verified invoice matches the buyer vault/card address (0xa101dd9d8e6205a3d490a1a4bad16a717748abce), destination token (0x036cbd53842c5426634e7929541ec2318f3dcf7e), destination chain (84532), and exact amount (0.000001). However, the request token field is 0xdec90b78111ba2fc6fc6d84d8b9ec159a2d4b9b3, while the verified invoice token is 0x036cbd53842c5426634e7929541ec2318f3dcf7e. Because the criterion requires the invoice to match the token and exact request details, this contradiction is a deterministic failure.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/b4ce456ddfabddbca11d0026de7a320a"
+            ]
+          },
+          {
+            "id": "product",
+            "status": "PASS",
+            "reason": "The verified invoice provides a clear product description: a research report titled \"Native USDC testnet settlement routes\" and explicitly states that the delivered research product is the sourced report text for a brief on CCTP payment routes. This is relevant to the stated research brief and fits the approved product category of Research reports.",
+            "sources": [
+              "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/b4ce456ddfabddbca11d0026de7a320a"
+            ]
+          }
+        ],
+        "reason": "REJECT: Criterion 'invoice' fails because the verified invoice token does not match the requested token field. Budget eligibility and small amount do not override this mismatch."
+      },
+      "reviewStage": {
+        "status": "COMPLETE",
+        "reason": "The finalized GenLayer decision is recorded."
+      },
+      "genLayerTxHash": "0xddcbeef212192601e5818462ee6872b48966a08018c95d549406a96b1f0ce424",
+      "createdAt": 1793763991486,
+      "updatedAt": 1793764145730,
+      "invoice": {
+        "invoice": {
+          "invoiceId": "b4ce456ddfabddbca11d0026de7a320a",
+          "buyer": "0xa101dd9d8e6205a3d490a1a4bad16a717748abce",
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "chainId": 84532,
+          "recipient": "0xe72e260811c6fbc27d1c350d92abaac89bbf803d",
+          "amount": "0.000001",
+          "description": "Research report: Native USDC testnet settlement routes, 4 November 2026. X Layer Testnet (1952) uses USDC 0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3; Base Sepolia (84532) uses USDC 0x036CbD53842c5426634e7929541eC2318f3dCF7e. CCTP V2 burns source USDC and mints native destination USDC after Circle attestation. These EVM chain IDs correspond to CCTP domains 37 and 6. An approval or source burn alone does not prove destination delivery; verify the destination mint receipt. Testnet tokens have no monetary value. The delivered research product is this sourced report text, for a brief on CCTP payment routes. Sources: https://developers.circle.com/stablecoins/usdc-contract-addresses.md; https://developers.circle.com/cctp.md; https://intentguard-tapeout.vercel.app/api/v1/config",
+          "issuedAt": 1793763886,
+          "expiresAt": 1793771086
+        },
+        "url": "https://intentguard-tapeout.vercel.app/api/v1/demo/invoices/b4ce456ddfabddbca11d0026de7a320a"
+      },
+      "researchReport": {
+        "title": "Native USDC testnet settlement routes",
+        "text": "Research report: Native USDC testnet settlement routes, 4 November 2026. X Layer Testnet (1952) uses USDC 0xDec90b78111Ba2fc6FC6d84d8B9ec159A2d4b9B3; Base Sepolia (84532) uses USDC 0x036CbD53842c5426634e7929541eC2318f3dCF7e. CCTP V2 burns source USDC and mints native destination USDC after Circle attestation. These EVM chain IDs correspond to CCTP domains 37 and 6. An approval or source burn alone does not prove destination delivery; verify the destination mint receipt. Testnet tokens have no monetary value. The delivered research product is this sourced report text, for a brief on CCTP payment routes. Sources: https://developers.circle.com/stablecoins/usdc-contract-addresses.md; https://developers.circle.com/cctp.md; https://intentguard-tapeout.vercel.app/api/v1/config",
+        "sha256": "603a055a256fde234b31ce311cc811460f7f4a4f601179e26292d7a09b5fee5d",
+        "sources": [
+          {
+            "url": "https://developers.circle.com/stablecoins/usdc-contract-addresses.md",
+            "readAt": "2026-11-04T03:44:44.805Z",
+            "sha256": "993ced64d29c9374d4494fdedfafa70bf9237d1d7d6be995ad18ed7de3009203"
+          },
+          {
+            "url": "https://developers.circle.com/cctp.md",
+            "readAt": "2026-11-04T03:44:44.870Z",
+            "sha256": "2cc4bf53ad571663b12915e9670bc803098627a3ce3b91965083018fee81d581"
+          },
+          {
+            "url": "https://intentguard-tapeout.vercel.app/api/v1/config",
+            "readAt": "2026-11-04T03:44:45.139Z",
+            "sha256": "a2155f8d76014e5453e0262c06e6e306d1b6a3f03cda982ca115c38a0068ea70"
+          }
+        ]
+      },
+      "reconciliation": {
+        "at": "2026-11-04T03:54:04.348Z",
+        "chainStatus": 3,
+        "reservationReleased": true,
+        "noSourceBurn": true,
+        "noDestinationPayment": true
+      },
+      "finalBalances": {
+        "funded": "1.2",
+        "spent": "0",
+        "reserved": "0",
+        "available": "1.2",
+        "periodSpent": "0",
+        "periodReserved": "0"
+      }
+    }
+  ],
+  "priorUnreachableMerchantAttempt": {
+    "id": "0x6a99b623a4c5ac03bdb0d5e762596f8222cdd0ceb4a0e356a8026c2b05a1853e",
+    "cardId": "0x8f6a2b5e38f176dd2a635c198f32b46172c4b3ce3bcf40043aca676f232ea89f",
+    "vault": "0xd4a87836bccccf6e2da4b12acdb89f56f7abcf48",
+    "name": "API access",
+    "settlement": {
+      "asset": "USDC",
+      "destinationChainIds": [
+        1952,
+        84532,
+        421614
+      ]
+    },
+    "input": {
+      "recipient": "0xdcE1AE1Deb32d990dFf06A0fcba435Ea9FAD39d9",
+      "amount": "0.000001",
+      "purchaseDescription": "API access for the approved integration, with merchant evidence at https://api.com.",
+      "justification": "Test the owner-approved API access purchase and CCTP settlement on Base Sepolia. Verify the merchant evidence before authorizing payment.",
+      "category": "API access",
+      "invoiceId": "cctp-api-access-9af490a24a03e0f8a3dfda56",
+      "evidence": [
+        {
+          "url": "https://api.com"
+        }
+      ],
+      "destinationChainId": 84532
+    },
+    "idempotencyKey": "live-cctp-9af490a24a03e0f8a3dfda56-base-api-access",
+    "admission": {
+      "status": 202,
+      "id": "0x6a99b623a4c5ac03bdb0d5e762596f8222cdd0ceb4a0e356a8026c2b05a1853e"
+    },
+    "status": "NEEDS_EVIDENCE",
+    "errorCode": "EVIDENCE_UNAVAILABLE",
+    "reviewStage": {
+      "status": "SKIPPED",
+      "reason": "The request ended before evidence review. No model decision was required."
+    },
+    "createdAt": 1793762072324,
+    "updatedAt": 1793762117019,
+    "evidenceNote": "User requested forming a purchase using this approved domain. No merchant invoice was supplied or fabricated; invoiceId is a test operation reference. Public HTTPS evidence at api.com could not be resolved during the local read-only preflight.",
+    "observedBalances": {
+      "funded": "1.2",
+      "spent": "0",
+      "reserved": "0",
+      "available": "1.2",
+      "periodSpent": "0",
+      "periodReserved": "0"
+    }
+  },
+  "nativeAudit": {
+    "path": "docs/audits/live-api-2026-11-04.json",
+    "sha256": "0be7073102128eda50827dc959d19bd40870cc4cbadaccabac8b9bf2ebc3b236"
+  }
+}
