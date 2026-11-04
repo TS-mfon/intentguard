@@ -1,4 +1,4 @@
-import {createPublicClient, createWalletClient, custom, defineChain, decodeEventLog, type Address, type Abi} from "viem";
+import {createPublicClient, createWalletClient, custom, defineChain, decodeEventLog, formatUnits, type Address, type Abi, type Hex} from "viem";
 import type {CardView, DraftView, Policy, RequestView, Settlement} from "@intentguard/shared";
 import exportedAbis from "../../../contracts/evm/abi.json";
 import {profileRoutes,sourceToken} from "../../../packages/shared/payment-profiles";
@@ -100,11 +100,32 @@ export async function login(address:Address){
   ownerToken={value:result.ownerSession,expiresAt:result.expiresAt!};
  }
 }
-export async function contractWrite(config:Config,address:string,abi:Abi,functionName:string,args:readonly unknown[],owner:string,onStatus:(status:string)=>void){
+export class WalletTransactionError extends Error{constructor(message:string,readonly transactionHash:Hex,readonly outcome:"REVERTED"|"PENDING"){super(message);}}
+const tokenBalanceAbi=[{type:"function",name:"balanceOf",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{type:"uint256"}]},{type:"function",name:"decimals",stateMutability:"view",inputs:[],outputs:[{type:"uint8"}]}] as const;
+export async function contractWrite(config:Config,address:string,abi:Abi,functionName:string,args:readonly unknown[],owner:string,onStatus:(status:string)=>void,options:{symbol?:string;onSubmitted?:(hash:Hex)=>void;transactionHash?:Hex}={}){
  if(!window.ethereum)throw Error("Reconnect your EVM wallet to continue.");const checked=validateConfig(config);if(!checked.configured)throw Error("This deployment is not ready for wallet transactions.");const chain=defineChain({id:config.chainId,name:config.networkName||(config.chainId===1952?"X Layer Testnet":config.chainId===196?"X Layer":"Configured network"),nativeCurrency:{name:"OKB",symbol:"OKB",decimals:18},rpcUrls:{default:{http:[config.rpcUrl||(config.chainId===1952?"https://testrpc.xlayer.tech":"https://rpc.xlayer.tech")]}}});
  const current=Number(BigInt(await window.ethereum.request({method:"eth_chainId"}) as string));if(current!==config.chainId){onStatus("Switch to "+chain.name+" in your wallet.");try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x"+config.chainId.toString(16)}]})}catch(e){if((e as {code?:number}).code===4902&&[196,1952].includes(config.chainId)){await window.ethereum.request({method:"wallet_addEthereumChain",params:[{chainId:"0x"+config.chainId.toString(16),chainName:chain.name,nativeCurrency:chain.nativeCurrency,rpcUrls:chain.rpcUrls.default.http,blockExplorerUrls:[config.explorerUrl]}]})}else throw e}}
  const accounts=await window.ethereum.request({method:"eth_accounts"}) as string[];if(accounts[0]?.toLowerCase()!==owner.toLowerCase())throw Error("Select the connected owner account in your wallet.");
- const client=createWalletClient({chain,transport:custom(window.ethereum)});const publicClient=createPublicClient({chain,transport:custom(window.ethereum)});onStatus("Confirm the transaction in your wallet.");const hash=await client.writeContract({address:address as Address,abi,functionName,args,account:owner as Address});onStatus("Transaction submitted. Waiting for confirmation.");const receipt=await publicClient.waitForTransactionReceipt({hash,confirmations:2});if(receipt.status!=="success")throw Error("The transaction reverted. No successful action was recorded.");onStatus("Transaction confirmed.");return receipt;
+ if(Number(BigInt(await window.ethereum.request({method:"eth_chainId"}) as string))!==config.chainId)throw Error("Switch to "+chain.name+" in your wallet before checking or submitting this transaction.");
+ const client=createWalletClient({chain,transport:custom(window.ethereum)}),publicClient=createPublicClient({chain,transport:custom(window.ethereum)});let hash=options.transactionHash;
+ try{
+  if(!hash){
+   if(functionName==="transfer"){
+    onStatus("Checking your token balance and transfer.");
+    const [balance,decimals]=await Promise.all([publicClient.readContract({address:address as Address,abi:tokenBalanceAbi,functionName:"balanceOf",args:[owner as Address]}),publicClient.readContract({address:address as Address,abi:tokenBalanceAbi,functionName:"decimals"})]);
+    const requested=args[1];if(typeof requested!=="bigint"||requested<=0n||decimals!==6)throw Error("The deposit must use a positive amount of this vault’s six-decimal token.");
+    if(balance<requested)throw Error("Your wallet has "+formatUnits(balance,decimals)+" "+(options.symbol||"tokens")+" on "+chain.name+", but this deposit needs "+formatUnits(requested,decimals)+". Obtain this token on this network before funding the vault.");
+    const simulation=await publicClient.simulateContract({address:address as Address,abi,functionName,args,account:owner as Address});if(simulation.result!==true)throw Error("The token refused this transfer. No transaction was submitted.");
+   }
+   const selected=await window.ethereum.request({method:"eth_accounts"}) as string[],network=Number(BigInt(await window.ethereum.request({method:"eth_chainId"}) as string));
+   if(selected[0]?.toLowerCase()!==owner.toLowerCase()||network!==config.chainId)throw Error("Your wallet account or network changed. Review the deposit before confirming.");
+   onStatus("Confirm the transaction in your wallet.");hash=await client.writeContract({address:address as Address,abi,functionName,args,account:owner as Address});
+  }
+  options.onSubmitted?.(hash);onStatus("Transaction submitted. Waiting for confirmation.");
+  let receipt;try{receipt=await publicClient.waitForTransactionReceipt({hash,confirmations:2});}catch{throw new WalletTransactionError("Confirmation is unavailable. Check the existing transaction before submitting another one.",hash,"PENDING");}
+  if(receipt.status!=="success")throw new WalletTransactionError("The transaction reverted. No successful action was recorded.",hash,"REVERTED");
+  onStatus("Transaction confirmed.");return receipt;
+ }catch(e){onStatus("");throw e;}
 }
 
 export const factoryAbi=exportedAbis.CardFactory as Abi;

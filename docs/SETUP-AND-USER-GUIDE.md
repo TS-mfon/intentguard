@@ -87,6 +87,8 @@ The application registers the confirmed activation and the worker initializes th
 
 Open **My agents**, select the agent and use **Fund vault**. Verify the card's vault address, payment chain and token contract before approving the transfer. Funding transfers the selected token directly from the owner wallet to that vault. The synthetic TEST-USDT card may offer **Mint test tokens**; that faucet does not mint native USDC.
 
+The app checks your balance of the exact deposit token and simulates the transfer before asking for confirmation. Native test OKB pays gas; it does not provide USDC. A USDC balance on another chain or at another token contract cannot fund this vault. If a transfer reverts, the app retains its transaction link and your amount for correction. If confirmation is unavailable, use **Check confirmation** to track the existing transaction; this control does not submit another transfer.
+
 Funding and lifetime spending permission are separate. A funded vault can still reject a purchase because of budget, validity, merchant or evidence restrictions.
 
 Once the reviewer is ready, use **Issue API key**. Copy the key into the agent's secret manager before closing the dialog; it is shown once. Save the card ID and vault address separately. A testnet key starts with `ig_`; a mainnet key uses `ig_mainnet_`. The key authorizes requests for its card and cannot withdraw funds or change policy.

@@ -65,6 +65,7 @@ try{
  window.testWalletMethods.push(method);if(method==="eth_sendTransaction")window.testWalletPayloads.push(params[0]);
  if(method==="eth_requestAccounts"&&window.testEmitGrant)window.testWalletListeners.accountsChanged?.([${JSON.stringify(owner)}]);
  if(["eth_accounts","eth_requestAccounts"].includes(method))return [${JSON.stringify(owner)}];
+ if(method==="eth_call"){const selector=params[0].data.slice(0,10);if(selector==="0x70a08231")return '0x'+(10000000n).toString(16).padStart(64,'0');if(selector==="0x313ce567")return '0x'+(6n).toString(16).padStart(64,'0');if(selector==="0xa9059cbb")return '0x'+(1n).toString(16).padStart(64,'0');}
  if(method==="eth_chainId")return "0x7a0";if(method==="personal_sign"&&window.testDeferSign)return new Promise(resolve=>window.resolveTestSignature=()=>resolve("0x"+"ab".repeat(65)));
  throw Object.assign(new Error("User rejected wallet request"),{code:4001});
  }}});
