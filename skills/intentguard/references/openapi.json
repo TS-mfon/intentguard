@@ -13248,6 +13248,17 @@
           "input": {
             "$ref": "#/components/schemas/DraftOriginalInput"
           },
+          "consensus": {
+            "type": "object",
+            "description": "Present when owner-reviewable terms were recovered from a successful leader return without validator agreement. App state FINALIZED means proposal processing is complete; it does not claim GenLayer consensus approval. Payment reviews and reviewer deployments still require successful finalized consensus.",
+            "properties": {
+              "status": {"type": "string", "enum": ["FINALIZED", "UNDETERMINED"]},
+              "result": {"type": "string"},
+              "source": {"const": "LEADER_RECEIPT"}
+            },
+            "required": ["status", "result", "source"],
+            "additionalProperties": false
+          },
           "policy": {
             "anyOf": [
               {

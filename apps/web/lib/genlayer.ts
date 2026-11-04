@@ -1,9 +1,10 @@
 import {readFile} from "node:fs/promises";
-import {createAccount,createClient,decodeInputData} from "genlayer-js";
+import {abi,createAccount,createClient,decodeInputData} from "genlayer-js";
 import {studionet} from "genlayer-js/chains";
 import {TransactionHashVariant,transactionsStatusNumberToName,executionResultNumberToName,transactionResultNumberToName,CalldataAddress,type CalldataEncodable,type GenLayerTransaction,type Hash as GLHash} from "genlayer-js/types";
 import {createPublicClient,http,decodeEventLog,keccak256,parseTransaction,toBytes,toHex,getAddress,type Abi,type Hex,type Address} from "viem";
 import {canonical,digest,policySchema,isSettlementV2,type DraftResult,type ReviewDecision} from "../../../packages/shared";
+import {parseStrictJson} from "../../../packages/shared/strict-json";
 import {configuration,STUDIONET_CHAIN_ID,STUDIONET_CONSENSUS} from "./config";
 import {assertSigningLease} from "./signing-lease";
 import {validateTransactionJournal} from "./transaction-profile";
@@ -62,19 +63,56 @@ export function normalizeStudioTransaction(tx:GenLayerTransaction,expectedHash?:
 
 export class PendingFinality extends Error {}
 export class GenLayerTerminalError extends Error {constructor(message:string,readonly diagnostic?:StudioExecutionDiagnostic){super(message);}}
-export function assertFinalized(tx:GenLayerTransaction,expected?:{target:string;method:string;args:unknown[];sender?:string}){
- const status=tx.statusName??transactionsStatusNumberToName[String(tx.status) as keyof typeof transactionsStatusNumberToName]??tx.status;
- if(status!=="FINALIZED"){if(["CANCELED","UNDETERMINED","VALIDATORS_TIMEOUT","LEADER_TIMEOUT"].includes(String(status)))throw new GenLayerTerminalError("GenLayer transaction failed: "+status);throw new PendingFinality("GenLayer consensus is not finalized");}
- const execution=tx.txExecutionResultName??executionResultNumberToName[String(tx.txExecutionResult) as keyof typeof executionResultNumberToName];
- if(execution!=="FINISHED_WITH_RETURN"){const diagnostic=studioExecutionDiagnostic(tx);throw new GenLayerTerminalError(diagnostic?.message??"GenLayer VM execution was not successful",diagnostic);}
- const result=tx.resultName??transactionResultNumberToName[String(tx.result) as keyof typeof transactionResultNumberToName];if(!["AGREE","MAJORITY_AGREE","SUCCESS"].includes(String(result)))throw new GenLayerTerminalError("GenLayer consensus did not approve execution");if(tx.txDataDecoded?.leaderOnly!==false)throw Error("GenLayer validator consensus is required");
- if(expected){
+type ExpectedCall={target:string;method:string;args:unknown[];sender?:string};
+function transactionStatus(tx:GenLayerTransaction){return tx.statusName??transactionsStatusNumberToName[String(tx.status) as keyof typeof transactionsStatusNumberToName]??tx.status;}
+function transactionResult(tx:GenLayerTransaction){return tx.resultName??transactionResultNumberToName[String(tx.result) as keyof typeof transactionResultNumberToName];}
+function assertCommittedCall(tx:GenLayerTransaction,expected:ExpectedCall){
  if((tx.recipient??tx.to_address)?.toLowerCase()!==expected.target.toLowerCase())throw Error("GenLayer transaction target mismatch");
  if(expected.sender&&(tx.sender??tx.from_address)?.toLowerCase()!==expected.sender.toLowerCase())throw Error("GenLayer transaction sender mismatch");
  const decoded=tx.txDataDecoded;if(!decoded||decoded.type!=="call"||!("callData" in decoded))throw Error("GenLayer decoded call is missing");
- const raw=decoded.callData;const call=normalizedCalldata(raw) as {method?:string;args?:unknown[]};
+ const call=normalizedCalldata(decoded.callData) as {method?:string;args?:unknown[]};
  if(!call||call.method!==expected.method||canonical(call.args??[])!==canonical(expected.args))throw Error("GenLayer transaction calldata mismatch");
- }
+}
+export function assertFinalized(tx:GenLayerTransaction,expected?:{target:string;method:string;args:unknown[];sender?:string}){
+ const status=transactionStatus(tx);
+ if(status!=="FINALIZED"){if(["CANCELED","UNDETERMINED","VALIDATORS_TIMEOUT","LEADER_TIMEOUT"].includes(String(status)))throw new GenLayerTerminalError("GenLayer transaction failed: "+status);throw new PendingFinality("GenLayer consensus is not finalized");}
+ const execution=tx.txExecutionResultName??executionResultNumberToName[String(tx.txExecutionResult) as keyof typeof executionResultNumberToName];
+ if(execution!=="FINISHED_WITH_RETURN"){const diagnostic=studioExecutionDiagnostic(tx);throw new GenLayerTerminalError(diagnostic?.message??"GenLayer VM execution was not successful",diagnostic);}
+ const result=transactionResult(tx);if(!["AGREE","MAJORITY_AGREE","SUCCESS"].includes(String(result)))throw new GenLayerTerminalError("GenLayer consensus did not approve execution");if(tx.txDataDecoded?.leaderOnly!==false)throw Error("GenLayer validator consensus is required");
+ if(expected)assertCommittedCall(tx,expected);
+}
+function parsedDraftResult(raw:unknown):DraftResult{
+ let value:DraftResult;
+ try{if(typeof raw!=="string")throw Error();value=parseStrictJson(raw) as DraftResult;}catch{throw new GenLayerTerminalError("Invalid draft result JSON");}
+ if(!value||typeof value!=="object"||Object.keys(value).sort().join(",")!=="interpretation,policy,questions,status"||!["PROPOSED","NEEDS_CLARIFICATION"].includes(value.status)||!Array.isArray(value.questions)||value.questions.length>12||value.questions.some(q=>typeof q!=="string"||!q.trim()||q.length>2000)||typeof value.interpretation!=="string"||value.interpretation.length>6000)throw new GenLayerTerminalError("Invalid draft result");
+ if(value.status==="PROPOSED"){const policy=policySchema.safeParse(value.policy);if(!policy.success)throw new GenLayerTerminalError("Invalid draft policy");value.policy=policy.data;if(value.questions.length)throw new GenLayerTerminalError("Proposed policy must not contain unanswered questions");}
+ else if(value.policy!==null||!value.questions.length)throw new GenLayerTerminalError("Clarification must contain questions and cannot authorize policy");
+ return value;
+}
+function preservesGuidance(guidance:unknown,proposed:unknown):boolean{
+ if(guidance&&typeof guidance==="object"&&!Array.isArray(guidance))return !!proposed&&typeof proposed==="object"&&!Array.isArray(proposed)&&Object.entries(guidance).every(([key,value])=>Object.hasOwn(proposed,key)&&preservesGuidance(value,(proposed as Record<string,unknown>)[key]));
+ return canonical(guidance)===canonical(proposed);
+}
+// A proposal is an owner-reviewed suggestion. Recover only a successful,
+// committed interpreter return; payment decisions still use assertFinalized.
+export function undeterminedProposal(tx:GenLayerTransaction,expected:ExpectedCall,input:Draft["input"]):DraftResult{
+ try{
+ const status=transactionStatus(tx),result=transactionResult(tx);
+ if(status!=="UNDETERMINED"&&!(status==="FINALIZED"&&result==="MAJORITY_DISAGREE"))throw new GenLayerTerminalError("Transaction has no recoverable undetermined proposal");
+ if(expected.method!=="propose"||!expected.sender||tx.txDataDecoded?.leaderOnly!==false)throw Error("Only committed permission proposals can be recovered");
+ assertCommittedCall(tx,expected);
+ const leader=finalStudioLeader(tx),payload=leader?.result?.payload as {raw?:unknown;readable?:unknown}|undefined;
+ if(leader?.mode!=="leader"||leader.execution_result!=="SUCCESS"||leader.result?.status!=="return"||!payload||typeof payload!=="object")throw new GenLayerTerminalError("Undetermined proposal execution did not return valid terms",studioExecutionDiagnostic(tx));
+ const bytes=payload.raw;
+ if(!Array.isArray(bytes)||!bytes.length||bytes.length>32768||bytes.some(b=>!Number.isInteger(b)||b<0||b>255))throw new GenLayerTerminalError("Undetermined proposal return bytes are invalid");
+ const returned=abi.calldata.decode(Uint8Array.from(bytes));
+ if(typeof returned!=="string")throw new GenLayerTerminalError("Undetermined proposal did not return a policy result");
+ if(canonical(Array.from(abi.calldata.encode(returned)))!==canonical(bytes))throw new GenLayerTerminalError("Proposal return encoding is invalid");
+ if(payload.readable!==undefined&&(typeof payload.readable!=="string"||payload.readable.length>65536||parseStrictJson(payload.readable)!==returned))throw new GenLayerTerminalError("Proposal receipt return representations disagree");
+ const proposal=parsedDraftResult(returned);
+ if(proposal.status==="PROPOSED"&&input.guidance&&!preservesGuidance(input.guidance,proposal.policy))throw new GenLayerTerminalError("Proposal changed explicit owner guidance");
+ return {...proposal,consensus:{status:status as "FINALIZED"|"UNDETERMINED",result:String(result??"UNDETERMINED"),source:"LEADER_RECEIPT"}};
+ }catch(e){if(e instanceof GenLayerTerminalError)throw e;throw new GenLayerTerminalError("Undetermined proposal receipt is invalid");}
 }
 export interface GenLayerPort{
  propose(draft:Draft):Promise<string>;
@@ -157,11 +195,11 @@ export class GenLayer implements GenLayerPort{
    return c.writeContract({address:target as Address,functionName:"propose",args:[d._id,canonical(d.input)],value:0n});
   },{table:"drafts",id:d._id,token:d.leaseToken});
  }
- async draft(d:Draft){if(!d.genLayerTxHash)throw Error("Missing draft transaction");const target=await this.draftInterpreter(d);const tx=await this.client.getTransaction({hash:d.genLayerTxHash as GLHash});assertFinalized(tx,{target,method:"propose",args:[d._id,canonical(d.input)],sender:this.account().address});
+ async draft(d:Draft){if(!d.genLayerTxHash)throw Error("Missing draft transaction");const target=await this.draftInterpreter(d);const tx=await this.client.getTransaction({hash:d.genLayerTxHash as GLHash}),expected={target,method:"propose",args:[d._id,canonical(d.input)],sender:this.account().address};
+ if(transactionStatus(tx)==="UNDETERMINED"||(transactionStatus(tx)==="FINALIZED"&&transactionResult(tx)==="MAJORITY_DISAGREE"))return undeterminedProposal(tx,expected,d.input);
+ assertFinalized(tx,expected);
  if(await this.read(target,"get_draft_input_hash",[d._id])!==d.inputHash)throw Error("Draft input commitment mismatch");
- const raw=await this.read(target,"get_draft",[d._id]);const result=JSON.parse(String(raw)) as DraftResult;
- if(!["PROPOSED","NEEDS_CLARIFICATION"].includes(result.status)||!Array.isArray(result.questions)||typeof result.interpretation!=="string")throw Error("Invalid draft result");
- if(result.status==="PROPOSED")result.policy=policySchema.parse(result.policy);else if(result.policy!==null)throw Error("Clarification must not authorize policy");return result;}
+ const raw=await this.read(target,"get_draft",[d._id]);return parsedDraftResult(raw);}
  reviewerArgs(c:Card){assertCardEnvironment(c);const args=[genLayerAddress(this.account().address),canonical(c.policy),c.policyHash,Number(c.chainId??this.cfg.chainId),String(c.token??this.cfg.token).toLowerCase(),...(c.settlement?[canonical(c.settlement)]:[])];if(c.reviewerVersion===4){if(!c.settlement||!isSettlementV2(c.settlement))throw Error("V4 reviewer requires explicit settlement permissions");args.push(canonical({version:4,paymentEnvironment:c.settlement.paymentEnvironment,reviewEnvironment:"testnet"}));}return args;}
  async reviewerSource(version:number){if(![1,2,3,4].includes(version))throw Error("Unsupported reviewer source version");return readFile(new URL(version===4?"../../../contracts/genlayer/versions/purchase_reviewer_v4.py":version===1?"../../../contracts/genlayer/versions/purchase_reviewer_v1.py":version===3?"../../../contracts/genlayer/versions/purchase_reviewer_v3.py":"../../../contracts/genlayer/purchase_reviewer.py",import.meta.url));}
  async deployReviewer(c:Card){const source=await this.reviewerSource(Number(c.reviewerVersion??2));return this.send("reviewer:"+c._id+(c.reviewerAttempt?":attempt:"+Number(c.reviewerAttempt):""),client=>client.deployContract({code:source,args:this.reviewerArgs(c)}),{table:"cards",id:c._id,token:c.leaseToken})}

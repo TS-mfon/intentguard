@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {abi} from "genlayer-js";
 import {TransactionHashVariant} from "genlayer-js/types";
 import {toHex,toRlp} from "viem";
-import {assertFinalized,GenLayer,GenLayerTerminalError,normalizeStudioTransaction,studioExecutionDiagnostic} from "../apps/web/lib/genlayer";
+import {assertFinalized,GenLayer,GenLayerTerminalError,PendingFinality,normalizeStudioTransaction,studioExecutionDiagnostic,undeterminedProposal} from "../apps/web/lib/genlayer";
 import {MemoryStore} from "../apps/web/lib/store";
 import type {Draft} from "../apps/web/lib/models";
 import {inspectSetupTransaction} from "../scripts/studionet-setup-inspect";
@@ -18,6 +18,41 @@ function fixture(receipts:unknown[],changes:Record<string,unknown>={}){
  return {hash,statusName:"FINALIZED",status:7,result_name:"MAJORITY_DISAGREE",sender,recipient:target,created_at:"2026-10-30T05:10:16Z",tx_data:toRlp([toHex(abi.calldata.encode({method:"propose",args})),"0x"]).slice(2),consensus_data:{leader_receipt:receipts},...changes};
 }
 const normalize=(raw:ReturnType<typeof fixture>)=>normalizeStudioTransaction(raw as never,hash);
+const proposed={status:"PROPOSED",policy,questions:[],interpretation:"Exact owner terms."};
+function returned(value:unknown=proposed){const text=typeof value==="string"?value:canonical(value);return {...success,result:{status:"return",payload:{raw:Array.from(abi.calldata.encode(text)),readable:JSON.stringify(text)}}};}
+const expected={target,method:"propose",args,sender};
+
+test("undetermined proposal returns preserve exact owner terms while payment finality stays strict",async()=>{
+ for(const statusName of ["UNDETERMINED","FINALIZED"]){
+  const tx=normalize(fixture([error("superseded"),returned(),idle],{statusName}));
+  const result=undeterminedProposal(tx,expected,input);assert.deepEqual(result.policy,policy);assert.deepEqual(result.consensus,{status:statusName,result:"MAJORITY_DISAGREE",source:"LEADER_RECEIPT"});
+  assert.throws(()=>assertFinalized(tx,expected),GenLayerTerminalError);
+  const t=await pinnedDraft();t.gl.client.getTransaction=async()=>tx;assert.deepEqual(await t.gl.draft(t.d),result);assert.equal(t.reads.length,0,"Rolled-back storage cannot supply this proposal");
+ }
+});
+test("undetermined clarification never supplies a policy and partial guidance remains exact",()=>{
+ const clarification={status:"NEEDS_CLARIFICATION",policy:null,questions:["Choose a budget period."],interpretation:"Ambiguous prose."};
+ assert.deepEqual(undeterminedProposal(normalize(fixture([returned(clarification)])),expected,input).policy,null);
+ const tx=normalize(fixture([returned()]));
+ assert.deepEqual(undeterminedProposal(tx,expected,{description:policy.mission,guidance:{financial:{totalBudget:policy.financial.totalBudget}}}).policy,policy);
+ for(const guidance of [{financial:{totalBudget:"999"}},{unknownField:"cannot be dropped"}])assert.throws(()=>undeterminedProposal(tx,expected,{description:policy.mission,guidance}),GenLayerTerminalError);
+});
+test("undetermined recovery rejects wrong identity, call, leader or return bytes as terminal",()=>{
+ const invalid=[fixture([returned()],{sender:target}),fixture([returned()],{recipient:sender}),fixture([returned()],{tx_data:toRlp([toHex(abi.calldata.encode({method:"review",args})),"0x"]).slice(2)}),fixture([returned(),error("Invalid draft result fields"),idle]),fixture([idle]),fixture([{...returned(),mode:undefined}]),fixture([success])];
+ for(const raw of invalid)assert.throws(()=>undeterminedProposal(normalize(raw),expected,input),GenLayerTerminalError);
+ for(const raw of [[],[256],[-1],[1.5],[0],Array(32769).fill(1),[...returned().result.payload.raw,0]]){
+  const leader=returned();leader.result.payload.raw=raw;
+  assert.throws(()=>undeterminedProposal(normalize(fixture([leader])),expected,input),GenLayerTerminalError);
+ }
+ const inconsistent=returned();inconsistent.result.payload.readable=JSON.stringify("different terms");assert.throws(()=>undeterminedProposal(normalize(fixture([inconsistent])),expected,input),GenLayerTerminalError);
+});
+test("malformed and changed undetermined terms cannot remain retryable or activate",()=>{
+ const bad=["not JSON",'{"status":"PROPOSED","status":"NEEDS_CLARIFICATION"}',{...proposed,extra:true},{...proposed,policy:{...policy,financial:{...policy.financial,totalBudget:"999"}}},{...proposed,policy:{...policy,financial:{...policy.financial,totalBudget:100}}},{...proposed,questions:["Unanswered"]},{status:"NEEDS_CLARIFICATION",policy,questions:["Clarify"],interpretation:"Question"}];
+ for(const value of bad)assert.throws(()=>undeterminedProposal(normalize(fixture([returned(value)])),expected,input),GenLayerTerminalError);
+});
+test("pending proposals stay pending until consensus processing has ended",async()=>{
+ for(const statusName of ["PENDING","ACCEPTED","COMMITTING","REVEALING"]){const t=await pinnedDraft();t.gl.client.getTransaction=async()=>normalize(fixture([returned()],{statusName}));await assert.rejects(t.gl.draft(t.d),PendingFinality);assert.equal(t.reads.length,0);}
+});
 
 test("persisted lowercase Studio contract authority can read its canonical finalized identifier",async()=>{
  const interpreter="0x4a96E2dFCa2cae0f77cC7Dcc1B5e50a865F0437f",gl=new GenLayer(new MemoryStore());gl.identity=async()=>{};

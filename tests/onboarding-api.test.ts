@@ -79,3 +79,11 @@ test("owner gallery supplies actual PAID-only usage without querying every publi
  assert.equal(cards.length,1);assert.equal(cards[0].usage.fundsMoved,"1.25");assert.equal(cards[0].usage.requestCount,4);assert.equal(cards[0].usage.paidCount,1);assert.equal(cards[0].usage.activeCount,2);assert.equal(cards[0].usage.chainId,1952);assert.ok(cards[0].usage.asOf<=Date.now());assert.equal(calls,1);
  await f.store.patch("cards",card._id,{chainId:196,paymentEnvironment:"mainnet"});assert.equal((await f.call("/owner/cards")).status,409);
 }));
+
+test("recovered proposal discloses actual consensus and requires completed proposed terms for activation",()=>fixture(async f=>{
+ const id=digest("undetermined-proposal"),consensus={status:"UNDETERMINED",result:"MAJORITY_DISAGREE",source:"LEADER_RECEIPT"};
+ await f.store.create("drafts",{_id:id,owner,state:"FINALIZED",input:{description:policy.mission,guidance:policy},result:{status:"PROPOSED",policy,questions:[],interpretation:"Exact terms",consensus}});
+ const response=await f.call("/owner/drafts/"+id);assert.equal(response.status,200);const result=await response.json();assert.deepEqual(result.consensus,consensus);assert.deepEqual(result.policy,policy);assert.ok(result.activation);
+ for(const state of ["AWAITING_FINALITY","FAILED"]){await f.store.patch("drafts",id,{state});assert.equal((await (await f.call("/owner/drafts/"+id)).json()).activation,undefined);}
+ await f.store.patch("drafts",id,{state:"FINALIZED",result:{status:"NEEDS_CLARIFICATION",policy:null,questions:["Clarify terms"],interpretation:"Clarification",consensus}});assert.equal((await (await f.call("/owner/drafts/"+id)).json()).activation,undefined);
+}));

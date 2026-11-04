@@ -75,7 +75,9 @@ Choose only assets and routes available in the live configuration. Native testne
 
 Submit **Review policy**. GenLayer processes the saved draft asynchronously. Save its draft ID or bookmark `/agent-setup?draftId=<draft-id>` so you can return after closing the page.
 
-Wait for a successfully finalized proposal with state `PROPOSED`. If clarification is requested, edit the inputs and resubmit. If a proposal fails, preserve its transaction link; the authenticated draft retains the original inputs for recovery.
+Wait for the proposal result. **Edit inputs**, **My agents** and setup mode switches stay disabled while processing, including after a reload or network interruption. Keep the same proposal link to resume waiting.
+
+A valid `PROPOSED` result can be ready for review even when GenLayer reports `UNDETERMINED` or finalized validator disagreement. The app uses the successful leader's returned terms, verifies the original input and exact structured guidance, and displays the missing consensus before activation. Review the full permission and explicitly accept it. This recovery does not submit another proposal transaction. If clarification is requested, edit the inputs and resubmit. If execution returned no valid terms, preserve its transaction link; the authenticated draft retains the original inputs for recovery. Payment evidence reviews and reviewer initialization still require successful finalized consensus.
 
 Open **Read the full permission**. Check the asset, networks, limits, merchants, evidence requirements and criteria. Confirm that you approve those exact terms, then select **Activate agent** and approve the factory transaction in your wallet on the payment source chain. Save the transaction hash and vault address. If the page loses connectivity after confirmation, reconcile that transaction before attempting another activation.
 

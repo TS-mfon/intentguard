@@ -96,6 +96,8 @@ Create agent includes editable **Research assistant**, **API access** and **Prot
 
 The supplied failed Studionet proposals showed generated-output faults, including altered guided fields and invalid generated decimals, rather than proved invalid user decimal input. A versioned interpreter repair preserves complete guided terms and keeps validator checks. Failed owner drafts return their original authenticated input for editing and resubmission; preserve old transactions and activate only reviewed FINALIZED/PROPOSED terms. See [the receipt-grounded incident report](docs/production/STUDIONET-SETUP-INCIDENT.md).
 
+Valid proposal terms returned by a successful leader can also be used after `UNDETERMINED` or finalized validator disagreement. The app verifies the existing receipt and unchanged structured owner guidance, discloses the consensus result, and requires full owner review before activation. **Edit inputs** and **My agents** stay disabled while proposal processing is pending. Payment reviews and reviewer deployments still require successful finalized consensus.
+
 ## Integrate with the source SDK
 
 Node24 and pnpm11.9.0 are the locked toolchain. The SDK is unpublished source in this checkout; it needs no wallet, MongoDB or server dependency. Import `packages/sdk/index.ts` with your TypeScript tooling, or use the browser-safe `ProtocolClient` from `packages/sdk/client.mjs`. Vendoring the entire `packages/sdk` directory retains its types, identity pins and guide.

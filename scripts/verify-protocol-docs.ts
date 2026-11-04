@@ -73,6 +73,10 @@ assert.equal(guide.mcp.ownerAuthority, false); assert.equal(guide.mcp.merchantAu
 
 const valid = {...input, amount: "1.000001"};
 conforms("Policy", card.policy); assert.equal(policySchema.safeParse(card.policy).success, true);
+const recoveredDraft={id:digest("recovered-proposal"),state:"FINALIZED",status:"PROPOSED",policy:card.policy,questions:[],interpretation:"Owner-reviewable terms",consensus:{status:"UNDETERMINED",result:"MAJORITY_DISAGREE",source:"LEADER_RECEIPT"}};
+conforms("DraftView",recoveredDraft);
+refuses("DraftView",{...recoveredDraft,consensus:{...recoveredDraft.consensus,status:"ACCEPTED"}});
+refuses("DraftView",{...recoveredDraft,consensus:{...recoveredDraft.consensus,source:"STORAGE"}});
 for (const amount of ["1", "1.000001", "0.000001", "18446744073709.551615", "18446744073709.55161", "18446744073708.999999"]) {
   const payment = {...valid, amount}; conforms("PaymentInput", payment); assert.equal(paymentSchema.safeParse(payment).success, true); validatePayment(payment);
 }

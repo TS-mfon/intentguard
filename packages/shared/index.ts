@@ -35,7 +35,8 @@ export function isSettlementV2(s:Settlement):s is SettlementV2{return "version" 
 export const paymentSchema=z.object({destinationChainId:z.number().int().positive().optional(),recipient:address,amount,purchaseDescription:z.string().min(3).max(2000),justification:z.string().min(3).max(6000),category:z.string().min(1).max(200),invoiceId:z.string().min(1).max(200),evidence:z.array(z.object({url:origin,sha256:z.string().regex(/^(0x)?[0-9a-fA-F]{64}$/).optional()}).strict()).min(1).max(8)}).strict();
 export type PaymentInput=z.infer<typeof paymentSchema>;
 export type ReviewDecision={decision:"APPROVE"|"REJECT"|"NEEDS_EVIDENCE";requestHash:string;policyHash:string;evidenceHash:string;criteria:{id:string;status:"PASS"|"FAIL"|"INSUFFICIENT";reason:string;sources:string[]}[];reason:string};
-export type DraftResult={status:"PROPOSED"|"NEEDS_CLARIFICATION";policy:Policy|null;questions:string[];interpretation:string};
+export type ProposalConsensus={status:"FINALIZED"|"UNDETERMINED";result:string;source:"LEADER_RECEIPT"};
+export type DraftResult={status:"PROPOSED"|"NEEDS_CLARIFICATION";policy:Policy|null;questions:string[];interpretation:string;consensus?:ProposalConsensus};
 export type DraftView=DraftResult&{id:string;state:string;genLayerTxHash?:string;error?:string;diagnosticCode?:string;settlement?:Settlement};
 export type Snapshot={url:string;sha256:string;content:string;fetchedAt:number};
 export type RequestStatus="QUEUED"|"RESERVED"|"REVIEWING"|"AWAITING_FINALITY"|"APPROVED"|"PAID"|"BLOCKED"|"REJECTED"|"NEEDS_EVIDENCE"|"EXPIRED"|"CANCELLED"|"RETRYING"|"BRIDGING"|"AWAITING_ATTESTATION"|"MINTING";
