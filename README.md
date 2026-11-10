@@ -8,6 +8,40 @@ The public verified records are **testnet**: X Layer 1952, native USDC delivery 
 
 Only payment status **PAID** confirms recipient delivery. HTTP202 admits an operation; APPROVED, a CCTP burn, an attestation and a submitted mint remain pending.
 
+## TapeOut ecosystem fit and submission details
+
+IntentGuard fits the **app, online service and developer-tool** directions: it lets owners delegate recurring digital-service purchases to agents with enforceable spending limits and verifiable receipts. Its spending-policy circuit also supports a commercial use case for TapeOut: evaluating numerical payment permission inside an X Layer vault before funds can move.
+
+**Access:** [Web app](https://intentguard-tapeout.vercel.app) · [Public explorer, no wallet required](https://intentguard-tapeout.vercel.app/explorer) · [Create agent](https://intentguard-tapeout.vercel.app/agent-setup). Developers can integrate through the [source SDK](packages/sdk), [MCP server](packages/mcp) and [OpenAPI specification](docs/openapi.json).
+
+### Target users and how to reach them
+
+The initial users are research and operations teams whose agents repeatedly buy datasets, API access or other digital services. This includes Web2 teams adding paid services to automated workflows and Web3 teams already paying service providers in stablecoins. The owner defines and funds the mandate; the agent requests purchases; the team reconciles the resulting receipts. The current payment flow requires an owner wallet and stablecoins.
+
+The proposed distribution channels are SDK/MCP integrations, open-source agent-framework communities and direct recruitment of teams with an existing paid-service workflow. The [researched outreach plan](docs/production/PILOT-OUTREACH.md) identifies Olas/Valory, Questflow and elizaOS builders as prospective interview contacts. These are recruitment targets; no partnership or native integration is claimed. The initial validation plan is eight interviews followed by two fourteen-day pilots. No outreach has been sent and no interviews or pilots have started.
+
+### Proposed revenue and recurring value
+
+The pricing hypothesis is **USD 49 per team per month for 500 payments**, with a possible **10 basis point (0.1%) fee on settled payments** after demand is validated. Subscription billing and the settlement fee are not implemented; the current service charges no protocol fee. [Commercial preparation](docs/COMMERCIAL.md) records the cost assumptions and pilot protocol.
+
+Users would pay for bounded agent spending, fewer individual manual approvals and easier payment reconciliation. Continued use would come from recurring API/data purchases under an owner-approved mandate, reusable agent integrations and a persistent receipt history. These benefits and willingness to pay remain hypotheses: there are no paying customers or measured retention or time-saving results. Pilots will test repeated purchases across at least three distinct days, complete reconciliation and an explicit decision to continue at the quoted price.
+
+### TapeOut features and circuit submission identifiers
+
+The deployed testnet integration uses TapeOut's **ICPU interface and unchanged NetlistVM** to execute IntentGuard's NAND spending-policy circuit on X Layer. Vaults call `eval(circuitId, inputs)` at reservation and settlement to check per-payment, lifetime and period budgets, validity, recipient, asset and enabled state. Each vault pins the processor, implementation and netlist hash. X Layer contracts and payment receipts provide the accounting and delivery evidence shown in the explorer. GenLayer supplies the separate semantic evidence review.
+
+| Circuit submission field | Recorded deployment |
+|---|---|
+| Network | X Layer Testnet, chain ID **1952** |
+| Processor contract address | [`0xa34d101011d4dbe18375ff2e7591b646e22c2ff3`](https://web3.okx.com/explorer/x-layer-testnet/address/0xa34d101011d4dbe18375ff2e7591b646e22c2ff3) |
+| Circuit ID | **1**, scoped to the testnet adapter above |
+| Processor type | `TESTNET_ADAPTER_UNMODIFIED_TAPEOUT_NETLIST_VM` |
+| Circuit | 1,766 NAND gates; 451 input bits; 8 output bits; no state |
+| Netlist SHA-256 | `0x280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761` |
+| Evidence and source | [Deployment record](docs/deployments/testnet.json), [independent contract/receipt verification](docs/audits/cctp-independent.json), [circuit source and artifacts](circuits/README.md), [TapeOut source provenance](contracts/evm/src/vendor/README.md) |
+
+**Remaining eligibility gap:** the recorded processor is a testnet adapter, with no verified official TapeOut CPU/circuit registry deployment. The website is hosted on Vercel; X Layer DeWEB publication is still preparation work. The supplied conditions do not specify whether this adapter qualifies as TapeOut ecosystem use, so full eligibility is not yet established. Organizer acceptance of the existing integration, or a verified official TapeOut circuit deployment on X Layer or X Layer DeWEB publication, would resolve this gap. Official mainnet circuit metadata remains `NOT_DEPLOYED`; the testnet circuit ID above must not be presented as an official mainnet registry ID. See the [recorded release limits](docs/deployments/cctp-release.json), [deployment workflow](docs/production/MAINNET-DEPLOYMENT.md) and [DeWEB preparation](docs/hosting/README.md).
+
 ## Latest live API verification
 
 On **4 November 2026**, the Protocol Revenue Research agent completed a real **0.000001 USDC** payment on X Layer Testnet after a finalized GenLayer approval. The receipt proves one exact USDC transfer; replaying the same request returned the original operation. **Four purchase scenarios and ten API checks passed**, including policy-bypass rejection, payment-limit denial, wrong-buyer evidence, authentication and idempotency.
