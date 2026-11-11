@@ -61,6 +61,7 @@ jobs:
       APP_URL: ${{ vars.APP_URL }}
       INTENTGUARD_RELEASE_ID: ${{ vars.INTENTGUARD_RELEASE_ID }}
       INTENTGUARD_VERIFIED_MANIFEST: ${{ vars.INTENTGUARD_VERIFIED_MANIFEST }}
+      INTENTGUARD_VERIFIED_MANIFEST_JSON: ${{ vars.INTENTGUARD_VERIFIED_MANIFEST_JSON }}
       INTENTGUARD_VERIFIED_MANIFEST_SHA256: ${{ vars.INTENTGUARD_VERIFIED_MANIFEST_SHA256 }}
       GENLAYER_CONSENSUS_ADDRESS: ${{ vars.GENLAYER_CONSENSUS_ADDRESS }}
       BASE_RPC_URL: ${{ vars.BASE_RPC_URL }}
@@ -84,8 +85,12 @@ jobs:
             echo "Only the exact approved mainnet source commit can execute."
             exit 1
           fi
-          if [[ "$MONGODB_DB" != "intentguard_mainnet" || -z "$APP_URL" || -z "$INTENTGUARD_RELEASE_ID" || -z "$INTENTGUARD_VERIFIED_MANIFEST" || ! "$INTENTGUARD_VERIFIED_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ || -z "$GENLAYER_CONSENSUS_ADDRESS" || ! "$GENLAYER_GENESIS_HASH" =~ ^0x[0-9a-f]{64}$ ]]; then
+          if [[ "$MONGODB_DB" != "intentguard_mainnet" || -z "$APP_URL" || -z "$INTENTGUARD_RELEASE_ID" || ! "$INTENTGUARD_VERIFIED_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ || -z "$GENLAYER_CONSENSUS_ADDRESS" || ! "$GENLAYER_GENESIS_HASH" =~ ^0x[0-9a-f]{64}$ ]]; then
             echo "Mainnet database, origin, release identity and verified deployment manifest are required."
+            exit 1
+          fi
+          if [[ -z "$INTENTGUARD_VERIFIED_MANIFEST" && -z "$INTENTGUARD_VERIFIED_MANIFEST_JSON" ]] || [[ -n "$INTENTGUARD_VERIFIED_MANIFEST" && -n "$INTENTGUARD_VERIFIED_MANIFEST_JSON" ]]; then
+            echo "Exactly one hash-pinned deployment manifest source is required."
             exit 1
           fi
           if ! [[ "$WORKER_RUN_SECONDS" =~ ^[0-9]{1,3}$ ]] || (( 10#$WORKER_RUN_SECONDS < 10 || 10#$WORKER_RUN_SECONDS > 240 )); then

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "kind": "verified-mainnet-payment-studionet-interpreter",
+  "paymentEnvironment": "mainnet",
+  "paymentChainId": 196,
+  "reviewEnvironment": "testnet",
+  "reviewChainId": 61999,
+  "sourceCommit": "422e7bd95a03e9b0e3af4867b5c6c92ef9472cc7",
+  "sourceFile": "contracts/genlayer/versions/permission_interpreter_v3.py",
+  "sourceSha256": "eaec7e5ff58646056a69895aa4f6868b33dfcac9ab6a6d28cbf26145618f1b67",
+  "interpreterVersion": 3,
+  "operator": "0x89990413bd7fbc2f0ec0a8ca8b7f6114d529d815",
+  "interpreterAddress": "0x544Fca7Ada5D3C49927F64263c5171EDE00D68Fb",
+  "deploymentTransaction": "0x49bf2d48474db28b960b1437da0182a27506801de4078273c8d82265bf0a3c47",
+  "verifiedAt": "2026-11-11T23:09:47.578Z",
+  "applicationActivation": false
+}

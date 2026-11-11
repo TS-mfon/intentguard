@@ -4,7 +4,7 @@ import {profileRoutes,sourceToken,ISSUER_SOURCES} from "../../../packages/shared
 /** Candidate issuer entries cannot become advertised spending authority. */
 export async function publicDeploymentConfiguration(){
  const base=publicConfiguration(),cfg=configuration();
- if(!cfg.mainnet&&!cfg.verifiedManifest)return {...base,settlementVersion:1 as const,readinessReasons:base.configured?[]:["NOT_CONFIGURED"]};
+ if(!cfg.mainnet&&!cfg.verifiedManifest&&!cfg.verifiedManifestJson)return {...base,settlementVersion:1 as const,readinessReasons:base.configured?[]:["NOT_CONFIGURED"]};
  try{
   if(!cfg.configured)throw Error("Not configured");
   const manifest=await runtimeManifest(cfg),routes=profileRoutes(manifest.paymentEnvironment);

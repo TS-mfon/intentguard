@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "releaseId": "intentguard-mainnet-beta-20261112",
+  "origin": "https://intentguard-mainnet.vercel.app",
+  "verifiedAt": "2026-11-11T23:18:59.606Z",
+  "marker": {
+    "_id": "environment",
+    "version": 1,
+    "paymentEnvironment": "mainnet",
+    "paymentChainId": 196,
+    "databaseName": "intentguard_mainnet",
+    "releaseId": "intentguard-mainnet-beta-20261112",
+    "origin": "https://intentguard-mainnet.vercel.app",
+    "frontendOrigin": "https://intentguard-mainnet.vercel.app",
+    "gateway": "0xa6d6a0dba04a1f8447c4f3fda4255e62b25b7e03",
+    "attestor": "0xe644e386771b2583adf6c78d524ab0a0847d380b"
+  },
+  "runtimePrincipals": [
+    "intentguard_mainnet_api",
+    "intentguard_mainnet_worker"
+  ],
+  "testnetToMainnetDenied": true,
+  "mainnetToTestnetDenied": true,
+  "financialRecords": 0,
+  "workerEnabled": false,
+  "applicationActivation": false
+}

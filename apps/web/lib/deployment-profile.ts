@@ -29,8 +29,10 @@ export function validateRuntimeManifest(raw:unknown,cfg:ReturnType<typeof config
 }
 export async function runtimeManifest(cfg=configuration()){
  if(cfg.local)throw Error("Hosted verification manifest required");
- if(!cfg.verifiedManifest||!cfg.verifiedManifestSha256)throw Error("Pinned mainnet verification manifest missing");
- const bytes=await readFile(cfg.verifiedManifest);
+ if((!!cfg.verifiedManifest===!!cfg.verifiedManifestJson)||!cfg.verifiedManifestSha256)throw Error("Use exactly one pinned mainnet verification manifest source");
+ // Inline public evidence survives serverless packaging; both transports use
+ // the same byte hash and strict identity/capability validation.
+ const bytes=cfg.verifiedManifestJson?Buffer.from(cfg.verifiedManifestJson,"utf8"):await readFile(cfg.verifiedManifest!);
  if(bytes.length>262144||createHash("sha256").update(bytes).digest("hex")!==cfg.verifiedManifestSha256)throw Error("Mainnet verification manifest hash mismatch");
  return validateRuntimeManifest(parseStrictJson(bytes.toString("utf8")),cfg);
 }
