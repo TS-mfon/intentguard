@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "kind": "verified-mainnet-contracts-and-existing-cpu-circuit",
+  "sourceCommit": "7684cd2c8f52f3e3dd518b469d5c77d07a2ae5fa",
+  "sourceTreeSha256": "80d0be6a7bd7c10ce33f0c9f083b5a5dd641f0847b2f5aca0f6be7ea9b9c2733",
+  "scopeSha256": "b2c9b23698666bed20b510c1f45acc8d36c486cc3b2ecbb21377bd434b4d8292",
+  "chainId": 196,
+  "deployer": "0x4985418ce78ebfdb99aff16a197925109b944466",
+  "cpuIndex": "414",
+  "processor": "0x9e2849c04a513fe64db07521cbe52d078d905c0e",
+  "circuitId": "4",
+  "owner": "0x4985418ce78ebfdb99aff16a197925109b944466",
+  "netlistSha256": "280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761",
+  "contracts": {
+    "USDC": {
+      "address": "0x1f10cd6397b65a995e4087cad5c1d6cab22cd772",
+      "contract": "CctpCardFactoryV4",
+      "runtimeSha256": "3be21b4f8576b32d3099473d67cf0ece2f5f0a141c1432330cfb507474fd2f16",
+      "sourceChainId": 196
+    },
+    "USDT0": {
+      "address": "0xf2b9515b6ba9a453ab3c41443c356a1c6c687364",
+      "contract": "MainnetUsdt0CardFactory",
+      "runtimeSha256": "68cd67b6ff2c195f6f45ce1c98fda5c8e425168ddc7edcaa16ab33a7c3d17720",
+      "sourceChainId": 196
+    }
+  },
+  "transactions": {
+    "mintTransistors": {
+      "hash": "0x6100e913cd4d08fcd3f1c8b57b46a0e331de253159c41bf898ac78cd4f6a95c9",
+      "actualCostOKB": "0.000661755831"
+    },
+    "tapeout": {
+      "hash": "0xf83ba8f90166d858483ab46b35f0a7742df909d807af1e5a55ab7bdb20a7c913",
+      "actualCostOKB": "0.001410344437"
+    },
+    "deployUSDCFactory": {
+      "hash": "0xb48e5340c6f3dd26052ddbc1707cacd088578e8b9eb348bb4f6f6894fe017bac",
+      "actualCostOKB": "0.000285943371"
+    },
+    "deployUSDT0Factory": {
+      "hash": "0x8f8706e7c06a98d09d7379dbe2f4cea1900961ed4ae6cce156c5c9030480e22f",
+      "actualCostOKB": "0.000084937461"
+    }
+  },
+  "totalSpentOKB": "0.0024429811",
+  "remainingBalanceOKB": "0.002299041619283113",
+  "numerical": {
+    "liveVectors": 490,
+    "resultsSha256": "7e85d23fb29d42186cd6f8ac4f1cc4af266d7be1887ae4e8a32ea0f2a1b5d73d",
+    "block": {
+      "number": "0x4827dcc",
+      "hash": "0x0692837b2ec178b049c458c44c0644db35122855a5d0d78621767e8704b519d9",
+      "timestamp": 1794429784
+    },
+    "providers": [
+      "https://rpc.xlayer.tech",
+      "https://xlayer.drpc.org"
+    ]
+  },
+  "applicationActivation": false
+}

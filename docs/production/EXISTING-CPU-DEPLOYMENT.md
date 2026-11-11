@@ -1,5 +1,7 @@
 # Budget-authorized registration on an existing official CPU
 
+The confirmed 2026-11-11 deployment is recorded in [mainnet-contracts-and-circuit.json](../deployments/mainnet-contracts-and-circuit.json): both payment factories, circuit 4 on official CPU 414, all four transaction receipts, deployed runtime hashes, and 490 live numerical vectors. Total native spending was 0.0024429811 OKB against the 0.0047 OKB cap. The circuit NFT belongs to the dedicated mainnet deployer.
+
 The user authorized the payment contract deployments and policy circuit registration, funded the dedicated X Layer 196 deployer, and explicitly selected an existing official CPU within the previously stated **0.0047 OKB** budget on 2026-11-11. This authorization supersedes the proposed creation of a dedicated CPU. The new factory charges BEM; it receives no transaction in this execution.
 
 `tools/production/deploy-existing-cpu.mjs` implements that bounded scope. Its authorization record is a budget authorization tied to the actual user response, not a fabricated approval of a five-minute exact quote. It permits only the required NAND deficit, the pinned policy tapeout, and deployments of the source-verified `CctpCardFactoryV4` and `MainnetUsdt0CardFactory` creation images. It permits no ERC-20 spending, approvals, transfers, application activation, or CPU creation.
