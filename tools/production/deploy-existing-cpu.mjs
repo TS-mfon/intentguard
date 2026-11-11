@@ -41,8 +41,12 @@ export function enforceBudget(scope,journal,nextMaximumWei){
  validateBudgetAuthority(scope);const total=budgetCommitment(journal)+decimal(String(nextMaximumWei));
  assert.ok(total<=decimal(scope.maximumNativeWei),"Total deployment commitment exceeds the user budget");return total;
 }
+export function sealStageQuote(body){
+ assert.equal(body.transaction.chainId,196,"The quote must bind the X Layer signing chain");
+ const result={...body,chainId:body.transaction.chainId};return {...result,quoteSha256:digest(result)};
+}
 async function validateScopedQuote(scope,proof,build,q){
- assert.ok(STEPS.includes(q.stage));assert.equal(q.scopeSha256,digest(scope));assert.equal(q.sourceCommit,scope.sourceCommit);assert.equal(q.sourceTreeSha256,scope.sourceTreeSha256);
+ assert.ok(STEPS.includes(q.stage));assert.equal(q.chainId,196);assert.equal(q.scopeSha256,digest(scope));assert.equal(q.sourceCommit,scope.sourceCommit);assert.equal(q.sourceTreeSha256,scope.sourceTreeSha256);
  const {quoteSha256,...body}=q;assert.equal(quoteSha256,digest(body));
  const tx=q.transaction;assert.equal(tx.sender,scope.deployer);assert.equal(tx.chainId,196);assert.equal(tx.type,"legacy");
  assert.ok(decimal(tx.nonce)<=BigInt(Number.MAX_SAFE_INTEGER));assert.ok(decimal(tx.gasLimit)>0n);assert.ok(decimal(tx.gasPriceWei)>0n&&decimal(tx.gasPriceWei)<=decimal(scope.gasPriceCeilingWei));
@@ -131,7 +135,7 @@ async function quote(stage,context){
  const maximumCostWei=(decimal(op.valueWei)+gasLimit*gasPrice).toString();enforceBudget(scope,journal,maximumCostWei);
  assert.ok(quantity(await rpc.request("eth_getBalance",[scope.deployer,block.number]))>=decimal(maximumCostWei),"Insufficient deployer balance");
  const quotedAt=Date.now();const result={version:1,kind:"budget-bound-existing-cpu-stage",scopeSha256:digest(scope),sourceCommit:scope.sourceCommit,sourceTreeSha256:scope.sourceTreeSha256,stage,operation:op.operation,transaction,block,quotedAt,expiresAt:quotedAt+300000,maximumCostWei};
- return {...result,quoteSha256:digest(result)};
+ return sealStageQuote(result);
 }
 
 async function receiptOutcome(rpc,row){

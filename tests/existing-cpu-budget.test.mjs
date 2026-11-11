@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {STEPS,validateBudgetAuthority,enforceBudget,budgetCommitment} from "../tools/production/deploy-existing-cpu.mjs";
+import {STEPS,validateBudgetAuthority,enforceBudget,budgetCommitment,sealStageQuote} from "../tools/production/deploy-existing-cpu.mjs";
+import {privateKeyToAccount} from "viem/accounts";
+import {validateSigned} from "../tools/production/mainnet-deploy.mjs";
 
 const scope=()=>({version:1,kind:"user-budget-authorized-existing-cpu-deployment",chainId:196,deployer:"0x"+"12".repeat(20),approvedBy:"user",authorizationReference:"User response: Use an existing official CPU within the OKB budget",maximumNativeWei:"4700000000000000",maximumTokenSpend:"0",steps:[...STEPS],sourceCommit:"ab".repeat(20),sourceTreeSha256:"cd".repeat(32),proofSha256:"ef".repeat(32),proofPath:".local/proof.json",gasPriceCeilingWei:"30000000"});
 
@@ -19,4 +21,12 @@ test("an interrupted or reverted stage cannot free its spending commitment for a
  assert.equal(budgetCommitment(journal),800000000000000n);
  assert.throws(()=>enforceBudget(scope(),journal,"4000000000000000"));
  assert.throws(()=>budgetCommitment({entries:{unknown:{status:"INTENT",quote:{maximumCostWei:"1"}}}}));
+});
+test("budget quote envelope binds the chain used by the actual signed-transaction validator",async()=>{
+ const account=privateKeyToAccount("0x"+"01".repeat(32));
+ const transaction={sender:account.address.toLowerCase(),to:"0x"+"12".repeat(20),data:"0x12345678",valueWei:"0",nonce:"0",gasLimit:"100000",gasPriceWei:"21000000",type:"legacy",chainId:196};
+ const quote=sealStageQuote({transaction});assert.equal(quote.chainId,196);
+ const raw=await account.signTransaction({type:"legacy",chainId:196,to:transaction.to,data:transaction.data,value:0n,nonce:0,gas:100000n,gasPrice:21000000n});
+ assert.match(await validateSigned(raw,quote),/^0x[0-9a-f]{64}$/);
+ assert.throws(()=>sealStageQuote({transaction:{...transaction,chainId:1952}}));
 });
