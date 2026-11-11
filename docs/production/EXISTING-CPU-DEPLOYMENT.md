@@ -1,0 +1,13 @@
+# Budget-authorized registration on an existing official CPU
+
+The user authorized the payment contract deployments and policy circuit registration, funded the dedicated X Layer 196 deployer, and explicitly selected an existing official CPU within the previously stated **0.0047 OKB** budget on 2026-11-11. This authorization supersedes the proposed creation of a dedicated CPU. The new factory charges BEM; it receives no transaction in this execution.
+
+`tools/production/deploy-existing-cpu.mjs` implements that bounded scope. Its authorization record is a budget authorization tied to the actual user response, not a fabricated approval of a five-minute exact quote. It permits only the required NAND deficit, the pinned policy tapeout, and deployments of the source-verified `CctpCardFactoryV4` and `MainnetUsdt0CardFactory` creation images. It permits no ERC-20 spending, approvals, transfers, application activation, or CPU creation.
+
+The scope binds a clean source commit/tree, the historical official CPU creation receipt, immutable processor/transistor runtime hashes, ownerless beacons, a recompiled verified transistor implementation, and the dedicated deployer. The original official factory implementation must match the reviewed pin at the CPU creation block. Current processor registry index and recognition are independently checked. NAND-only tapeout execution does not depend on the upgraded factory implementation.
+
+Each transaction receives a fresh agreed-block call simulation, gas estimate, fixed legacy gas price, nonce and balance check. The maximum native cost uses a 25% gas buffer plus 50,000 gas. Unfinished stages reserve their full maximum cost; confirmed or reverted stages retain their actual cost. A global 0.0047 OKB ceiling applies across all stages, with a separate gas-price ceiling. A private locked journal is fsynced before signing and again before broadcasting. Recovery uses the same raw transaction and hash, never a replacement nonce or increased fee.
+
+Receipt acceptance requires two confirmations, independent RPC agreement, the exact signed fields, receipt block identity, and deployed runtime/constructor or circuit outputs. Circuit acceptance also executes all 490 established independent numerical vectors on the actual official CPU. A verified contract/circuit report does not activate the application or certify full mainnet operational readiness.
+
+Use a private `.local/` scope file with `plan`, `execute ... --broadcast`, or `verify`. The executable does not generate user authorization records. Keep scope, credential and signed journal files private. The existing exact-stage executor and its authorization requirements remain available for its original dedicated-CPU flow.
