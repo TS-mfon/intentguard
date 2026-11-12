@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "kind": "verified-mainnet-vault-activation",
+  "statement": "The invoice buyer is the deployed vault created by this owner with this exact policy commitment. These values were checked against confirmed chain receipts and immutable contract configuration using two independent X Layer RPC providers.",
+  "paymentChainId": 196,
+  "cardId": "0xb2861ba8d5128e1e141fd7a685c7f867c88df1530df54bde4cb57fe4f1e3137f",
+  "cardAddress": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+  "owner": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+  "policyHash": "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48",
+  "settlement": {
+    "version": 2,
+    "paymentEnvironment": "mainnet",
+    "asset": "USDC",
+    "destinationChainIds": [
+      196
+    ]
+  },
+  "activation": {
+    "transactionHash": "0xa5df485b7639528a48b465219ba77412c55799e492a9b8f176c49c1f284c1dd4",
+    "factoryAddress": "0x1f10cd6397b65a995e4087cad5c1d6cab22cd772",
+    "status": "0x1",
+    "blockNumber": "0x482aed4",
+    "blockHash": "0xadbc96674a628d873bdac1fd25985e95e0ca52ce1fea8c453de8623c21da485d",
+    "confirmed": true,
+    "cardCreatedEvent": {
+      "address": "0x1f10cd6397b65a995e4087cad5c1d6cab22cd772",
+      "eventName": "CardCreated",
+      "args": {
+        "owner": "0xF3760F8FD610aD69Ca2c0C529160cC14d0B34dCd",
+        "card": "0x5b03FC070e2dFC3aE4A2652058fB038C4Ee9D916",
+        "policyHash": "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48"
+      }
+    },
+    "rawLogs": [
+      {
+        "address": "0x1f10cd6397b65a995e4087cad5c1d6cab22cd772",
+        "blockHash": "0xadbc96674a628d873bdac1fd25985e95e0ca52ce1fea8c453de8623c21da485d",
+        "blockNumber": "0x482aed4",
+        "blockTimestamp": "0x6af50460",
+        "data": "0x",
+        "logIndex": "0x24",
+        "removed": false,
+        "topics": [
+          "0x88ee2fbfc813cf43be39d6093790f88078d2c8b66a54c8cb475155ab52dee185",
+          "0x000000000000000000000000f3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+          "0x0000000000000000000000005b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+          "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48"
+        ],
+        "transactionHash": "0xa5df485b7639528a48b465219ba77412c55799e492a9b8f176c49c1f284c1dd4",
+        "transactionIndex": "0xf"
+      }
+    ]
+  },
+  "immutableConfiguration": {
+    "owner": "0xF3760F8FD610aD69Ca2c0C529160cC14d0B34dCd",
+    "gateway": "0xa6d6A0dBa04A1f8447C4F3fdA4255E62b25B7e03",
+    "attestor": "0xe644E386771B2583adf6c78D524aB0A0847D380B",
+    "token": "0xB6CEceAB302E2E4948951eE7843FC24E92933061",
+    "processor": "0x9e2849c04A513FE64db07521cBE52d078d905c0E",
+    "circuitId": "4",
+    "beacon": "0xf70d1ed4f62CF3780157B0b421b7E2F45bD0991C",
+    "expectedImplementation": "0x977f217887E085D298Cb3819cDAD5A0ee35F29B2",
+    "expectedNetlistHash": "0x280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761",
+    "policyHash": "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48",
+    "totalLimit": "1000",
+    "perPaymentLimit": "100",
+    "periodLimit": "1000",
+    "periodSeconds": "86400",
+    "validFrom": "1794441740",
+    "validUntil": "1795046540",
+    "allowedRecipients": [
+      "0x4985418ce78ebFDB99aFF16a197925109b944466"
+    ]
+  },
+  "cardRuntimeCodeHash": "0x6eaa7e1d1d1f88838f49ac3458f424d10189b41bc60daed12090313074eeb46e",
+  "observedBlock": {
+    "number": "0x4836005",
+    "hash": "0xac4415e3971a01791ff09b0dea3b350a97c855e730a848576069b59a56e2b25a",
+    "timestamp": 1794487697
+  },
+  "providers": [
+    "https://rpc.xlayer.tech",
+    "https://xlayer.drpc.org"
+  ],
+  "explorerUrl": "https://www.oklink.com/xlayer/tx/0xa5df485b7639528a48b465219ba77412c55799e492a9b8f176c49c1f284c1dd4",
+  "verifiedAt": "2026-11-12T12:48:22.442Z"
+}
