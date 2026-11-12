@@ -1,0 +1,11 @@
+{
+  "invoiceId": "intentguard-launch-20261112-hosted",
+  "buyer": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+  "token": "0xb6ceceab302e2e4948951ee7843fc24e92933061",
+  "chainId": 196,
+  "recipient": "0x4985418ce78ebfdb99aff16a197925109b944466",
+  "amount": "0.0001",
+  "description": "Native USDC settlement validation: verify the hosted API and worker deliver this controlled mainnet transfer.",
+  "issuedAt": 1794442474,
+  "expiresAt": 1794449674
+}

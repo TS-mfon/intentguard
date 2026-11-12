@@ -25,6 +25,7 @@ test("mainnet advertises only assets and destinations in its pinned release",()=
  const c=await publicDeploymentConfiguration();assert.equal(configuration().configured,true);assert.equal(c.configured,true);
  assert.deepEqual(c.assets.map(x=>x.asset),["USDC","USDT0"]);assert.deepEqual(c.spendingNetworks.map(x=>x.chainId),[196,42161]);
  assert.equal(c.reviewChainId,61999);assert.equal(c.reviewInfrastructure,"studionet-simulator");assert.equal(c.chainId,196);
+ assert.equal(c.paymentSymbol,"USDC");assert.equal(c.token,"0xb6ceceab302e2e4948951ee7843fc24e92933061");assert.equal(c.factoryAddress,b);
 }));
 test("tampering or cross-environment capability lists suppress all mainnet authority",()=>configured(async(manifest,path)=>{
  for(const change of [{verifiedDestinationChainIds:[1952]},{verifiedDestinationChainIds:[196,196]},{enabledAssets:["USDC","USDC"]},{reviewConsensus:a}]){
