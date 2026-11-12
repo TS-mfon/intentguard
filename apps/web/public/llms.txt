@@ -1,7 +1,10 @@
 # IntentGuard
-> Owner-approved agent spending vaults. TapeOut enforces numerical gates on X Layer; GenLayer reviews evidence. Testnet only.
-Canonical site: https://intentguard-tapeout.vercel.app
-API base: https://intentguard-tapeout.vercel.app/api/v1
+> Owner-approved agent spending vaults. TapeOut enforces numerical gates on X Layer; GenLayer reviews evidence on Studionet testnet.
+Mainnet site: https://intentguard-mainnet.vercel.app
+Mainnet API base: https://intentguard-mainnet.vercel.app/api/v1
+Mainnet release: USDC payments on X Layer 196. Check /api/v1/config for verified assets, destinations and release readiness.
+Testnet practice site: https://intentguard-tapeout.vercel.app
+Testnet API base: https://intentguard-tapeout.vercel.app/api/v1
 Only PAID confirms transfer. HTTP 202 means admission, APPROVED means settlement pending.
 Agent auth: Authorization: Bearer <owner-issued-agent-key>. Payment POST requires stable Idempotency-Key and JSON.
 Amounts are exact decimal strings, up to six fractional digits. Buyer on invoice is agent vault.
