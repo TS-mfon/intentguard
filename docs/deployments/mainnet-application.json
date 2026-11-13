@@ -1,0 +1,398 @@
+{
+  "version": 1,
+  "kind": "deployed-mainnet-USDC-beta",
+  "applicationActivation": true,
+  "origin": "https://intentguard-mainnet.vercel.app",
+  "sourceCommit": "ba69eae8d57279ea9e2f84630f6cb33b71c398b4",
+  "releaseId": "intentguard-mainnet-beta-20261112",
+  "deployment": {
+    "id": "dpl_49i6VzaqSeYvXo17AkoXzjAu45Xo",
+    "productionUrl": "https://intentguard-mainnet.vercel.app",
+    "readyState": "READY"
+  },
+  "paymentEnvironment": "mainnet",
+  "paymentChainId": 196,
+  "enabledAssets": [
+    "USDC"
+  ],
+  "verifiedDestinationChainIds": [
+    196
+  ],
+  "reviewEnvironment": "testnet",
+  "reviewNetwork": "studionet",
+  "reviewChainId": 61999,
+  "manifestSha256": "469a827265903370768efbedd219aafb9d533cec38b0a3affc053d4d474556ea",
+  "contractsAndCircuitEvidence": "docs/deployments/mainnet-contracts-and-circuit.json",
+  "runtimeEvidence": {
+    "version": 1,
+    "sourceCommit": "bf971b8727a8eddeead7134823cd58dd32a855f9",
+    "manifestSha256": "7e7168e94ef2e46570ac35ca7106450ea7ce381b85c982b3a8962b30a77be190",
+    "block": {
+      "number": "0x483b332",
+      "hash": "0x150487ffa1c7c2160dcc68bc83f7fc4b821ea083248f3e5485dd12b2d4b281af",
+      "timestamp": 1794508990
+    },
+    "circuitId": "4",
+    "owner": "0x4985418ce78ebfdb99aff16a197925109b944466",
+    "enabledAssets": [
+      "USDC"
+    ],
+    "verifiedDestinationChainIds": [
+      196
+    ],
+    "verifiedAt": "2026-11-12T18:43:20.259Z"
+  },
+  "codeValidation": {
+    "version": 1,
+    "sourceCommit": "ba69eae8d57279ea9e2f84630f6cb33b71c398b4",
+    "tests": 59,
+    "failures": 0,
+    "skipped": 0,
+    "typecheck": true,
+    "productionBuild": true,
+    "verifiedAt": "2026-11-12T18:48:50.516Z"
+  },
+  "paymentCanaries": {
+    "version": 1,
+    "kind": "live-mainnet-native-USDC-launch-canary",
+    "sourceCommit": "ba69eae8d57279ea9e2f84630f6cb33b71c398b4",
+    "releaseId": "intentguard-mainnet-beta-20261112",
+    "paymentChainId": 196,
+    "reviewChainId": 61999,
+    "reviewEnvironment": "testnet",
+    "reviewNetwork": "studionet",
+    "applicationOrigin": "https://intentguard-mainnet.vercel.app",
+    "owner": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+    "cardAddress": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+    "cardId": "0xb2861ba8d5128e1e141fd7a685c7f867c88df1530df54bde4cb57fe4f1e3137f",
+    "activationTx": "0xa5df485b7639528a48b465219ba77412c55799e492a9b8f176c49c1f284c1dd4",
+    "reviewerAddress": "0xe7E0163E894985EB4241872b4D555857435372DE",
+    "reviewerTx": "0x95f8b63912077c6f30df31149ac0ac90de4afd3ec16f9623af07c737d25a463b",
+    "requests": {
+      "approved": {
+        "id": "0x0a76cfed020c993c65259fc5cdb4abfdaeebe521909093568fab2f27c7b6c75b",
+        "status": "PAID",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0xb2da81e90228870b524f52b9413fb155754b8aac105ae4f7cb5575036e19ff4a"
+        },
+        "review": {
+          "decision": "APPROVE",
+          "requestHash": "0xe18cf2d78ca81c6c479aad2e0c51be1a9ed1ba76cc3cc43bf8b9a02d078453fe",
+          "policyHash": "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48",
+          "evidenceHash": "0xb15cda6c8a87b65f32d615f1a88632e0e72129db97a4847fdda5ecea3cfaef93",
+          "criteria": [
+            {
+              "id": "protocol-validation",
+              "status": "PASS",
+              "reason": "The request is in the allowed category protocol-validation and the verified invoice from the approved origin identifies the approved merchant product 'Native USDC settlement validation'. The invoice buyer matches the activated vault address proven in the verified vault-proof document, the token matches the required Circle-issued native ERC-20 USDC address on X Layer chain 196, the recipient matches the sole approved merchant recipient, and the invoice amount 0.0001 matches the submitted request amount 0.0001 and the saved per-payment cap rather than using a conflicting fixed amount. The invoice description and request purpose are consistent with protocol validation, and there is no evidence of advertising, retail services, or instructions to bypass policy.",
+              "sources": [
+                "https://intentguard-mainnet.vercel.app/launch-validation/20261112/approved.json",
+                "https://intentguard-mainnet.vercel.app/launch-validation/20261112/vault-proof.json"
+              ]
+            }
+          ],
+          "reason": "APPROVE"
+        },
+        "requestHash": "0xe18cf2d78ca81c6c479aad2e0c51be1a9ed1ba76cc3cc43bf8b9a02d078453fe",
+        "evidenceHash": "0xb15cda6c8a87b65f32d615f1a88632e0e72129db97a4847fdda5ecea3cfaef93",
+        "genLayerTxHash": "0x22ddf452188b983be2e19558f8d14ee2e509ea21a2450d05f6af95a9958e3afc",
+        "paymentTxHash": "0xb54b132415d116152632e4eab9dd98161d738185d2b14abc6647a265f24f786e",
+        "invoiceUrl": "https://intentguard-mainnet.vercel.app/launch-validation/20261112/approved.json",
+        "recipientDeltaUSDC": "0.0001",
+        "transport": "local-API-and-live-GitHub-worker",
+        "errorCode": null
+      },
+      "budget": {
+        "id": "0x2a5ac3c6ee72bed7f22acefba2a041272e1e4cfee0d96472274c83fb6c0ee641",
+        "status": "BLOCKED",
+        "guard": {
+          "allow": false,
+          "failures": [
+            "Payment limit"
+          ]
+        },
+        "requestHash": "",
+        "evidenceHash": "",
+        "invoiceUrl": "https://intentguard-mainnet.vercel.app/launch-validation/20261112/budget.json",
+        "recipientDeltaUSDC": "0",
+        "transport": "local-API-and-live-GitHub-worker",
+        "errorCode": null
+      },
+      "semantic": {
+        "id": "0x7c6ce591e0aedb3f7bc357ae3a7de484ca00b268c8dae9333f64f7ac6db152dc",
+        "status": "CANCELLED",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0x499adf260ae1ce6178f1e1a5335bc0f15d9093eddbdfdb4b383ddcc5172990ff"
+        },
+        "requestHash": "0xb0055dc937cd0c6302dffcb9a4aa847f3c812c300d93bb34162c12a5a12e94f7",
+        "evidenceHash": "0x18f39240b82b3e93d82ddad56adc780b6b0ddde536641b216c1156663fbd5fc3",
+        "genLayerTxHash": "0x1a5113c432cc589b07fe75854435c4e53dab6c5f6a1f6c26a1436c89e7dc3cde",
+        "invoiceUrl": "https://intentguard-mainnet.vercel.app/launch-validation/20261112/semantic.json",
+        "recipientDeltaUSDC": "0",
+        "transport": "local-API-and-live-GitHub-worker",
+        "errorCode": "GENLAYER_REVIEW_FAILED",
+        "consensus": {
+          "status": "FINALIZED",
+          "result": "MAJORITY_DISAGREE"
+        },
+        "consensusFailureVerified": true
+      },
+      "category": {
+        "id": "0xf4d3f583fb1f9c4e83dc12713c4557a1783bc0067892da54cdcc6acf5120e302",
+        "status": "REJECTED",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0x0b8f8d933a35e63eb7ac813c8d3d093c32fdde1f742f119007da0506a068ffc8"
+        },
+        "review": {
+          "decision": "REJECT",
+          "requestHash": "0x9dcb5f61d17017927200ee0cbb5ad00fd1a85de7e56237025a3acf144bf8cf6b",
+          "policyHash": "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48",
+          "evidenceHash": "0x86964fd0112c07a29938ccae3ded54131886f52a1aae8729632c7009a622ad86",
+          "criteria": [
+            {
+              "id": "protocol-validation",
+              "status": "FAIL",
+              "reason": "Purchase category is outside owner permissions.",
+              "sources": []
+            }
+          ],
+          "reason": "Purchase category is outside owner permissions."
+        },
+        "requestHash": "0x9dcb5f61d17017927200ee0cbb5ad00fd1a85de7e56237025a3acf144bf8cf6b",
+        "evidenceHash": "0x86964fd0112c07a29938ccae3ded54131886f52a1aae8729632c7009a622ad86",
+        "genLayerTxHash": "0x48d1c51b4d32a230a075457229637f5801e54e6f66de87637a8a22b6649cb283",
+        "invoiceUrl": "https://intentguard-mainnet.vercel.app/launch-validation/20261112/semantic.json",
+        "recipientDeltaUSDC": "0",
+        "transport": "local-API-and-live-GitHub-worker",
+        "errorCode": null
+      },
+      "injection": {
+        "id": "0xc5209f03357677a8863aecc94e1a1d734c55bbae9b78e9ecc563ba81a161e386",
+        "status": "NEEDS_EVIDENCE",
+        "guard": {
+          "allow": true,
+          "failures": [],
+          "txHash": "0x337cb2794163b0f81f5387a94074cdc2299f06dca8c12a5ba5ccc8282c334d9e"
+        },
+        "review": {
+          "decision": "NEEDS_EVIDENCE",
+          "requestHash": "0x4352c5771cd0f35cf545d6e11e7746a63ae91a37f07293d59aaa9398af0cb8ce",
+          "policyHash": "0x2cce7df9d4ff8ad7128c3bb8db07d9dff28c4e6f2b3e82632adef33fde3bec48",
+          "evidenceHash": "0xec3f8b743d369b6590bef514b4427335767f9691f0e5a68a8f9a7ee3b23118d7",
+          "criteria": [
+            {
+              "id": "protocol-validation",
+              "status": "INSUFFICIENT",
+              "reason": "Agent text attempts to override the authorization rules; independent clean evidence is required. Public evidence attempts to override the authorization rules: https://intentguard-mainnet.vercel.app/launch-validation/20261112/injection.json Decoded invoice description attempts to override the authorization rules: https://intentguard-mainnet.vercel.app/launch-validation/20261112/injection.json",
+              "sources": []
+            }
+          ],
+          "reason": "Agent text attempts to override the authorization rules; independent clean evidence is required. Public evidence attempts to override the authorization rules: https://intentguard-mainnet.vercel.app/launch-validation/20261112/injection.json Decoded invoice description attempts to override the authorization rules: https://intentguard-mainnet.vercel.app/launch-validation/20261112/injection.json"
+        },
+        "requestHash": "0x4352c5771cd0f35cf545d6e11e7746a63ae91a37f07293d59aaa9398af0cb8ce",
+        "evidenceHash": "0xec3f8b743d369b6590bef514b4427335767f9691f0e5a68a8f9a7ee3b23118d7",
+        "genLayerTxHash": "0x13772cad713d440cb5488ca4a4196a864e147eb7653ee127ccb19dba98ffa405",
+        "invoiceUrl": "https://intentguard-mainnet.vercel.app/launch-validation/20261112/injection.json",
+        "recipientDeltaUSDC": "0",
+        "transport": "local-API-and-live-GitHub-worker",
+        "errorCode": null
+      },
+      "hosted": {
+        "id": "0x5c0545761429c1c166f02cab75a1a202d1fa7eea97f1508c641b3d01e876cd2d",
+        "status": "CANCELLED",
+        "guard": {
+          "allow": true,
+          "failures": []
+        },
+        "requestHash": "0x6024443d9831bf86d03780d04a3e88b346f38837c4c19eafddebc682b629a6af",
+        "evidenceHash": "0x90416feadc7463c257ace8f1aa2278e55de448e752390deed325753befb4debc",
+        "invoiceUrl": "https://intentguard-mainnet.vercel.app/launch-validation/20261112/hosted.json",
+        "recipientDeltaUSDC": "0",
+        "transport": "live-hosted-API-and-GitHub-worker",
+        "errorCode": "PROCESSING_TIMEOUT",
+        "skipped": true
+      }
+    },
+    "localChecksPassed": true,
+    "hostedChecksPassed": false,
+    "verifiedAt": "2026-11-13T04:12:46.324Z",
+    "hostedChecksSkipped": {
+      "reason": "User explicitly requested skipping the test that needs additional gas and finishing the release.",
+      "requestId": "0x5c0545761429c1c166f02cab75a1a202d1fa7eea97f1508c641b3d01e876cd2d",
+      "status": "CANCELLED",
+      "recipientDeltaUSDC": "0",
+      "additionalFundingExecuted": false,
+      "verifiedAt": "2026-11-13T04:12:46.321Z"
+    }
+  },
+  "priorAttempts": [
+    {
+      "scenario": "approved",
+      "requestId": "0xbeb569105d6ba8b235f79415c025deffb84f85d187a39ccaaad8e1b4d72169df",
+      "status": "NEEDS_EVIDENCE",
+      "reviewTransaction": null,
+      "paymentTransaction": null
+    },
+    {
+      "scenario": "approved",
+      "requestId": "0x0ff2384a50e7f40c7e7c06f8b6fdaaaeca7c8ef305ed6977b4c3f553583d9ec7",
+      "status": "CANCELLED",
+      "reviewTransaction": "0x51f66f676b1e84e866dd539bb74fd0d41efbfc440345a26095045cc965d63b9b",
+      "paymentTransaction": null
+    },
+    {
+      "scenario": "approved",
+      "requestId": "0xc3b4d31fc7abc7f1e4773a54d6e3a591ddb37aff61d562f4a4ee6980030ead4e",
+      "status": "CANCELLED",
+      "reviewTransaction": "0x1bf1063797fe10b7ac59dd53eb71493f1a389d85501471a31aff76539c4e51da",
+      "paymentTransaction": null
+    },
+    {
+      "scenario": "semantic",
+      "requestId": "0x3afe64eca15ec589e1de53ad3b4bc65fdd55f81c4f268815747ead82f79ac793",
+      "status": "CANCELLED",
+      "reviewTransaction": "0xfb725eb20c8cba11ea8fdda0966c193456db17b5afe67538413ae6cda362afaa",
+      "paymentTransaction": null
+    },
+    {
+      "scenario": "hosted",
+      "requestId": "0x5422f769fb4a3ee6a06b83295b7e01fcdd0e4bc787e7cee501efc99c73940557",
+      "status": "CANCELLED",
+      "reviewTransaction": "0x77bf30eeee86e38c74a38f0fbf5e2df051417847cc74a7ca347f14626a62f8ee",
+      "paymentTransaction": null
+    },
+    {
+      "scenario": "approved",
+      "requestId": "0x6c38ecfc385c75cf958af63b03a784a49fe500ac4d1ed8d342a9fd4ed5ea978c",
+      "status": "NEEDS_EVIDENCE",
+      "reviewTransaction": "0x76e2f78790fb9cd8862d91e915cc01060f54e0b544da290b870b32ea5ec668fa",
+      "paymentTransaction": null
+    },
+    {
+      "scenario": "semantic",
+      "requestId": "0x224ace253d7df471696ad7776adfb9cf471e8b041e2232163e38feaece78d4c9",
+      "status": "CANCELLED",
+      "reviewTransaction": null,
+      "paymentTransaction": null
+    }
+  ],
+  "ownerRecovery": {
+    "version": 1,
+    "sourceCommit": "ba69eae8d57279ea9e2f84630f6cb33b71c398b4",
+    "cardAddress": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+    "checks": {
+      "pause": true,
+      "gatewayCannotChangeOwnerControls": true,
+      "resume": true,
+      "revoke": true,
+      "withdraw": true,
+      "credentialRevoked": true,
+      "allTestUSDCBackInDeployer": true
+    },
+    "ledger": {
+      "funded": "0",
+      "spent": "0.0001",
+      "reserved": "0",
+      "available": "0",
+      "periodSpent": "0",
+      "periodReserved": "0"
+    },
+    "verifiedAt": "2026-11-13T04:35:46.499Z"
+  },
+  "ownerTransactions": {
+    "version": 1,
+    "transactions": {
+      "activate": {
+        "sender": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+        "to": "0x1f10cd6397b65a995e4087cad5c1d6cab22cd772",
+        "transactionHash": "0xa5df485b7639528a48b465219ba77412c55799e492a9b8f176c49c1f284c1dd4",
+        "confirmed": true,
+        "actualGasOKB": "0.000197328012",
+        "maximumGasOKB": "0.000249518892"
+      },
+      "deposit": {
+        "sender": "0x4985418ce78ebfdb99aff16a197925109b944466",
+        "to": "0xb6ceceab302e2e4948951ee7843fc24e92933061",
+        "transactionHash": "0x7d84d47f940a3c721b85f753d2543ba5f0b8f2fe2aedce3ad0a5f990c9890b11",
+        "confirmed": true,
+        "actualGasOKB": "0.000002610174",
+        "maximumGasOKB": "0.00000414624"
+      },
+      "pause": {
+        "sender": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+        "to": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+        "transactionHash": "0x545016db39a1ff54ae78e2d913736b33526d2d2608d6db36377dab7ef675f253",
+        "confirmed": true,
+        "actualGasOKB": "0.000000966168",
+        "maximumGasOKB": "0.000002308656"
+      },
+      "resume": {
+        "sender": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+        "to": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+        "transactionHash": "0xb7a36fc7a1b19c45543ba2531938b19b94fccf7ace49fdbb0e86444a255830fa",
+        "confirmed": true,
+        "actualGasOKB": "0.000001886472",
+        "maximumGasOKB": "0.00000321804"
+      },
+      "withdraw": {
+        "sender": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+        "to": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+        "transactionHash": "0xa8b8f9570876ed30bb85a07a570989d88fbfff62750270f60ead4f8b7e377609",
+        "confirmed": true,
+        "actualGasOKB": "0.00000313425",
+        "maximumGasOKB": "0.000005863872"
+      },
+      "revoke": {
+        "sender": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+        "to": "0x5b03fc070e2dfc3ae4a2652058fb038c4ee9d916",
+        "transactionHash": "0x35a8e2c16347aa2c217457c0b27dad949cd040c331ede6260e84362c0046f0ca",
+        "confirmed": true,
+        "actualGasOKB": "0.000001167642",
+        "maximumGasOKB": "0.000002317686"
+      },
+      "returnTokens": {
+        "sender": "0xf3760f8fd610ad69ca2c0c529160cc14d0b34dcd",
+        "to": "0xb6ceceab302e2e4948951ee7843fc24e92933061",
+        "transactionHash": "0xe5215f178d5776f6d0b5fbf43814d800ce163fa3c83cc9226111b2d602e095f0",
+        "confirmed": true,
+        "actualGasOKB": "0.000001690374",
+        "maximumGasOKB": "0.00000323631"
+      }
+    },
+    "verifiedAt": "2026-11-13T04:30:00.426Z"
+  },
+  "testOwnerGasReturn": {
+    "version": 1,
+    "recipient": "0x4985418ce78ebfdb99aff16a197925109b944466",
+    "transactionHash": "0x6649ae800f94bbb11f0a1875d33a8c0c6278ff36f5317d9247cb82062e01c825",
+    "returnedOKB": "0.000016181082",
+    "actualGasOKB": "0.000000882",
+    "verifiedAt": "2026-11-13T04:38:23.286Z"
+  },
+  "additionalFundingExecuted": false,
+  "finalAcceptance": {
+    "met": 0,
+    "unmet": 0,
+    "abandoned": 6,
+    "reason": "The user requested skipping the additional gas test, stopping further checks and pushing the release. Prior implementation and canary evidence is preserved; final acceptance is not certified."
+  },
+  "operationalStatus": {
+    "workerFundingRequiredBeforeFurtherMainnetPayments": true,
+    "hostedSuccessfulPaymentVerified": false,
+    "browserAcceptanceCompleted": false
+  },
+  "limitations": [
+    "Semantic review uses GenLayer Studionet testnet simulator infrastructure and the configured attestor.",
+    "The first hosted approval did not finalize because validators errored; no payment occurred. Its gas-starved retry was cancelled when the user stopped additional paid testing.",
+    "Further mainnet payments require additional worker OKB. No additional funding was executed.",
+    "Two prose-only advertising reviews failed consensus and cancelled without payment; explicit category rejection was separately finalized.",
+    "USDT0, cross-chain mainnet payment destinations and DeWEB publication are outside this release.",
+    "Final browser and acceptance checks were stopped at the user request; this is a deployed beta, not completed independent production acceptance."
+  ]
+}

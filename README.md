@@ -4,7 +4,7 @@ An owner-approved spending protocol for agents that buy data, APIs and digital s
 
 [Setup and user guide](docs/SETUP-AND-USER-GUIDE.md) · [Open a real paid record](https://intentguard-tapeout.vercel.app/explorer/transactions/0xe76c364d42a8b3f1a98924dc79693a7228d048527bd5dc168ad04d01cd8028ff) · [Open a real budget block](https://intentguard-tapeout.vercel.app/explorer/transactions/0x89e88d85bd8f95529865dc9348d496a971e253aaa1eab9a3fe2c1d67cb439163) · [Public explorer](https://intentguard-tapeout.vercel.app/explorer) · [Portable protocol](docs/PROTOCOL.md) · [OpenAPI](docs/openapi.json) · [Machine guide](packages/sdk/integration.json)
 
-The public verified records are **testnet**: X Layer 1952, native USDC delivery on X Layer/Base Sepolia84532/Arbitrum Sepolia421614, and GenLayer Studionet61999 review. Testnet tokens have no monetary value. The repository prepares a separate **mainnet payment beta on X Layer196 with Studionet testnet review**; mainnet deployment, canaries, independent hosted acceptance, interviews and pilots still require external evidence. The [verified submission film](docs/production/SUBMISSION-VIDEO.md) presents historical testnet records. The [remediation contract](docs/production/REMEDIATION-PLAN.md) remains authoritative.
+The linked historical records are **testnet**: X Layer 1952, native USDC delivery on X Layer/Base Sepolia84532/Arbitrum Sepolia421614, and GenLayer Studionet61999 review. Testnet tokens have no monetary value. A separate [mainnet payment beta](https://intentguard-mainnet.vercel.app) enables native USDC on X Layer196 with **Studionet testnet review**. USDT0 and cross-chain mainnet payment destinations remain disabled. Further mainnet payments require worker OKB; the user stopped the additional funded payment check. See [the deployed release record](docs/production/MAINNET-APPLICATION.md) for evidence and the skipped acceptance scope. Independent security acceptance, sustained availability, interviews and pilots still require external evidence. The [verified submission film](docs/production/SUBMISSION-VIDEO.md) presents historical testnet records. The [remediation contract](docs/production/REMEDIATION-PLAN.md) remains authoritative.
 
 Only payment status **PAID** confirms recipient delivery. HTTP202 admits an operation; APPROVED, a CCTP burn, an attestation and a submitted mint remain pending.
 
@@ -12,7 +12,7 @@ Only payment status **PAID** confirms recipient delivery. HTTP202 admits an oper
 
 IntentGuard fits the **app, online service and developer-tool** directions: it lets owners delegate recurring digital-service purchases to agents with enforceable spending limits and verifiable receipts. Its spending-policy circuit also supports a commercial use case for TapeOut: evaluating numerical payment permission inside an X Layer vault before funds can move.
 
-**Access:** [Web app](https://intentguard-tapeout.vercel.app) · [Public explorer, no wallet required](https://intentguard-tapeout.vercel.app/explorer) · [Create agent](https://intentguard-tapeout.vercel.app/agent-setup). Developers can integrate through the [source SDK](packages/sdk), [MCP server](packages/mcp) and [OpenAPI specification](docs/openapi.json).
+**Access:** [Mainnet beta](https://intentguard-mainnet.vercel.app) · [Testnet app](https://intentguard-tapeout.vercel.app) · [Public testnet explorer, no wallet required](https://intentguard-tapeout.vercel.app/explorer) · [Create a mainnet agent](https://intentguard-mainnet.vercel.app/agent-setup). Developers can integrate through the [source SDK](packages/sdk), [MCP server](packages/mcp) and [OpenAPI specification](docs/openapi.json).
 
 ### Target users and how to reach them
 
@@ -40,7 +40,7 @@ The deployed testnet integration uses TapeOut's **ICPU interface and unchanged N
 | Netlist SHA-256 | `0x280890411f873d9cf1e113c5edf783c18b14d4f9485c567a7d0ec2d45292a761` |
 | Evidence and source | [Deployment record](docs/deployments/testnet.json), [independent contract/receipt verification](docs/audits/cctp-independent.json), [circuit source and artifacts](circuits/README.md), [TapeOut source provenance](contracts/evm/src/vendor/README.md) |
 
-**Remaining eligibility gap:** the recorded processor is a testnet adapter, with no verified official TapeOut CPU/circuit registry deployment. The website is hosted on Vercel; X Layer DeWEB publication is still preparation work. The supplied conditions do not specify whether this adapter qualifies as TapeOut ecosystem use, so full eligibility is not yet established. Organizer acceptance of the existing integration, or a verified official TapeOut circuit deployment on X Layer or X Layer DeWEB publication, would resolve this gap. Official mainnet circuit metadata remains `NOT_DEPLOYED`; the testnet circuit ID above must not be presented as an official mainnet registry ID. See the [recorded release limits](docs/deployments/cctp-release.json), [deployment workflow](docs/production/MAINNET-DEPLOYMENT.md) and [DeWEB preparation](docs/hosting/README.md).
+The separate **official X Layer mainnet registration** uses frozen CPU **414**, processor `0x9e2849c04a513fe64db07521cbe52d078d905c0e`, and circuit **4**, owned by the project deployer. [Verified mainnet contract and circuit evidence](docs/deployments/mainnet-contracts-and-circuit.json) records the registration receipt, matching netlist and 490 live numerical vectors. The table above preserves the historical testnet identifiers. The website is hosted on Vercel; X Layer DeWEB publication and organizer eligibility confirmation remain separate work. See the [deployment workflow](docs/production/MAINNET-DEPLOYMENT.md) and [DeWEB preparation](docs/hosting/README.md).
 
 ## Latest live API verification
 
@@ -85,7 +85,7 @@ flowchart LR
 
 A version1 policy commits mission, task context, merchant recipients, categories, evidence origins, criteria, exact lifetime/per-payment/period limits and validity. TapeOut evaluates the numerical permission at reservation and settlement. GenLayer checks independently fetched merchant evidence against the immutable policy. The vault verifies the release signature, stored commitments, anti-replay state and transfer receipt.
 
-The current testnet processor is an adapter running unchanged TapeOut NetlistVM. Official TapeOut mainnet deployment is a separate live acceptance requirement. The worker and immutable configured attestor remain trusted for foreign-chain GenLayer finality and CCTP receipt acknowledgement; X Layer does not execute a foreign-chain light client. Consensus cannot guarantee that model mistakes or prompt injection are impossible.
+The testnet processor is an adapter running unchanged TapeOut NetlistVM. The mainnet beta uses the registered circuit on official frozen CPU414. The worker and immutable configured attestor remain trusted for foreign-chain GenLayer finality and CCTP receipt acknowledgement; X Layer does not execute a foreign-chain light client. Consensus cannot guarantee that model mistakes or prompt injection are impossible.
 
 ```mermaid
 stateDiagram-v2
@@ -108,7 +108,7 @@ RETRYING is recoverable progress on the same record. EXPIRED and CANCELLED are t
 
 ## Explicit environments, settlement and reviewer versions
 
-| Interface | Preserved testnet | Versioned testnet / mainnet preparation |
+| Interface | Preserved testnet | Versioned testnet / mainnet beta |
 |---|---|---|
 | Payment source | X Layer1952 | Testnet1952 or mainnet196, explicitly selected |
 | Settlement permission | Legacy USDC `{asset,destinationChainIds}` or configured synthetic TEST-USDT | V2 `{version:2,paymentEnvironment,asset,destinationChainIds}` |
